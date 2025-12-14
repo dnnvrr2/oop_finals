@@ -4,6 +4,15 @@
  */
 package oop_finals;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableColumn;
+
 /**
  *
  * @author Admin
@@ -12,13 +21,58 @@ public class counselor_viewprofile extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(counselor_viewprofile.class.getName());
 
+    private int currentCounselorId;
+    private String currentCounselorName;
+    
+    // Database connection parameters
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "";
     /**
-     * Creates new form counselor_viewprofile
+     * Creates new form counselor_myschedule
      */
+    
     public counselor_viewprofile() {
         initComponents();
     }
-
+    
+    public counselor_viewprofile(int counselorId, String counselorName) {
+        initComponents();
+        this.currentCounselorId = counselorId;
+        this.currentCounselorName = counselorName;
+        jLabel5.setText(currentCounselorName + "!");  // ✅ Correct variable name
+        loadCounselorProfile();  // Load profile data
+    }
+    
+    private void loadCounselorProfile() {
+    String query = "SELECT name, email, specialization, license_number FROM counselors WHERE counselor_id = ?";
+    
+    try (java.sql.Connection conn = java.sql.DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+         java.sql.PreparedStatement pstmt = conn.prepareStatement(query)) {
+        
+        pstmt.setInt(1, currentCounselorId);
+        java.sql.ResultSet rs = pstmt.executeQuery();
+        
+        if (rs.next()) {
+            jTextField1.setText(rs.getString("name"));
+            jTextField2.setText(rs.getString("email"));
+            jTextField3.setText(rs.getString("specialization"));
+            jTextField4.setText(rs.getString("license_number"));
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                "Counselor profile not found!",
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+        
+    } catch (java.sql.SQLException e) {
+        logger.log(java.util.logging.Level.SEVERE, "Error loading counselor profile", e);
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Error loading profile: " + e.getMessage(),
+            "Database Error",
+            javax.swing.JOptionPane.ERROR_MESSAGE);
+    }
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -295,32 +349,43 @@ public class counselor_viewprofile extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
-        // TODO add your handling code here:
+        // TODO add your handling code her
+    int confirmation = JOptionPane.showConfirmDialog(null,
+        "Are you sure you want to logout?",
+        "Confirm logout",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.QUESTION_MESSAGE);
+
+    if (confirmation == JOptionPane.YES_OPTION) {
+        this.dispose();
+        new login_page().setVisible(true);
+    }
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
+        counselor_dashboard d = new counselor_dashboard(currentCounselorId, currentCounselorName);
+        d.setVisible(true);
         this.dispose();
-        new counselor_dashboard().setVisible(true);
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
-        counselor_requests a = new counselor_requests();
+        counselor_requests a = new counselor_requests(currentCounselorId, currentCounselorName);
         a.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
         // TODO add your handling code here:
-        counselor_myschedule b = new counselor_myschedule();
+        counselor_myschedule b = new counselor_myschedule(currentCounselorId, currentCounselorName);
         b.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         // TODO add your handling code here:
-        counselor_viewprofile c = new counselor_viewprofile();
+        counselor_viewprofile c = new counselor_viewprofile(currentCounselorId, currentCounselorName);
         c.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton5ActionPerformed

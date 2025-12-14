@@ -25,6 +25,9 @@ public class admin_dashboard extends javax.swing.JFrame {
     private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "";
+    
+    private int currentRequestId = -1;
+    private String currentRequestType = "";
     /**
      * Creates new form admin_dashboard
      */
@@ -44,136 +47,228 @@ public class admin_dashboard extends javax.swing.JFrame {
     }
     
     private void loadDashboardData() {
-    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+    System.out.println("=== Loading Dashboard Data ===");
         
-        // 1. Count Pending Counselors
-        String query1 = "SELECT COUNT(*) as count FROM user_requests WHERE user_type='Counselor' AND status='Pending'";
-        try (PreparedStatement pst = conn.prepareStatement(query1);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                pendingcounselor.setText(String.valueOf(rs.getInt("count")));
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            System.out.println("✓ Database connection successful");
+            
+            // 1. Count Pending Counselors
+            String query1 = "SELECT COUNT(*) as count FROM user_requests WHERE user_type='Counselor' AND status='Pending'";
+            try (PreparedStatement pst = conn.prepareStatement(query1);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt("count");
+                    System.out.println("Pending Counselors: " + count);
+                    pendingcounselor.setText(String.valueOf(count));
+                }
             }
-        }
-        
-        // 2. Count Approved Counselors
-        String query2 = "SELECT COUNT(*) as count FROM counselors WHERE status='Active'";
-        try (PreparedStatement pst = conn.prepareStatement(query2);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                approvedconselors.setText(String.valueOf(rs.getInt("count")));
+            
+            // 2. Count Approved Counselors
+            String query2 = "SELECT COUNT(*) as count FROM counselors WHERE status='Active'";
+            try (PreparedStatement pst = conn.prepareStatement(query2);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt("count");
+                    System.out.println("Approved Counselors: " + count);
+                    approvedconselors.setText(String.valueOf(count));
+                }
             }
-        }
-        
-        // 3. Count Total Counselors
-        String query3 = "SELECT COUNT(*) as count FROM counselors";
-        try (PreparedStatement pst = conn.prepareStatement(query3);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                totalcounselors.setText(String.valueOf(rs.getInt("count")));
+            
+            // 3. Count Total Counselors
+            String query3 = "SELECT COUNT(*) as count FROM counselors";
+            try (PreparedStatement pst = conn.prepareStatement(query3);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt("count");
+                    System.out.println("Total Counselors: " + count);
+                    totalcounselors.setText(String.valueOf(count));
+                }
             }
-        }
-        
-        // 4. Count Pending Students
-        String query4 = "SELECT COUNT(*) as count FROM user_requests WHERE user_type='Student' AND status='Pending'";
-        try (PreparedStatement pst = conn.prepareStatement(query4);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                pendingstudents.setText(String.valueOf(rs.getInt("count")));
+            
+            // 4. Count Pending Students
+            String query4 = "SELECT COUNT(*) as count FROM user_requests WHERE user_type='Student' AND status='Pending'";
+            try (PreparedStatement pst = conn.prepareStatement(query4);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt("count");
+                    System.out.println("Pending Students: " + count);
+                    pendingstudents.setText(String.valueOf(count));
+                }
             }
-        }
-        
-        // 5. Count Approved Students
-        String query5 = "SELECT COUNT(*) as count FROM students WHERE status='Active'";
-        try (PreparedStatement pst = conn.prepareStatement(query5);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                approvedstudents.setText(String.valueOf(rs.getInt("count")));
+            
+            // 5. Count Approved Students
+            String query5 = "SELECT COUNT(*) as count FROM students WHERE status='Active'";
+            try (PreparedStatement pst = conn.prepareStatement(query5);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt("count");
+                    System.out.println("Approved Students: " + count);
+                    approvedstudents.setText(String.valueOf(count));
+                }
             }
-        }
-        
-        // 6. Count Total Students
-        String query6 = "SELECT COUNT(*) as count FROM students";
-        try (PreparedStatement pst = conn.prepareStatement(query6);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                totalstudents.setText(String.valueOf(rs.getInt("count")));
+            
+            // 6. Count Total Students
+            String query6 = "SELECT COUNT(*) as count FROM students";
+            try (PreparedStatement pst = conn.prepareStatement(query6);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt("count");
+                    System.out.println("Total Students: " + count);
+                    totalstudents.setText(String.valueOf(count));
+                }
             }
-        }
-        
-        // 7. Count Pending Appointments
-        String query7 = "SELECT COUNT(*) as count FROM appointments WHERE status='Pending'";
-        try (PreparedStatement pst = conn.prepareStatement(query7);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                pendingappointment.setText(String.valueOf(rs.getInt("count")));
+            
+            // 7. Count Pending Appointments
+            String query7 = "SELECT COUNT(*) as count FROM appointments WHERE status='Pending'";
+            try (PreparedStatement pst = conn.prepareStatement(query7);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt("count");
+                    System.out.println("Pending Appointments: " + count);
+                    pendingappointment.setText(String.valueOf(count));
+                }
             }
-        }
-        
-        // 8. Count Total Appointments
-        String query8 = "SELECT COUNT(*) as count FROM appointments";
-        try (PreparedStatement pst = conn.prepareStatement(query8);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                totalappointments.setText(String.valueOf(rs.getInt("count")));
+            
+            // 8. Count Total Appointments
+            String query8 = "SELECT COUNT(*) as count FROM appointments";
+            try (PreparedStatement pst = conn.prepareStatement(query8);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt("count");
+                    System.out.println("Total Appointments: " + count);
+                    totalappointments.setText(String.valueOf(count));
+                }
             }
+            
+            System.out.println("✓ All statistics loaded successfully");
+            
+            // Load pending user requests preview
+            loadPendingRequestsPreview();
+            
+        } catch (SQLException e) {
+            System.err.println("✗ Database error: " + e.getMessage());
+            e.printStackTrace();
+            logger.log(java.util.logging.Level.SEVERE, "Error loading dashboard data", e);
+            JOptionPane.showMessageDialog(this,
+                "Error loading dashboard statistics: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
         }
-        
-        // Load pending user requests preview
-        loadPendingRequestsPreview();
-        
-    } catch (SQLException e) {
-        logger.log(java.util.logging.Level.SEVERE, "Error loading dashboard data", e);
-        JOptionPane.showMessageDialog(this,
-            "Error loading dashboard statistics: " + e.getMessage(),
-            "Database Error",
-            JOptionPane.ERROR_MESSAGE);
     }
-}
+
+// 3. ADD debug logging to loadPendingRequestsPreview
+private void loadPendingRequestsPreview() {
+        System.out.println("=== Loading Pending Requests Preview ===");
+        
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            
+            // Load first pending counselor request
+            String query1 = "SELECT * FROM user_requests WHERE user_type='Counselor' AND status='Pending' ORDER BY requested_at DESC LIMIT 1";
+            try (PreparedStatement pst = conn.prepareStatement(query1);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    currentRequestId = rs.getInt("request_id");
+                    currentRequestType = "Counselor";
+                    
+                    StringBuilder info = new StringBuilder();
+                    info.append("Type: COUNSELOR\n");
+                    info.append("Name: ").append(rs.getString("name")).append("\n");
+                    info.append("Email: ").append(rs.getString("email")).append("\n");
+                    info.append("Specialization: ").append(rs.getString("specialization")).append("\n");
+                    info.append("License: ").append(rs.getString("license_number")).append("\n");
+                    info.append("Requested: ").append(rs.getTimestamp("requested_at"));
+                    
+                    userrequest1.setText(info.toString());
+                    System.out.println("✓ Loaded counselor request: " + rs.getString("name"));
+                } else {
+                    currentRequestId = -1;
+                    currentRequestType = "";
+                    userrequest1.setText("No pending counselor requests");
+                    System.out.println("○ No pending counselor requests found");
+                }
+            }
+            
+            // Load first pending student request
+            String query2 = "SELECT * FROM user_requests WHERE user_type='Student' AND status='Pending' ORDER BY requested_at DESC LIMIT 1";
+            try (PreparedStatement pst = conn.prepareStatement(query2);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    // Store the second request info if needed
+                    StringBuilder info = new StringBuilder();
+                    info.append("Type: STUDENT\n");
+                    info.append("Name: ").append(rs.getString("name")).append("\n");
+                    info.append("Email: ").append(rs.getString("email")).append("\n");
+                    info.append("Course: ").append(rs.getString("course")).append("\n");
+                    info.append("Student #: ").append(rs.getString("student_number")).append("\n");
+                    info.append("Requested: ").append(rs.getTimestamp("requested_at"));
+                    
+                    userrequest2.setText(info.toString());
+                    System.out.println("✓ Loaded student request: " + rs.getString("name"));
+                } else {
+                    userrequest2.setText("No pending student requests");
+                    System.out.println("○ No pending student requests found");
+                }
+            }
+            
+            System.out.println("=== Finished Loading Pending Requests ===");
+            
+        } catch (SQLException e) {
+            System.err.println("✗ Error loading pending requests: " + e.getMessage());
+            e.printStackTrace();
+            logger.log(java.util.logging.Level.SEVERE, "Error loading pending requests", e);
+        }
+    }
+
+
+private void testDatabaseConnection() {
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            System.out.println("✓ DATABASE CONNECTION SUCCESSFUL");
+            
+            // Test each table
+            String[] queries = {
+                "SELECT COUNT(*) FROM users",
+                "SELECT COUNT(*) FROM students", 
+                "SELECT COUNT(*) FROM counselors",
+                "SELECT COUNT(*) FROM admins",
+                "SELECT COUNT(*) FROM user_requests",
+                "SELECT COUNT(*) FROM appointments"
+            };
+            
+            for (String query : queries) {
+                try (PreparedStatement pst = conn.prepareStatement(query);
+                     ResultSet rs = pst.executeQuery()) {
+                    if (rs.next()) {
+                        String tableName = query.substring(query.indexOf("FROM") + 5);
+                        System.out.println("  " + tableName + ": " + rs.getInt(1) + " records");
+                    }
+                }
+            }
+            
+            JOptionPane.showMessageDialog(this, 
+                "Database connection successful!\nCheck console for details.",
+                "Connection Test", 
+                JOptionPane.INFORMATION_MESSAGE);
+                
+        } catch (SQLException e) {
+            System.err.println("✗ DATABASE CONNECTION FAILED");
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
+            
+            JOptionPane.showMessageDialog(this,
+                "Database connection failed!\n" + e.getMessage(),
+                "Connection Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * Default constructor
+     */
     public admin_dashboard() {
         initComponents();
     }
     
-    private void loadPendingRequestsPreview() {
-    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-        
-        // Load first pending counselor request
-        String query1 = "SELECT * FROM user_requests WHERE user_type='Counselor' AND status='Pending' ORDER BY requested_at DESC LIMIT 1";
-        try (PreparedStatement pst = conn.prepareStatement(query1);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                StringBuilder info = new StringBuilder();
-                info.append("Name: ").append(rs.getString("name")).append("\n");
-                info.append("Email: ").append(rs.getString("email")).append("\n");
-                info.append("Specialization: ").append(rs.getString("specialization")).append("\n");
-                info.append("License: ").append(rs.getString("license_number"));
-                userrequest1.setText(info.toString());
-            } else {
-                userrequest1.setText("No pending counselor requests");
-            }
-        }
-        
-        // Load first pending student request
-        String query2 = "SELECT * FROM user_requests WHERE user_type='Student' AND status='Pending' ORDER BY requested_at DESC LIMIT 1";
-        try (PreparedStatement pst = conn.prepareStatement(query2);
-             ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                StringBuilder info = new StringBuilder();
-                info.append("Name: ").append(rs.getString("name")).append("\n");
-                info.append("Email: ").append(rs.getString("email")).append("\n");
-                info.append("Course: ").append(rs.getString("course")).append("\n");
-                info.append("Student #: ").append(rs.getString("student_number"));
-                userrequest2.setText(info.toString());
-            } else {
-                userrequest2.setText("No pending student requests");
-            }
-        }
-        
-    } catch (SQLException e) {
-        logger.log(java.util.logging.Level.SEVERE, "Error loading pending requests", e);
-    }
-}
-
-
+   
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -865,18 +960,55 @@ public class admin_dashboard extends javax.swing.JFrame {
 
     private void viewallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewallActionPerformed
         // TODO add your handling code here:
+        JOptionPane.showMessageDialog(this,
+            "View all pending requests feature coming soon!",
+            "Information",
+            JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_viewallActionPerformed
 
     private void rejectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rejectActionPerformed
         // TODO add your handling code here:
+        if (currentRequestId == -1) {
+            JOptionPane.showMessageDialog(this,
+                "No request selected",
+                "Information",
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        String reason = JOptionPane.showInputDialog(this,
+            "Enter rejection reason:",
+            "Reject Request",
+            JOptionPane.QUESTION_MESSAGE);
+        
+        if (reason != null && !reason.trim().isEmpty()) {
+            rejectUserRequest(currentRequestId, reason);
+        }
     }//GEN-LAST:event_rejectActionPerformed
 
     private void acceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_acceptActionPerformed
         // TODO add your handling code here:
+        if (currentRequestId == -1) {
+            JOptionPane.showMessageDialog(this,
+                "No request selected",
+                "Information",
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        int confirmation = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to approve this " + currentRequestType.toLowerCase() + " request?",
+            "Confirm Approval",
+            JOptionPane.YES_NO_OPTION);
+        
+        if (confirmation == JOptionPane.YES_OPTION) {
+            approveUserRequest(currentRequestId, currentRequestType);
+        }
     }//GEN-LAST:event_acceptActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
+        loadDashboardData();
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
@@ -901,6 +1033,120 @@ public class admin_dashboard extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton4ActionPerformed
 
+    private void approveUserRequest(int requestId, String userType) {
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            conn.setAutoCommit(false);
+            
+            try {
+                // Get request details
+                String getRequestQuery = "SELECT * FROM user_requests WHERE request_id = ?";
+                PreparedStatement getPst = conn.prepareStatement(getRequestQuery);
+                getPst.setInt(1, requestId);
+                ResultSet rs = getPst.executeQuery();
+                
+                if (rs.next()) {
+                    // Create user in users table
+                    String insertUserQuery = "INSERT INTO users (user_type, name, email, password, status) VALUES (?, ?, ?, ?, 'Active')";
+                    PreparedStatement userPst = conn.prepareStatement(insertUserQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+                    userPst.setString(1, userType);
+                    userPst.setString(2, rs.getString("name"));
+                    userPst.setString(3, rs.getString("email"));
+                    userPst.setString(4, rs.getString("password"));
+                    userPst.executeUpdate();
+                    
+                    ResultSet generatedKeys = userPst.getGeneratedKeys();
+                    if (generatedKeys.next()) {
+                        int userId = generatedKeys.getInt(1);
+                        
+                        // Insert into specific table
+                        if (userType.equals("Counselor")) {
+                            String insertCounselorQuery = "INSERT INTO counselors (user_id, name, email, specialization, license_number, password, status) VALUES (?, ?, ?, ?, ?, ?, 'Active')";
+                            PreparedStatement counselorPst = conn.prepareStatement(insertCounselorQuery);
+                            counselorPst.setInt(1, userId);
+                            counselorPst.setString(2, rs.getString("name"));
+                            counselorPst.setString(3, rs.getString("email"));
+                            counselorPst.setString(4, rs.getString("specialization"));
+                            counselorPst.setString(5, rs.getString("license_number"));
+                            counselorPst.setString(6, rs.getString("password"));
+                            counselorPst.executeUpdate();
+                        } else if (userType.equals("Student")) {
+                            String insertStudentQuery = "INSERT INTO students (user_id, name, email, course, student_number, password, status) VALUES (?, ?, ?, ?, ?, ?, 'Active')";
+                            PreparedStatement studentPst = conn.prepareStatement(insertStudentQuery);
+                            studentPst.setInt(1, userId);
+                            studentPst.setString(2, rs.getString("name"));
+                            studentPst.setString(3, rs.getString("email"));
+                            studentPst.setString(4, rs.getString("course"));
+                            studentPst.setString(5, rs.getString("student_number"));
+                            studentPst.setString(6, rs.getString("password"));
+                            studentPst.executeUpdate();
+                        }
+                    }
+                    
+                    // Update request status
+                    String updateRequestQuery = "UPDATE user_requests SET status = 'Approved', processed_at = NOW(), processed_by = ? WHERE request_id = ?";
+                    PreparedStatement updatePst = conn.prepareStatement(updateRequestQuery);
+                    updatePst.setInt(1, currentAdminId);
+                    updatePst.setInt(2, requestId);
+                    updatePst.executeUpdate();
+                    
+                    conn.commit();
+                    
+                    JOptionPane.showMessageDialog(this,
+                        "User request approved successfully!",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Reload dashboard
+                    loadDashboardData();
+                }
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error approving request: " + e.getMessage());
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Error approving request: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * Reject a user request
+     */
+    private void rejectUserRequest(int requestId, String reason) {
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            String updateQuery = "UPDATE user_requests SET status = 'Rejected', rejection_reason = ?, processed_at = NOW(), processed_by = ? WHERE request_id = ?";
+            PreparedStatement pst = conn.prepareStatement(updateQuery);
+            pst.setString(1, reason);
+            pst.setInt(2, currentAdminId);
+            pst.setInt(3, requestId);
+            
+            int rowsAffected = pst.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                JOptionPane.showMessageDialog(this,
+                    "User request rejected",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Reload dashboard
+                loadDashboardData();
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error rejecting request: " + e.getMessage());
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Error rejecting request: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
     /**
      * @param args the command line arguments
      */

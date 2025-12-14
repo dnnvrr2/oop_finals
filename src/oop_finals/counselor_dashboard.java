@@ -25,13 +25,16 @@ public class counselor_dashboard extends javax.swing.JFrame {
     private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = ""; // Change to your MySQL password
+    
+    private int currentAppointmentId1 = -1;  // First text area
+    private int currentAppointmentId2 = -1; 
 
     // Default constructor
     public counselor_dashboard() {
         initComponents();
-        // Test with student ID 1 (John Doe)
-        this.currentCounselorId = 1;
-        this.currentCounselorName = "John Doe";
+        pendingrequesttable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        pendingrequesttable.setColumnSelectionAllowed(false);
+        pendingrequesttable.setRowSelectionAllowed(true);
         loadDashboardData();
     }
     
@@ -47,15 +50,8 @@ public class counselor_dashboard extends javax.swing.JFrame {
     private void loadDashboardData() {
         // Update welcome message
         user.setText(currentCounselorName + "!");
-        
-        // Load appointment counts for the cards
         loadAppointmentCounts();
-        
-        // Load upcoming appointments in first text area
-        loadUpcomingAppointments();
-        
-        // Load pending appointments in second text area
-        loadPendingAppointments();
+        loadPendingRequestsTable();
     }
     
     // Load appointment counts for dashboard cards (jLabel1, jLabel3, jLabel8)
@@ -64,7 +60,7 @@ public class counselor_dashboard extends javax.swing.JFrame {
                       "COUNT(CASE WHEN status = 'Upcoming' THEN 1 END) as upcoming_count, " +
                       "COUNT(CASE WHEN status = 'Pending' THEN 1 END) as pending_count, " +
                       "COUNT(CASE WHEN status = 'Completed' THEN 1 END) as completed_count " +
-                      "FROM appointments WHERE student_id = ?";
+                      "FROM appointments WHERE counselor_id = ?";
         
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -92,16 +88,13 @@ public class counselor_dashboard extends javax.swing.JFrame {
         }
     }
     
-    // Load ONE upcoming appointment into jTextArea1
-    private void loadUpcomingAppointments() {
-        String query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, " +
-                      "a.reason, c.name as counselor_name, c.specialization " +
+    private void loadPendingRequestsTable() {
+    String query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, " +
+                      "s.name as student_name, s.year_level, s.course, a.reason " +
                       "FROM appointments a " +
-                      "JOIN counselors c ON a.counselor_id = c.counselor_id " +
-                      "WHERE a.student_id = ? AND a.status = 'Upcoming' " +
-                      "ORDER BY a.appointment_date, a.appointment_time LIMIT 1";
-        
-        StringBuilder appointmentText = new StringBuilder();
+                      "JOIN students s ON a.student_id = s.student_id " +
+                      "WHERE a.counselor_id = ? AND a.status = 'Pending' " +
+                      "ORDER BY a.appointment_date, a.appointment_time LIMIT 2";
         
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -109,58 +102,128 @@ public class counselor_dashboard extends javax.swing.JFrame {
             pstmt.setInt(1, currentCounselorId);
             ResultSet rs = pstmt.executeQuery();
             
-            if (rs.next()) {
-                appointmentText.append("Date: ").append(rs.getDate("appointment_date")).append("\n");
-                appointmentText.append("Time: ").append(rs.getTime("appointment_time")).append("\n");
-                appointmentText.append("Counselor: ").append(rs.getString("counselor_name")).append("\n");
-                appointmentText.append("Specialization: ").append(rs.getString("specialization")).append("\n");
-                appointmentText.append("Reason: ").append(rs.getString("reason"));
-            } else {
-                appointmentText.append("No upcoming appointments scheduled.");
+            // Create table model
+            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) pendingrequesttable.getModel();
+            model.setRowCount(0); // Clear existing rows
+            
+            // Populate table
+            while (rs.next()) {
+                Object[] row = new Object[6];
+                row[0] = rs.getDate("appointment_date");
+                row[1] = rs.getTime("appointment_time");
+                row[2] = rs.getString("student_name");
+                row[3] = rs.getString("year_level");
+                row[4] = rs.getString("course");
+                row[5] = rs.getString("reason");
+                
+                model.addRow(row);
             }
             
-            pendingrequest1.setText(appointmentText.toString());
-            pendingrequest1.setCaretPosition(0);
+            logger.log(java.util.logging.Level.INFO, "Loaded " + model.getRowCount() + " pending requests (max 2 for dashboard)");
             
         } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading upcoming appointments", e);
-            pendingrequest1.setText("Error loading appointments: " + e.getMessage());
+            logger.log(java.util.logging.Level.SEVERE, "Error loading pending requests table", e);
+            JOptionPane.showMessageDialog(this,
+                "Error loading pending requests: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
     
-    // Load ONE upcoming appointment into jTextArea2
-    private void loadPendingAppointments() {
-        String query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, " +
-                      "a.reason, c.name as counselor_name, c.specialization " +
+    private int getAppointmentIdFromTable(java.util.Date date, java.sql.Time time, String studentName) {
+        String query = "SELECT a.appointment_id " +
                       "FROM appointments a " +
-                      "JOIN counselors c ON a.counselor_id = c.counselor_id " +
-                      "WHERE a.student_id = ? AND a.status = 'Upcoming' " +
-                      "ORDER BY a.appointment_date, a.appointment_time LIMIT 1 OFFSET 1";
-        
-        StringBuilder appointmentText = new StringBuilder();
+                      "JOIN students s ON a.student_id = s.student_id " +
+                      "WHERE a.counselor_id = ? AND a.appointment_date = ? " +
+                      "AND a.appointment_time = ? AND s.name = ? AND a.status = 'Pending'";
         
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             
             pstmt.setInt(1, currentCounselorId);
+            pstmt.setDate(2, new java.sql.Date(date.getTime()));
+            pstmt.setTime(3, time);
+            pstmt.setString(4, studentName);
+            
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
-                appointmentText.append("Date: ").append(rs.getDate("appointment_date")).append("\n");
-                appointmentText.append("Time: ").append(rs.getTime("appointment_time")).append("\n");
-                appointmentText.append("Counselor: ").append(rs.getString("counselor_name")).append("\n");
-                appointmentText.append("Specialization: ").append(rs.getString("specialization")).append("\n");
-                appointmentText.append("Reason: ").append(rs.getString("reason"));
-            } else {
-                appointmentText.append("No additional upcoming appointments.");
+                return rs.getInt("appointment_id");
             }
             
-            pendingrequest2.setText(appointmentText.toString());
-            pendingrequest2.setCaretPosition(0);
+        } catch (SQLException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error getting appointment ID", e);
+        }
+        
+        return -1;
+    }
+
+    // Accept appointment method
+    private void acceptAppointment(int appointmentId) {
+        String updateQuery = "UPDATE appointments SET status = 'Upcoming', updated_at = NOW() WHERE appointment_id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
+            
+            pstmt.setInt(1, appointmentId);
+            int rowsAffected = pstmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                JOptionPane.showMessageDialog(this,
+                    "Appointment request accepted successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Reload dashboard to show updated data
+                loadDashboardData();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Failed to accept appointment. It may have been already processed.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
             
         } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading upcoming appointments", e);
-            pendingrequest2.setText("Error loading upcoming appointments: " + e.getMessage());
+            logger.log(java.util.logging.Level.SEVERE, "Error accepting appointment", e);
+            JOptionPane.showMessageDialog(this,
+                "Error accepting appointment: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Reject appointment method
+    private void rejectAppointment(int appointmentId, String reason) {
+        String updateQuery = "UPDATE appointments SET status = 'Rejected', notes = ?, updated_at = NOW() WHERE appointment_id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
+            
+            pstmt.setString(1, "Rejected: " + reason);
+            pstmt.setInt(2, appointmentId);
+            int rowsAffected = pstmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                JOptionPane.showMessageDialog(this,
+                    "Appointment request rejected.",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Reload dashboard to show updated data
+                loadDashboardData();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Failed to reject appointment. It may have been already processed.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            
+        } catch (SQLException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error rejecting appointment", e);
+            JOptionPane.showMessageDialog(this,
+                "Error rejecting appointment: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -192,17 +255,10 @@ public class counselor_dashboard extends javax.swing.JFrame {
         logout = new javax.swing.JButton();
         logo_home = new javax.swing.JButton();
         dashboard = new javax.swing.JLabel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        pendingrequest2 = new javax.swing.JTextArea();
-        accept = new javax.swing.JButton();
-        reject = new javax.swing.JButton();
-        viewall = new javax.swing.JButton();
         jPanel6 = new javax.swing.JPanel();
         jPanel7 = new javax.swing.JPanel();
         upcoming = new javax.swing.JLabel();
         pendingrequests = new javax.swing.JLabel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        pendingrequest1 = new javax.swing.JTextArea();
         jPanel8 = new javax.swing.JPanel();
         pending = new javax.swing.JLabel();
         jPanel9 = new javax.swing.JPanel();
@@ -210,6 +266,11 @@ public class counselor_dashboard extends javax.swing.JFrame {
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        pendingrequesttable = new javax.swing.JTable();
+        accept = new javax.swing.JButton();
+        reject = new javax.swing.JButton();
+        viewall = new javax.swing.JButton();
 
         jButton1.setBackground(new java.awt.Color(255, 195, 51));
         jButton1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -281,7 +342,7 @@ public class counselor_dashboard extends javax.swing.JFrame {
                 .addComponent(profilelogo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(viewprofile)
-                .addContainerGap(119, Short.MAX_VALUE))
+                .addContainerGap(123, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -326,44 +387,6 @@ public class counselor_dashboard extends javax.swing.JFrame {
         dashboard.setForeground(new java.awt.Color(255, 195, 51));
         dashboard.setText("DASHBOARD");
 
-        pendingrequest2.setColumns(20);
-        pendingrequest2.setFont(new java.awt.Font("Segoe UI", 1, 10)); // NOI18N
-        pendingrequest2.setRows(5);
-        jScrollPane2.setViewportView(pendingrequest2);
-
-        accept.setBackground(new java.awt.Color(255, 195, 51));
-        accept.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        accept.setForeground(new java.awt.Color(255, 255, 255));
-        accept.setText("ACCEPT");
-        accept.setBorderPainted(false);
-        accept.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                acceptActionPerformed(evt);
-            }
-        });
-
-        reject.setBackground(new java.awt.Color(255, 195, 51));
-        reject.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        reject.setForeground(new java.awt.Color(255, 255, 255));
-        reject.setText("REJECT");
-        reject.setBorderPainted(false);
-        reject.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                rejectActionPerformed(evt);
-            }
-        });
-
-        viewall.setBackground(new java.awt.Color(255, 195, 51));
-        viewall.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        viewall.setForeground(new java.awt.Color(255, 255, 255));
-        viewall.setText("VIEW ALL");
-        viewall.setBorderPainted(false);
-        viewall.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                viewallActionPerformed(evt);
-            }
-        });
-
         jPanel6.setBackground(new java.awt.Color(38, 36, 68));
 
         jPanel7.setPreferredSize(new java.awt.Dimension(150, 150));
@@ -387,11 +410,6 @@ public class counselor_dashboard extends javax.swing.JFrame {
         pendingrequests.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         pendingrequests.setForeground(new java.awt.Color(255, 195, 51));
         pendingrequests.setText("PENDING APPOINTMENT REQUESTS");
-
-        pendingrequest1.setColumns(20);
-        pendingrequest1.setFont(new java.awt.Font("Segoe UI", 1, 10)); // NOI18N
-        pendingrequest1.setRows(5);
-        jScrollPane1.setViewportView(pendingrequest1);
 
         jPanel8.setPreferredSize(new java.awt.Dimension(150, 150));
 
@@ -441,6 +459,62 @@ public class counselor_dashboard extends javax.swing.JFrame {
         jLabel6.setForeground(new java.awt.Color(255, 255, 255));
         jLabel6.setText("COMPLETED");
 
+        pendingrequesttable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null}
+            },
+            new String [] {
+                "Date", "Time", "Student Name", "Year Level", "Course", "Reason"
+            }
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        pendingrequesttable.setRowHeight(90);
+        pendingrequesttable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        pendingrequesttable.setShowGrid(false);
+        pendingrequesttable.setShowHorizontalLines(true);
+        jScrollPane3.setViewportView(pendingrequesttable);
+
+        accept.setBackground(new java.awt.Color(255, 195, 51));
+        accept.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        accept.setForeground(new java.awt.Color(255, 255, 255));
+        accept.setText("ACCEPT");
+        accept.setBorderPainted(false);
+        accept.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                acceptActionPerformed(evt);
+            }
+        });
+
+        reject.setBackground(new java.awt.Color(255, 195, 51));
+        reject.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        reject.setForeground(new java.awt.Color(255, 255, 255));
+        reject.setText("REJECT");
+        reject.setBorderPainted(false);
+        reject.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rejectActionPerformed(evt);
+            }
+        });
+
+        viewall.setBackground(new java.awt.Color(255, 195, 51));
+        viewall.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        viewall.setForeground(new java.awt.Color(255, 255, 255));
+        viewall.setText("VIEW ALL");
+        viewall.setBorderPainted(false);
+        viewall.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                viewallActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
@@ -453,21 +527,26 @@ public class counselor_dashboard extends javax.swing.JFrame {
                         .addGap(53, 53, 53)
                         .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(53, 53, 53)
-                        .addComponent(jPanel9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addComponent(jPanel9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGap(156, 156, 156)
+                        .addComponent(jLabel4)
+                        .addGap(140, 140, 140)
+                        .addComponent(jLabel5)
+                        .addGap(148, 148, 148)
+                        .addComponent(jLabel6))
                     .addGroup(jPanel6Layout.createSequentialGroup()
                         .addGap(47, 47, 47)
                         .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jScrollPane1)
-                            .addComponent(pendingrequests))))
-                .addGap(48, 48, 48))
-            .addGroup(jPanel6Layout.createSequentialGroup()
-                .addGap(156, 156, 156)
-                .addComponent(jLabel4)
-                .addGap(140, 140, 140)
-                .addComponent(jLabel5)
-                .addGap(148, 148, 148)
-                .addComponent(jLabel6)
+                            .addComponent(pendingrequests)
+                            .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 666, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGap(89, 89, 89)
+                        .addComponent(accept, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(67, 67, 67)
+                        .addComponent(reject, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(62, 62, 62)
+                        .addComponent(viewall, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel6Layout.setVerticalGroup(
@@ -486,8 +565,13 @@ public class counselor_dashboard extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 27, Short.MAX_VALUE)
                 .addComponent(pendingrequests)
                 .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 202, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, Short.MAX_VALUE)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(reject)
+                    .addComponent(accept)
+                    .addComponent(viewall))
+                .addGap(184, 184, 184))
         );
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
@@ -505,23 +589,14 @@ public class counselor_dashboard extends javax.swing.JFrame {
                 .addGap(37, 37, 37)
                 .addComponent(logout)
                 .addGap(38, 38, 38))
-            .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(48, 48, 48)
-                        .addComponent(dashboard))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(96, 96, 96)
-                        .addComponent(accept, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(65, 65, 65)
-                        .addComponent(reject, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(67, 67, 67)
-                        .addComponent(viewall, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(47, 47, 47)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 692, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(48, 48, 48)
+                .addComponent(dashboard)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -539,16 +614,9 @@ public class counselor_dashboard extends javax.swing.JFrame {
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(51, 51, 51)
                 .addComponent(dashboard)
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(27, 27, 27)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(accept)
-                    .addComponent(reject)
-                    .addComponent(viewall))
-                .addContainerGap(36, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -562,7 +630,7 @@ public class counselor_dashboard extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 700, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         pack();
@@ -578,22 +646,86 @@ public class counselor_dashboard extends javax.swing.JFrame {
 
     private void viewallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewallActionPerformed
         // TODO add your handling code here:
-        counselor_requests d = new counselor_requests();
-        d.setVisible(true);
-        this.dispose();
+        // CORRECT - Pass the parameters!
+        counselor_requests r = new counselor_requests(currentCounselorId, currentCounselorName);
+        r.setVisible(true);
+        this.dispose();     
     }//GEN-LAST:event_viewallActionPerformed
 
     private void rejectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rejectActionPerformed
         // TODO add your handling code here:
+        int selectedRow = pendingrequesttable.getSelectedRow();
+        
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this,
+                "Please select a request from the table to reject.",
+                "No Selection",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // Get appointment details from selected row
+        java.util.Date appointmentDate = (java.util.Date) pendingrequesttable.getValueAt(selectedRow, 0);
+        java.sql.Time appointmentTime = (java.sql.Time) pendingrequesttable.getValueAt(selectedRow, 1);
+        String studentName = (String) pendingrequesttable.getValueAt(selectedRow, 2);
+        
+        // Find appointment ID
+        int appointmentId = getAppointmentIdFromTable(appointmentDate, appointmentTime, studentName);
+        
+        if (appointmentId != -1) {
+            String reason = JOptionPane.showInputDialog(this,
+                "Enter reason for rejection:",
+                "Reject Appointment",
+                JOptionPane.QUESTION_MESSAGE);
+            
+            if (reason != null && !reason.trim().isEmpty()) {
+                rejectAppointment(appointmentId, reason);
+            } else if (reason != null) {
+                JOptionPane.showMessageDialog(this,
+                    "Rejection reason is required.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }//GEN-LAST:event_rejectActionPerformed
 
     private void acceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_acceptActionPerformed
         // TODO add your handling code here:
+        int selectedRow = pendingrequesttable.getSelectedRow();
+        
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this,
+                "Please select a request from the table to accept.",
+                "No Selection",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // Get appointment details from selected row
+        java.util.Date appointmentDate = (java.util.Date) pendingrequesttable.getValueAt(selectedRow, 0);
+        java.sql.Time appointmentTime = (java.sql.Time) pendingrequesttable.getValueAt(selectedRow, 1);
+        String studentName = (String) pendingrequesttable.getValueAt(selectedRow, 2);
+        
+        // Find appointment ID
+        int appointmentId = getAppointmentIdFromTable(appointmentDate, appointmentTime, studentName);
+        
+        if (appointmentId != -1) {
+            int confirmation = JOptionPane.showConfirmDialog(this,
+                "Accept appointment request from " + studentName + "?",
+                "Confirm Acceptance",
+                JOptionPane.YES_NO_OPTION);
+            
+            if (confirmation == JOptionPane.YES_OPTION) {
+                acceptAppointment(appointmentId);
+            }
+        }
     }//GEN-LAST:event_acceptActionPerformed
 
     private void logo_homeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logo_homeActionPerformed
         // TODO add your handling code here:
-        loadDashboardData();
+        counselor_dashboard d = new counselor_dashboard(currentCounselorId, currentCounselorName);
+        d.setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_logo_homeActionPerformed
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
@@ -613,21 +745,21 @@ public class counselor_dashboard extends javax.swing.JFrame {
 
     private void myscheduleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_myscheduleActionPerformed
         // TODO add your handling code here:
-        counselor_myschedule b = new counselor_myschedule();
+        counselor_myschedule b = new counselor_myschedule(currentCounselorId, currentCounselorName);
         b.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_myscheduleActionPerformed
 
     private void viewprofileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewprofileActionPerformed
         // TODO add your handling code here:
-        counselor_viewprofile c = new counselor_viewprofile();
+        counselor_viewprofile c = new counselor_viewprofile(currentCounselorId, currentCounselorName);
         c.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_viewprofileActionPerformed
 
     private void requestsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_requestsActionPerformed
         // TODO add your handling code here:
-        counselor_requests a = new counselor_requests();
+        counselor_requests a = new counselor_requests(currentCounselorId, currentCounselorName);
         a.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_requestsActionPerformed
@@ -671,15 +803,13 @@ public class counselor_dashboard extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JButton logo_home;
     private javax.swing.JButton logout;
     private javax.swing.JButton myschedule;
     private javax.swing.JLabel pending;
-    private javax.swing.JTextArea pendingrequest1;
-    private javax.swing.JTextArea pendingrequest2;
     private javax.swing.JLabel pendingrequests;
+    private javax.swing.JTable pendingrequesttable;
     private javax.swing.JLabel profilelogo;
     private javax.swing.JButton reject;
     private javax.swing.JButton requests;

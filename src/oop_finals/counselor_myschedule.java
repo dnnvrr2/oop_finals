@@ -4,7 +4,14 @@
  */
 package oop_finals;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableColumn;
 
 /**
  *
@@ -14,11 +21,26 @@ public class counselor_myschedule extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(counselor_myschedule.class.getName());
 
+    private int currentCounselorId;
+    private String currentCounselorName;
+    
+    // Database connection parameters
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "";
     /**
      * Creates new form counselor_myschedule
      */
     public counselor_myschedule() {
         initComponents();
+    }
+    
+    public counselor_myschedule(int counselorId, String counselorName) {
+        initComponents();
+        this.currentCounselorId = counselorId;
+        this.currentCounselorName = counselorName;
+        user.setText(currentCounselorName + "!");
+        // Load data based on currentCounselorId
     }
 
     /**
@@ -286,21 +308,21 @@ public class counselor_myschedule extends javax.swing.JFrame {
 
     private void requestsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_requestsActionPerformed
         // TODO add your handling code here:
-        counselor_requests a = new counselor_requests();
+        counselor_requests a = new counselor_requests(currentCounselorId, currentCounselorName);
         a.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_requestsActionPerformed
 
     private void viewprofileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewprofileActionPerformed
         // TODO add your handling code here:
-        counselor_viewprofile c = new counselor_viewprofile();
+        counselor_viewprofile c = new counselor_viewprofile(currentCounselorId, currentCounselorName);
         c.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_viewprofileActionPerformed
 
     private void myscheduleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_myscheduleActionPerformed
         // TODO add your handling code here:
-        counselor_myschedule b = new counselor_myschedule();
+        counselor_myschedule b = new counselor_myschedule(currentCounselorId, currentCounselorName);
         b.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_myscheduleActionPerformed
@@ -321,8 +343,9 @@ public class counselor_myschedule extends javax.swing.JFrame {
 
     private void homeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_homeActionPerformed
         // TODO add your handling code here:
+        counselor_dashboard d = new counselor_dashboard(currentCounselorId, currentCounselorName);
+        d.setVisible(true);
         this.dispose();
-        new counselor_dashboard().setVisible(true);
     }//GEN-LAST:event_homeActionPerformed
 
     private void editActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editActionPerformed
