@@ -1,4 +1,15 @@
 package oop_finals;
+
+import java.awt.Color;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
+
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
@@ -11,12 +22,71 @@ package oop_finals;
 public class counselor_login_page extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(counselor_login_page.class.getName());
+    
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "";
 
     /**
      * Creates new form counselor_login_page
      */
     public counselor_login_page() {
         initComponents();
+        setupPlaceholders();
+    }
+    
+    private void setupPlaceholders() {
+        setupPlaceholder(username, "Username");
+        setupPasswordPlaceholder(password, "Password");
+    }
+    
+    private void setupPlaceholder(javax.swing.JTextField textField, String placeholder) {
+        textField.setText(placeholder);
+        textField.setForeground(Color.GRAY);
+        
+        textField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textField.getText().equals(placeholder)) {
+                    textField.setText("");
+                    textField.setForeground(new Color(0, 0, 0)); // Your yellow color
+                }
+            }
+            
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textField.getText().isEmpty()) {
+                    textField.setText(placeholder);
+                    textField.setForeground(Color.GRAY);
+                }
+            }
+        });
+    }
+    
+    private void setupPasswordPlaceholder(javax.swing.JPasswordField passwordField, String placeholder) {
+        passwordField.setText(placeholder);
+        passwordField.setForeground(Color.GRAY);
+        passwordField.setEchoChar((char) 0); // Show placeholder text normally
+        
+        passwordField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (String.valueOf(passwordField.getPassword()).equals(placeholder)) {
+                    passwordField.setText("");
+                    passwordField.setForeground(new Color(0, 0, 0)); 
+                    passwordField.setEchoChar('•'); // Hide password with bullets
+                }
+            }
+            
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (String.valueOf(passwordField.getPassword()).isEmpty()) {
+                    passwordField.setText(placeholder);
+                    passwordField.setForeground(Color.GRAY);
+                    passwordField.setEchoChar((char) 0); // Show placeholder
+                }
+            }
+        });
     }
 
     /**
@@ -30,11 +100,11 @@ public class counselor_login_page extends javax.swing.JFrame {
 
         jLabel1 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
-        jLabel2 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
-        jPasswordField1 = new javax.swing.JPasswordField();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        counselor = new javax.swing.JLabel();
+        username = new javax.swing.JTextField();
+        password = new javax.swing.JPasswordField();
+        login = new javax.swing.JButton();
+        back = new javax.swing.JButton();
 
         jLabel1.setText("jLabel1");
 
@@ -42,32 +112,37 @@ public class counselor_login_page extends javax.swing.JFrame {
 
         jPanel1.setBackground(new java.awt.Color(38, 36, 68));
 
-        jLabel2.setFont(new java.awt.Font("Segoe UI Black", 1, 32)); // NOI18N
-        jLabel2.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel2.setText("COUNSELOR");
+        counselor.setFont(new java.awt.Font("Segoe UI Black", 1, 32)); // NOI18N
+        counselor.setForeground(new java.awt.Color(255, 255, 255));
+        counselor.setText("COUNSELOR");
 
-        jTextField1.setForeground(new java.awt.Color(255, 195, 51));
-        jTextField1.setText("Username");
-        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+        username.setForeground(new java.awt.Color(255, 195, 51));
+        username.setText("Username");
+        username.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField1ActionPerformed(evt);
+                usernameActionPerformed(evt);
             }
         });
 
-        jPasswordField1.setForeground(new java.awt.Color(255, 195, 51));
-        jPasswordField1.setText("jPasswordField1");
+        password.setForeground(new java.awt.Color(255, 195, 51));
+        password.setText("jPasswordField1");
 
-        jButton1.setBackground(new java.awt.Color(255, 195, 51));
-        jButton1.setFont(new java.awt.Font("Segoe UI Black", 1, 12)); // NOI18N
-        jButton1.setForeground(new java.awt.Color(255, 255, 255));
-        jButton1.setText("LOGIN");
-
-        jButton2.setBackground(new java.awt.Color(38, 36, 68));
-        jButton2.setForeground(new java.awt.Color(255, 255, 255));
-        jButton2.setText("Back");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        login.setBackground(new java.awt.Color(255, 195, 51));
+        login.setFont(new java.awt.Font("Segoe UI Black", 1, 12)); // NOI18N
+        login.setForeground(new java.awt.Color(255, 255, 255));
+        login.setText("LOGIN");
+        login.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                loginActionPerformed(evt);
+            }
+        });
+
+        back.setBackground(new java.awt.Color(38, 36, 68));
+        back.setForeground(new java.awt.Color(255, 255, 255));
+        back.setText("Back");
+        back.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                backActionPerformed(evt);
             }
         });
 
@@ -80,32 +155,32 @@ public class counselor_login_page extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(215, 215, 215)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(password, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(301, 301, 301)
-                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(login, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(277, 277, 277)
-                        .addComponent(jLabel2))
+                        .addComponent(counselor))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(32, 32, 32)
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(back, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(280, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(34, 34, 34)
-                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(back, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(144, 144, 144)
-                .addComponent(jLabel2)
+                .addComponent(counselor)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(password, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(login, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(316, Short.MAX_VALUE))
         );
 
@@ -123,15 +198,86 @@ public class counselor_login_page extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+    private void usernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_usernameActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
+        password.requestFocus();
+    }//GEN-LAST:event_usernameActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void backActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backActionPerformed
         this.dispose();
         new login_page().setVisible(true);
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_backActionPerformed
+
+    private void loginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginActionPerformed
+        // TODO add your handling code here:
+        String usernameText = username.getText();
+        String passwordText = String.valueOf(password.getPassword());
+        
+        // Validate input
+        if (usernameText.equals("Username") || usernameText.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "Please enter your username!", 
+                "Validation Error", 
+                JOptionPane.WARNING_MESSAGE);
+            username.requestFocus();
+            return;
+        }
+        
+        if (passwordText.equals("Password") || passwordText.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "Please enter your password!", 
+                "Validation Error", 
+                JOptionPane.WARNING_MESSAGE);
+            password.requestFocus();
+            return;
+        }
+        
+        // FIXED: Correct SQL query for COUNSELOR login
+        // Changed from "JOIN counselor" to "JOIN counselors" (table name is plural)
+        // Changed from "student_id" to "counselor_id"
+        // Changed from "student_dashboard" to "counselor_dashboard"
+        String query = "SELECT u.*, c.* FROM users u " +
+                      "JOIN counselors c ON u.user_id = c.user_id " +
+                      "WHERE c.email = ? AND c.password = ? AND u.status = 'Active'";
+        
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pst = conn.prepareStatement(query)) {
+            
+            pst.setString(1, usernameText);
+            pst.setString(2, passwordText);
+            
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    // Login successful - get COUNSELOR data
+                    int counselorId = rs.getInt("counselor_id");
+                    String name = rs.getString("name");
+                    String specialization = rs.getString("specialization");
+                    
+                    JOptionPane.showMessageDialog(this, 
+                        "Welcome, " + name + "!\nSpecialization: " + specialization, 
+                        "Login Successful", 
+                        JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Open COUNSELOR dashboard with proper data
+                    this.dispose();
+                    new counselor_dashboard(counselorId, name).setVisible(true);
+                } else {
+                    JOptionPane.showMessageDialog(this, 
+                        "Invalid email or password!\nPlease check your credentials and try again.", 
+                        "Login Failed", 
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+            
+        } catch (SQLException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Database error during login", e);
+            JOptionPane.showMessageDialog(this, 
+                "Database connection error: " + e.getMessage(), 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_loginActionPerformed
 
     /**
      * @param args the command line arguments
@@ -159,12 +305,12 @@ public class counselor_login_page extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
+    private javax.swing.JButton back;
+    private javax.swing.JLabel counselor;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPasswordField jPasswordField1;
-    private javax.swing.JTextField jTextField1;
+    private javax.swing.JButton login;
+    private javax.swing.JPasswordField password;
+    private javax.swing.JTextField username;
     // End of variables declaration//GEN-END:variables
 }

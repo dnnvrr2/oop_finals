@@ -5,6 +5,11 @@
 package oop_finals;
 
 import javax.swing.JOptionPane;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  *
@@ -13,13 +18,161 @@ import javax.swing.JOptionPane;
 public class admin_dashboard extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(admin_dashboard.class.getName());
-
+    
+    private int currentAdminId;
+    private String currentAdminName;
+    
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "";
     /**
      * Creates new form admin_dashboard
      */
+    
+    // Add this constructor
+    public admin_dashboard(int adminId, String adminName) {
+        this.currentAdminId = adminId;
+        this.currentAdminName = adminName;
+        initComponents();
+        
+        jLabel5.setText(adminName.toUpperCase() + "!");
+    
+        loadDashboardData();
+        
+        // Set the admin name in your UI if you have a label
+        // Example: adminNameLabel.setText(adminName);
+    }
+    
+    private void loadDashboardData() {
+    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+        
+        // 1. Count Pending Counselors
+        String query1 = "SELECT COUNT(*) as count FROM user_requests WHERE user_type='Counselor' AND status='Pending'";
+        try (PreparedStatement pst = conn.prepareStatement(query1);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                pendingcounselor.setText(String.valueOf(rs.getInt("count")));
+            }
+        }
+        
+        // 2. Count Approved Counselors
+        String query2 = "SELECT COUNT(*) as count FROM counselors WHERE status='Active'";
+        try (PreparedStatement pst = conn.prepareStatement(query2);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                approvedconselors.setText(String.valueOf(rs.getInt("count")));
+            }
+        }
+        
+        // 3. Count Total Counselors
+        String query3 = "SELECT COUNT(*) as count FROM counselors";
+        try (PreparedStatement pst = conn.prepareStatement(query3);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                totalcounselors.setText(String.valueOf(rs.getInt("count")));
+            }
+        }
+        
+        // 4. Count Pending Students
+        String query4 = "SELECT COUNT(*) as count FROM user_requests WHERE user_type='Student' AND status='Pending'";
+        try (PreparedStatement pst = conn.prepareStatement(query4);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                pendingstudents.setText(String.valueOf(rs.getInt("count")));
+            }
+        }
+        
+        // 5. Count Approved Students
+        String query5 = "SELECT COUNT(*) as count FROM students WHERE status='Active'";
+        try (PreparedStatement pst = conn.prepareStatement(query5);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                approvedstudents.setText(String.valueOf(rs.getInt("count")));
+            }
+        }
+        
+        // 6. Count Total Students
+        String query6 = "SELECT COUNT(*) as count FROM students";
+        try (PreparedStatement pst = conn.prepareStatement(query6);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                totalstudents.setText(String.valueOf(rs.getInt("count")));
+            }
+        }
+        
+        // 7. Count Pending Appointments
+        String query7 = "SELECT COUNT(*) as count FROM appointments WHERE status='Pending'";
+        try (PreparedStatement pst = conn.prepareStatement(query7);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                pendingappointment.setText(String.valueOf(rs.getInt("count")));
+            }
+        }
+        
+        // 8. Count Total Appointments
+        String query8 = "SELECT COUNT(*) as count FROM appointments";
+        try (PreparedStatement pst = conn.prepareStatement(query8);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                totalappointments.setText(String.valueOf(rs.getInt("count")));
+            }
+        }
+        
+        // Load pending user requests preview
+        loadPendingRequestsPreview();
+        
+    } catch (SQLException e) {
+        logger.log(java.util.logging.Level.SEVERE, "Error loading dashboard data", e);
+        JOptionPane.showMessageDialog(this,
+            "Error loading dashboard statistics: " + e.getMessage(),
+            "Database Error",
+            JOptionPane.ERROR_MESSAGE);
+    }
+}
     public admin_dashboard() {
         initComponents();
     }
+    
+    private void loadPendingRequestsPreview() {
+    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+        
+        // Load first pending counselor request
+        String query1 = "SELECT * FROM user_requests WHERE user_type='Counselor' AND status='Pending' ORDER BY requested_at DESC LIMIT 1";
+        try (PreparedStatement pst = conn.prepareStatement(query1);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                StringBuilder info = new StringBuilder();
+                info.append("Name: ").append(rs.getString("name")).append("\n");
+                info.append("Email: ").append(rs.getString("email")).append("\n");
+                info.append("Specialization: ").append(rs.getString("specialization")).append("\n");
+                info.append("License: ").append(rs.getString("license_number"));
+                userrequest1.setText(info.toString());
+            } else {
+                userrequest1.setText("No pending counselor requests");
+            }
+        }
+        
+        // Load first pending student request
+        String query2 = "SELECT * FROM user_requests WHERE user_type='Student' AND status='Pending' ORDER BY requested_at DESC LIMIT 1";
+        try (PreparedStatement pst = conn.prepareStatement(query2);
+             ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                StringBuilder info = new StringBuilder();
+                info.append("Name: ").append(rs.getString("name")).append("\n");
+                info.append("Email: ").append(rs.getString("email")).append("\n");
+                info.append("Course: ").append(rs.getString("course")).append("\n");
+                info.append("Student #: ").append(rs.getString("student_number"));
+                userrequest2.setText(info.toString());
+            } else {
+                userrequest2.setText("No pending student requests");
+            }
+        }
+        
+    } catch (SQLException e) {
+        logger.log(java.util.logging.Level.SEVERE, "Error loading pending requests", e);
+    }
+}
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -45,43 +198,43 @@ public class admin_dashboard extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         jPanel4 = new javax.swing.JPanel();
         jPanel6 = new javax.swing.JPanel();
-        jLabel17 = new javax.swing.JLabel();
+        pendingcounselor = new javax.swing.JLabel();
         jLabel1 = new javax.swing.JLabel();
         jPanel7 = new javax.swing.JPanel();
         jPanel8 = new javax.swing.JPanel();
-        jLabel20 = new javax.swing.JLabel();
+        totalcounselors = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         jPanel11 = new javax.swing.JPanel();
         jPanel12 = new javax.swing.JPanel();
-        jLabel19 = new javax.swing.JLabel();
+        approvedconselors = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
         jPanel13 = new javax.swing.JPanel();
         jPanel14 = new javax.swing.JPanel();
-        jLabel21 = new javax.swing.JLabel();
+        pendingstudents = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         jPanel15 = new javax.swing.JPanel();
         jPanel16 = new javax.swing.JPanel();
-        jLabel23 = new javax.swing.JLabel();
+        totalstudents = new javax.swing.JLabel();
         jLabel12 = new javax.swing.JLabel();
         jPanel17 = new javax.swing.JPanel();
         jPanel18 = new javax.swing.JPanel();
-        jLabel22 = new javax.swing.JLabel();
+        approvedstudents = new javax.swing.JLabel();
         jLabel13 = new javax.swing.JLabel();
         jPanel19 = new javax.swing.JPanel();
         jPanel20 = new javax.swing.JPanel();
-        jLabel24 = new javax.swing.JLabel();
+        pendingappointment = new javax.swing.JLabel();
         jLabel16 = new javax.swing.JLabel();
         jPanel23 = new javax.swing.JPanel();
         jPanel24 = new javax.swing.JPanel();
-        jLabel25 = new javax.swing.JLabel();
+        totalappointments = new javax.swing.JLabel();
         jLabel18 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
-        jButton2 = new javax.swing.JButton();
-        jButton3 = new javax.swing.JButton();
-        jButton9 = new javax.swing.JButton();
+        userrequest1 = new javax.swing.JTextArea();
+        accept = new javax.swing.JButton();
+        reject = new javax.swing.JButton();
+        viewall = new javax.swing.JButton();
         jScrollPane3 = new javax.swing.JScrollPane();
-        jTextArea3 = new javax.swing.JTextArea();
+        userrequest2 = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -182,20 +335,20 @@ public class admin_dashboard extends javax.swing.JFrame {
 
         jPanel6.setPreferredSize(new java.awt.Dimension(75, 75));
 
-        jLabel17.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel17.setForeground(new java.awt.Color(204, 0, 0));
-        jLabel17.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel17.setText("jLabel17");
+        pendingcounselor.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        pendingcounselor.setForeground(new java.awt.Color(204, 0, 0));
+        pendingcounselor.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        pendingcounselor.setText("jLabel17");
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel17, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(pendingcounselor, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel17, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(pendingcounselor, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
 
         jLabel1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -209,7 +362,8 @@ public class admin_dashboard extends javax.swing.JFrame {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel1))
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 141, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -227,24 +381,25 @@ public class admin_dashboard extends javax.swing.JFrame {
 
         jPanel8.setPreferredSize(new java.awt.Dimension(75, 75));
 
-        jLabel20.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel20.setForeground(new java.awt.Color(0, 153, 0));
-        jLabel20.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel20.setText("jLabel20");
+        totalcounselors.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        totalcounselors.setForeground(new java.awt.Color(0, 153, 0));
+        totalcounselors.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        totalcounselors.setText("jLabel20");
 
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
         jPanel8.setLayout(jPanel8Layout);
         jPanel8Layout.setHorizontalGroup(
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel20, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(totalcounselors, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
         jPanel8Layout.setVerticalGroup(
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel20, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(totalcounselors, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
 
+        jLabel3.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel3.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel3.setText("TOTAL COUNSELOS");
+        jLabel3.setText("TOTAL COUNSELORS");
 
         javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
         jPanel7.setLayout(jPanel7Layout);
@@ -271,22 +426,23 @@ public class admin_dashboard extends javax.swing.JFrame {
 
         jPanel12.setPreferredSize(new java.awt.Dimension(75, 75));
 
-        jLabel19.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel19.setForeground(new java.awt.Color(0, 0, 204));
-        jLabel19.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel19.setText("jLabel19");
+        approvedconselors.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        approvedconselors.setForeground(new java.awt.Color(0, 0, 204));
+        approvedconselors.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        approvedconselors.setText("jLabel19");
 
         javax.swing.GroupLayout jPanel12Layout = new javax.swing.GroupLayout(jPanel12);
         jPanel12.setLayout(jPanel12Layout);
         jPanel12Layout.setHorizontalGroup(
             jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel19, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(approvedconselors, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
         jPanel12Layout.setVerticalGroup(
             jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel19, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(approvedconselors, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
 
+        jLabel7.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel7.setForeground(new java.awt.Color(255, 255, 255));
         jLabel7.setText("APPROVED COUNSELORS");
 
@@ -297,8 +453,7 @@ public class admin_dashboard extends javax.swing.JFrame {
             .addGroup(jPanel11Layout.createSequentialGroup()
                 .addComponent(jPanel12, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel7)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel11Layout.setVerticalGroup(
             jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -316,20 +471,20 @@ public class admin_dashboard extends javax.swing.JFrame {
 
         jPanel14.setPreferredSize(new java.awt.Dimension(75, 75));
 
-        jLabel21.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel21.setForeground(new java.awt.Color(204, 0, 0));
-        jLabel21.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel21.setText("jLabel21");
+        pendingstudents.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        pendingstudents.setForeground(new java.awt.Color(204, 0, 0));
+        pendingstudents.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        pendingstudents.setText("jLabel21");
 
         javax.swing.GroupLayout jPanel14Layout = new javax.swing.GroupLayout(jPanel14);
         jPanel14.setLayout(jPanel14Layout);
         jPanel14Layout.setHorizontalGroup(
             jPanel14Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel21, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(pendingstudents, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
         jPanel14Layout.setVerticalGroup(
             jPanel14Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel21, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(pendingstudents, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
 
         jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -361,22 +516,23 @@ public class admin_dashboard extends javax.swing.JFrame {
 
         jPanel16.setPreferredSize(new java.awt.Dimension(75, 75));
 
-        jLabel23.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel23.setForeground(new java.awt.Color(0, 153, 0));
-        jLabel23.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel23.setText("jLabel23");
+        totalstudents.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        totalstudents.setForeground(new java.awt.Color(0, 153, 0));
+        totalstudents.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        totalstudents.setText("jLabel23");
 
         javax.swing.GroupLayout jPanel16Layout = new javax.swing.GroupLayout(jPanel16);
         jPanel16.setLayout(jPanel16Layout);
         jPanel16Layout.setHorizontalGroup(
             jPanel16Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel23, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(totalstudents, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
         jPanel16Layout.setVerticalGroup(
             jPanel16Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel23, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(totalstudents, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
 
+        jLabel12.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel12.setForeground(new java.awt.Color(255, 255, 255));
         jLabel12.setText("TOTAL STUDENTS");
 
@@ -387,7 +543,8 @@ public class admin_dashboard extends javax.swing.JFrame {
             .addGroup(jPanel15Layout.createSequentialGroup()
                 .addComponent(jPanel16, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel12))
+                .addComponent(jLabel12)
+                .addContainerGap(35, Short.MAX_VALUE))
         );
         jPanel15Layout.setVerticalGroup(
             jPanel15Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -405,22 +562,23 @@ public class admin_dashboard extends javax.swing.JFrame {
 
         jPanel18.setPreferredSize(new java.awt.Dimension(75, 75));
 
-        jLabel22.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel22.setForeground(new java.awt.Color(0, 0, 204));
-        jLabel22.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel22.setText("jLabel22");
+        approvedstudents.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        approvedstudents.setForeground(new java.awt.Color(0, 0, 204));
+        approvedstudents.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        approvedstudents.setText("jLabel22");
 
         javax.swing.GroupLayout jPanel18Layout = new javax.swing.GroupLayout(jPanel18);
         jPanel18.setLayout(jPanel18Layout);
         jPanel18Layout.setHorizontalGroup(
             jPanel18Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel22, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(approvedstudents, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
         jPanel18Layout.setVerticalGroup(
             jPanel18Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel22, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(approvedstudents, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
 
+        jLabel13.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel13.setForeground(new java.awt.Color(255, 255, 255));
         jLabel13.setText("APPROVED STUDENTS");
 
@@ -449,20 +607,20 @@ public class admin_dashboard extends javax.swing.JFrame {
 
         jPanel20.setPreferredSize(new java.awt.Dimension(75, 75));
 
-        jLabel24.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel24.setForeground(new java.awt.Color(204, 0, 0));
-        jLabel24.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel24.setText("jLabel24");
+        pendingappointment.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        pendingappointment.setForeground(new java.awt.Color(204, 0, 0));
+        pendingappointment.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        pendingappointment.setText("jLabel24");
 
         javax.swing.GroupLayout jPanel20Layout = new javax.swing.GroupLayout(jPanel20);
         jPanel20.setLayout(jPanel20Layout);
         jPanel20Layout.setHorizontalGroup(
             jPanel20Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel24, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(pendingappointment, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
         jPanel20Layout.setVerticalGroup(
             jPanel20Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel24, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(pendingappointment, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
 
         jLabel16.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -476,7 +634,8 @@ public class admin_dashboard extends javax.swing.JFrame {
             .addGroup(jPanel19Layout.createSequentialGroup()
                 .addComponent(jPanel20, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel16))
+                .addComponent(jLabel16)
+                .addContainerGap(10, Short.MAX_VALUE))
         );
         jPanel19Layout.setVerticalGroup(
             jPanel19Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -494,22 +653,23 @@ public class admin_dashboard extends javax.swing.JFrame {
 
         jPanel24.setPreferredSize(new java.awt.Dimension(75, 75));
 
-        jLabel25.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel25.setForeground(new java.awt.Color(0, 0, 204));
-        jLabel25.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel25.setText("jLabel25");
+        totalappointments.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        totalappointments.setForeground(new java.awt.Color(0, 0, 204));
+        totalappointments.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        totalappointments.setText("jLabel25");
 
         javax.swing.GroupLayout jPanel24Layout = new javax.swing.GroupLayout(jPanel24);
         jPanel24.setLayout(jPanel24Layout);
         jPanel24Layout.setHorizontalGroup(
             jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel25, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(totalappointments, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
         jPanel24Layout.setVerticalGroup(
             jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel25, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
+            .addComponent(totalappointments, javax.swing.GroupLayout.DEFAULT_SIZE, 75, Short.MAX_VALUE)
         );
 
+        jLabel18.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel18.setForeground(new java.awt.Color(255, 255, 255));
         jLabel18.setText("TOTAL APPOINTMENTS");
 
@@ -520,7 +680,7 @@ public class admin_dashboard extends javax.swing.JFrame {
             .addGroup(jPanel23Layout.createSequentialGroup()
                 .addComponent(jPanel24, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel18))
+                .addComponent(jLabel18, javax.swing.GroupLayout.DEFAULT_SIZE, 140, Short.MAX_VALUE))
         );
         jPanel23Layout.setVerticalGroup(
             jPanel23Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -539,20 +699,22 @@ public class admin_dashboard extends javax.swing.JFrame {
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(46, 46, 46)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, 222, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 223, Short.MAX_VALUE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel17, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel15, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel13, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(32, 32, 32)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel23, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel19, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(47, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jPanel17, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jPanel13, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(26, 26, 26)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jPanel23, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jPanel19, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(jPanel15, javax.swing.GroupLayout.PREFERRED_SIZE, 217, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(29, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -568,7 +730,7 @@ public class admin_dashboard extends javax.swing.JFrame {
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jPanel19, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jPanel13, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jPanel13, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(27, 27, 27)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jPanel17, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -578,46 +740,46 @@ public class admin_dashboard extends javax.swing.JFrame {
                 .addGap(18, 18, 18))
         );
 
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jScrollPane1.setViewportView(jTextArea1);
+        userrequest1.setColumns(20);
+        userrequest1.setRows(5);
+        jScrollPane1.setViewportView(userrequest1);
 
-        jButton2.setBackground(new java.awt.Color(255, 195, 51));
-        jButton2.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton2.setForeground(new java.awt.Color(255, 255, 255));
-        jButton2.setText("ACCEPT");
-        jButton2.setBorderPainted(false);
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        accept.setBackground(new java.awt.Color(255, 195, 51));
+        accept.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        accept.setForeground(new java.awt.Color(255, 255, 255));
+        accept.setText("ACCEPT");
+        accept.setBorderPainted(false);
+        accept.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                acceptActionPerformed(evt);
             }
         });
 
-        jButton3.setBackground(new java.awt.Color(255, 195, 51));
-        jButton3.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton3.setForeground(new java.awt.Color(255, 255, 255));
-        jButton3.setText("REJECT");
-        jButton3.setBorderPainted(false);
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
+        reject.setBackground(new java.awt.Color(255, 195, 51));
+        reject.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        reject.setForeground(new java.awt.Color(255, 255, 255));
+        reject.setText("REJECT");
+        reject.setBorderPainted(false);
+        reject.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                rejectActionPerformed(evt);
             }
         });
 
-        jButton9.setBackground(new java.awt.Color(255, 195, 51));
-        jButton9.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton9.setForeground(new java.awt.Color(255, 255, 255));
-        jButton9.setText("SHOW MORE");
-        jButton9.setBorderPainted(false);
-        jButton9.addActionListener(new java.awt.event.ActionListener() {
+        viewall.setBackground(new java.awt.Color(255, 195, 51));
+        viewall.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        viewall.setForeground(new java.awt.Color(255, 255, 255));
+        viewall.setText("VIEW ALL");
+        viewall.setBorderPainted(false);
+        viewall.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton9ActionPerformed(evt);
+                viewallActionPerformed(evt);
             }
         });
 
-        jTextArea3.setColumns(20);
-        jTextArea3.setRows(5);
-        jScrollPane3.setViewportView(jTextArea3);
+        userrequest2.setColumns(20);
+        userrequest2.setRows(5);
+        jScrollPane3.setViewportView(userrequest2);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -636,11 +798,11 @@ public class admin_dashboard extends javax.swing.JFrame {
                 .addGap(38, 38, 38))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(accept, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(65, 65, 65)
-                .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(reject, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(67, 67, 67)
-                .addComponent(jButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(viewall, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(98, 98, 98))
             .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 788, Short.MAX_VALUE)
             .addGroup(jPanel2Layout.createSequentialGroup()
@@ -678,9 +840,9 @@ public class admin_dashboard extends javax.swing.JFrame {
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton2)
-                    .addComponent(jButton3)
-                    .addComponent(jButton9))
+                    .addComponent(accept)
+                    .addComponent(reject)
+                    .addComponent(viewall))
                 .addGap(24, 24, 24))
         );
 
@@ -701,17 +863,17 @@ public class admin_dashboard extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
+    private void viewallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewallActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton9ActionPerformed
+    }//GEN-LAST:event_viewallActionPerformed
 
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+    private void rejectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rejectActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton3ActionPerformed
+    }//GEN-LAST:event_rejectActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void acceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_acceptActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_acceptActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
@@ -765,27 +927,19 @@ public class admin_dashboard extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
+    private javax.swing.JButton accept;
+    private javax.swing.JLabel approvedconselors;
+    private javax.swing.JLabel approvedstudents;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButton8;
-    private javax.swing.JButton jButton9;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel16;
-    private javax.swing.JLabel jLabel17;
     private javax.swing.JLabel jLabel18;
-    private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel20;
-    private javax.swing.JLabel jLabel21;
-    private javax.swing.JLabel jLabel22;
-    private javax.swing.JLabel jLabel23;
-    private javax.swing.JLabel jLabel24;
-    private javax.swing.JLabel jLabel25;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -814,8 +968,16 @@ public class admin_dashboard extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JTextArea jTextArea1;
-    private javax.swing.JTextArea jTextArea3;
     private javax.swing.JButton logout;
+    private javax.swing.JLabel pendingappointment;
+    private javax.swing.JLabel pendingcounselor;
+    private javax.swing.JLabel pendingstudents;
+    private javax.swing.JButton reject;
+    private javax.swing.JLabel totalappointments;
+    private javax.swing.JLabel totalcounselors;
+    private javax.swing.JLabel totalstudents;
+    private javax.swing.JTextArea userrequest1;
+    private javax.swing.JTextArea userrequest2;
+    private javax.swing.JButton viewall;
     // End of variables declaration//GEN-END:variables
 }
