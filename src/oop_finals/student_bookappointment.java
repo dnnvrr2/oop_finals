@@ -11,7 +11,6 @@ package oop_finals;
 import java.sql.*;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
-import java.util.Calendar;
 
 
 public class student_bookappointment extends javax.swing.JFrame {
@@ -28,14 +27,14 @@ public class student_bookappointment extends javax.swing.JFrame {
     public student_bookappointment() {
         initComponents();
         loadSpecializations(); // ADD THIS LINE
-        jTextArea2.setEditable(false);
-        jTextArea2.setText("Select a specialization and counselor to view details.");
+        counselordetails.setEditable(false);
+        counselordetails.setText("Select a specialization and counselor to view details.");
 
         // Set minimum selectable date to today
-        jCalendar1.setMinSelectableDate(new java.util.Date());
+        schedulecalendar.setMinSelectableDate(new java.util.Date());
 
         // Add property change listener to calendar
-        jCalendar1.addPropertyChangeListener("calendar", evt -> {
+        schedulecalendar.addPropertyChangeListener("calendar", evt -> {
             updateCalendarForSelectedCounselor();
         });
     }
@@ -51,28 +50,32 @@ public class student_bookappointment extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jSpinner1 = new javax.swing.JSpinner();
         jPanel2 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
-        jButton4 = new javax.swing.JButton();
-        jButton5 = new javax.swing.JButton();
-        jButton6 = new javax.swing.JButton();
-        jLabel10 = new javax.swing.JLabel();
-        jLabel11 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
-        jLabel5 = new javax.swing.JLabel();
-        jButton7 = new javax.swing.JButton();
-        jButton8 = new javax.swing.JButton();
+        bookappointment = new javax.swing.JButton();
+        viewprofile = new javax.swing.JButton();
+        myappointmets = new javax.swing.JButton();
+        profilelogo = new javax.swing.JLabel();
+        appointmentlogo = new javax.swing.JLabel();
+        booklogo = new javax.swing.JLabel();
+        welcome = new javax.swing.JLabel();
+        user = new javax.swing.JLabel();
+        logout = new javax.swing.JButton();
+        logo_home = new javax.swing.JButton();
         jLabel6 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
-        jLabel7 = new javax.swing.JLabel();
+        book = new javax.swing.JLabel();
         jLabel1 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
-        jComboBox3 = new javax.swing.JComboBox<>();
-        jComboBox4 = new javax.swing.JComboBox<>();
+        nextpage = new javax.swing.JButton();
+        specialization = new javax.swing.JComboBox<>();
+        counselor = new javax.swing.JComboBox<>();
         jScrollPane2 = new javax.swing.JScrollPane();
-        jTextArea2 = new javax.swing.JTextArea();
-        jButton2 = new javax.swing.JButton();
+        counselordetails = new javax.swing.JTextArea();
+        select = new javax.swing.JButton();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel8 = new javax.swing.JLabel();
+        schedulecalendar = new com.toedter.calendar.JCalendar();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -81,41 +84,41 @@ public class student_bookappointment extends javax.swing.JFrame {
 
         jPanel3.setBackground(new java.awt.Color(255, 255, 255));
 
-        jButton4.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton4.setText("BOOK APPOINTMENT");
-        jButton4.setBorderPainted(false);
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
+        bookappointment.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        bookappointment.setText("BOOK APPOINTMENT");
+        bookappointment.setBorderPainted(false);
+        bookappointment.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
+                bookappointmentActionPerformed(evt);
             }
         });
 
-        jButton5.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton5.setText("VIEW PROFILE");
-        jButton5.setBorderPainted(false);
-        jButton5.addActionListener(new java.awt.event.ActionListener() {
+        viewprofile.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        viewprofile.setText("VIEW PROFILE");
+        viewprofile.setBorderPainted(false);
+        viewprofile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton5ActionPerformed(evt);
+                viewprofileActionPerformed(evt);
             }
         });
 
-        jButton6.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton6.setText("MY APPOINTMENTS");
-        jButton6.setBorderPainted(false);
-        jButton6.addActionListener(new java.awt.event.ActionListener() {
+        myappointmets.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        myappointmets.setText("MY APPOINTMENTS");
+        myappointmets.setBorderPainted(false);
+        myappointmets.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton6ActionPerformed(evt);
+                myappointmetsActionPerformed(evt);
             }
         });
 
-        jLabel10.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/profile.png"))); // NOI18N
-        jLabel10.setText("icon");
+        profilelogo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/profile.png"))); // NOI18N
+        profilelogo.setText("icon");
 
-        jLabel11.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/appointments.png"))); // NOI18N
-        jLabel11.setText("icon");
+        appointmentlogo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/appointments.png"))); // NOI18N
+        appointmentlogo.setText("icon");
 
-        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/book appointment.png"))); // NOI18N
-        jLabel2.setText("icon");
+        booklogo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/book appointment.png"))); // NOI18N
+        booklogo.setText("icon");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -123,17 +126,17 @@ public class student_bookappointment extends javax.swing.JFrame {
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(64, 64, 64)
-                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(booklogo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton4)
+                .addComponent(bookappointment)
                 .addGap(42, 42, 42)
-                .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(appointmentlogo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton6)
+                .addComponent(myappointmets)
                 .addGap(49, 49, 49)
-                .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(profilelogo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton5)
+                .addComponent(viewprofile)
                 .addContainerGap(93, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
@@ -141,37 +144,37 @@ public class student_bookappointment extends javax.swing.JFrame {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton4)
-                    .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton6)
-                    .addComponent(jButton5)
-                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(bookappointment)
+                    .addComponent(profilelogo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(myappointmets)
+                    .addComponent(viewprofile)
+                    .addComponent(booklogo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(appointmentlogo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jLabel4.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel4.setText("WELCOME,");
+        welcome.setForeground(new java.awt.Color(255, 255, 255));
+        welcome.setText("WELCOME,");
 
-        jLabel5.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel5.setText("USER!");
+        user.setForeground(new java.awt.Color(255, 255, 255));
+        user.setText("USER!");
 
-        jButton7.setBackground(new java.awt.Color(204, 0, 0));
-        jButton7.setForeground(new java.awt.Color(255, 255, 255));
-        jButton7.setText("LOGOUT");
-        jButton7.setBorderPainted(false);
-        jButton7.addActionListener(new java.awt.event.ActionListener() {
+        logout.setBackground(new java.awt.Color(204, 0, 0));
+        logout.setForeground(new java.awt.Color(255, 255, 255));
+        logout.setText("LOGOUT");
+        logout.setBorderPainted(false);
+        logout.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton7ActionPerformed(evt);
+                logoutActionPerformed(evt);
             }
         });
 
-        jButton8.setBackground(new java.awt.Color(38, 36, 68));
-        jButton8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/logo.png"))); // NOI18N
-        jButton8.setBorderPainted(false);
-        jButton8.addActionListener(new java.awt.event.ActionListener() {
+        logo_home.setBackground(new java.awt.Color(38, 36, 68));
+        logo_home.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/logo.png"))); // NOI18N
+        logo_home.setBorderPainted(false);
+        logo_home.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton8ActionPerformed(evt);
+                logo_homeActionPerformed(evt);
             }
         });
 
@@ -181,8 +184,8 @@ public class student_bookappointment extends javax.swing.JFrame {
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
 
-        jLabel7.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jLabel7.setText("BOOK APPOINTMENT");
+        book.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        book.setText("BOOK APPOINTMENT");
 
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/book appointment.png"))); // NOI18N
         jLabel1.setText("icon");
@@ -195,7 +198,7 @@ public class student_bookappointment extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jLabel7)
+                .addComponent(book)
                 .addGap(14, 14, 14))
         );
         jPanel1Layout.setVerticalGroup(
@@ -203,46 +206,54 @@ public class student_bookappointment extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(2, 2, 2)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel7)
+                    .addComponent(book)
                     .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jButton1.setBackground(new java.awt.Color(255, 195, 51));
-        jButton1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton1.setForeground(new java.awt.Color(255, 255, 255));
-        jButton1.setText("NEXT");
-        jButton1.setBorderPainted(false);
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        nextpage.setBackground(new java.awt.Color(255, 195, 51));
+        nextpage.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        nextpage.setForeground(new java.awt.Color(255, 255, 255));
+        nextpage.setText("NEXT");
+        nextpage.setBorderPainted(false);
+        nextpage.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                nextpageActionPerformed(evt);
             }
         });
 
-        jComboBox3.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        jComboBox3.addActionListener(new java.awt.event.ActionListener() {
+        specialization.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        specialization.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox3ActionPerformed(evt);
+                specializationActionPerformed(evt);
             }
         });
 
-        jComboBox4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        jComboBox4.addActionListener(new java.awt.event.ActionListener() {
+        counselor.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        counselor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox4ActionPerformed(evt);
+                counselorActionPerformed(evt);
             }
         });
 
-        jTextArea2.setColumns(20);
-        jTextArea2.setRows(5);
-        jScrollPane2.setViewportView(jTextArea2);
+        counselordetails.setColumns(20);
+        counselordetails.setRows(5);
+        jScrollPane2.setViewportView(counselordetails);
 
-        jButton2.setText("Select");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        select.setText("Select");
+        select.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                selectActionPerformed(evt);
             }
         });
+
+        jLabel3.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jLabel3.setForeground(new java.awt.Color(255, 195, 51));
+        jLabel3.setText("SPECIALIZATION");
+
+        jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jLabel8.setForeground(new java.awt.Color(255, 195, 51));
+        jLabel8.setText("COUNSELOR");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -251,13 +262,13 @@ public class student_bookappointment extends javax.swing.JFrame {
             .addComponent(jPanel3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addGap(41, 41, 41)
-                .addComponent(jButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(logo_home, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jLabel4)
+                .addComponent(welcome)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel5)
+                .addComponent(user)
                 .addGap(37, 37, 37)
-                .addComponent(jButton7)
+                .addComponent(logout)
                 .addGap(38, 38, 38))
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(48, 48, 48)
@@ -266,19 +277,28 @@ public class student_bookappointment extends javax.swing.JFrame {
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(5, 5, 5)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(nextpage, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel6, javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                        .addComponent(jScrollPane2)
-                                        .addGroup(jPanel2Layout.createSequentialGroup()
-                                            .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, 191, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                            .addComponent(jComboBox4, 0, 164, Short.MAX_VALUE))
-                                        .addComponent(jButton2, javax.swing.GroupLayout.Alignment.TRAILING))
-                                    .addComponent(jLabel6, javax.swing.GroupLayout.Alignment.LEADING))
-                                .addGap(343, 343, 343)))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel2Layout.createSequentialGroup()
+                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel3)
+                                            .addComponent(specialization, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addGap(18, 18, 18)
+                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(counselor, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                                .addComponent(jLabel8)
+                                                .addGap(0, 0, Short.MAX_VALUE))))
+                                    .addGroup(jPanel2Layout.createSequentialGroup()
+                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 361, Short.MAX_VALUE)
+                                            .addComponent(select, javax.swing.GroupLayout.Alignment.TRAILING))
+                                        .addGap(0, 0, Short.MAX_VALUE)))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(schedulecalendar, javax.swing.GroupLayout.PREFERRED_SIZE, 328, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                .addGap(40, 40, 40))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -288,27 +308,34 @@ public class student_bookappointment extends javax.swing.JFrame {
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(13, 13, 13)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jButton7)
-                            .addComponent(jLabel4)
-                            .addComponent(jLabel5)))
-                    .addComponent(jButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(logout)
+                            .addComponent(welcome)
+                            .addComponent(user)))
+                    .addComponent(logo_home, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(41, 41, 41)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jLabel6)
-                .addGap(29, 29, 29)
+                .addGap(24, 24, 24)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jComboBox4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel8))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(specialization, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(counselor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(select))
+                    .addComponent(schedulecalendar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addGap(18, 18, 18)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jButton2)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 57, Short.MAX_VALUE)
-                .addComponent(jButton1)
-                .addGap(49, 49, 49))
+                .addComponent(nextpage)
+                .addContainerGap(89, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -328,41 +355,41 @@ public class student_bookappointment extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+    private void bookappointmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bookappointmentActionPerformed
         // TODO add your handling code here:
         student_bookappointment a = new student_bookappointment();
         a.setVisible(true);
         this.dispose();
-    }//GEN-LAST:event_jButton4ActionPerformed
+    }//GEN-LAST:event_bookappointmentActionPerformed
 
-    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+    private void viewprofileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewprofileActionPerformed
         // TODO add your handling code here:
         student_viewprofile b = new student_viewprofile();
         b.setVisible(true);
         this.dispose();
-    }//GEN-LAST:event_jButton5ActionPerformed
+    }//GEN-LAST:event_viewprofileActionPerformed
 
-    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+    private void myappointmetsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_myappointmetsActionPerformed
         // TODO add your handling code here:
         student_myappointment c = new student_myappointment();
         c.setVisible(true);
         this.dispose();
-    }//GEN-LAST:event_jButton6ActionPerformed
+    }//GEN-LAST:event_myappointmetsActionPerformed
 
-    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+    private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton7ActionPerformed
+    }//GEN-LAST:event_logoutActionPerformed
 
-    private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
+    private void logo_homeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logo_homeActionPerformed
         // TODO add your handling code here:
         this.dispose();
         new student_dashboard().setVisible(true);
-    }//GEN-LAST:event_jButton8ActionPerformed
+    }//GEN-LAST:event_logo_homeActionPerformed
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void nextpageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nextpageActionPerformed
         // TODO add your handling code here:                                                                             
-        String selectedSpecialization = (String) jComboBox3.getSelectedItem();
-        String selectedCounselor = (String) jComboBox4.getSelectedItem();
+        String selectedSpecialization = (String) specialization.getSelectedItem();
+        String selectedCounselor = (String) counselor.getSelectedItem();
 
         if (selectedSpecialization == null || selectedSpecialization.equals("-- Select Specialization --")) {
             JOptionPane.showMessageDialog(this, "Please select a specialization before proceeding.",
@@ -376,7 +403,7 @@ public class student_bookappointment extends javax.swing.JFrame {
             return;
         }
 
-        java.util.Date selectedDate = jCalendar1.getDate();
+        java.util.Date selectedDate = schedulecalendar.getDate();
         if (selectedDate == null) {
             JOptionPane.showMessageDialog(this, "Please select a date from the calendar.",
                     "Date Required", JOptionPane.WARNING_MESSAGE);
@@ -396,12 +423,12 @@ public class student_bookappointment extends javax.swing.JFrame {
         student_bookappointment2nd d = new student_bookappointment2nd();
         d.setVisible(true);
         this.dispose();
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }//GEN-LAST:event_nextpageActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void selectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectActionPerformed
         // TODO add your handling code here:
-        String selectedSpecialization = (String) jComboBox3.getSelectedItem();
-        String selectedCounselor = (String) jComboBox4.getSelectedItem();
+        String selectedSpecialization = (String) specialization.getSelectedItem();
+        String selectedCounselor = (String) counselor.getSelectedItem();
         
         if (selectedSpecialization == null || selectedSpecialization.equals("-- Select Specialization --")) {
             JOptionPane.showMessageDialog(this, "Please select a specialization first.",
@@ -425,11 +452,11 @@ public class student_bookappointment extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Counselor selected successfully!",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
         }
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_selectActionPerformed
 
-    private void jComboBox4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox4ActionPerformed
+    private void counselorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_counselorActionPerformed
         // TODO add your handling code here:
-        String selectedCounselor = (String) jComboBox4.getSelectedItem();
+        String selectedCounselor = (String) counselor.getSelectedItem();
 
     if (selectedCounselor != null && !selectedCounselor.equals("-- Select Counselor --")) {
         displayCounselorInfo(selectedCounselor);
@@ -440,35 +467,35 @@ public class student_bookappointment extends javax.swing.JFrame {
             applyCounselorScheduleToCalendar(counselorId);
         }
     } else {
-        jTextArea2.setText("Select a counselor to view details.");
+        counselordetails.setText("Select a counselor to view details.");
         
         // Remove evaluator when no counselor selected
         if (currentEvaluator != null) {
             try {
-                jCalendar1.getDayChooser().removeDateEvaluator(currentEvaluator);
+                schedulecalendar.getDayChooser().removeDateEvaluator(currentEvaluator);
                 currentEvaluator = null;
-                jCalendar1.getDayChooser().setCalendar(jCalendar1.getCalendar());
-                jCalendar1.updateUI();
+                schedulecalendar.getDayChooser().setCalendar(schedulecalendar.getCalendar());
+                schedulecalendar.updateUI();
             } catch (Exception e) {
                 // Ignore if removal fails
             }
         }
     }
-    }//GEN-LAST:event_jComboBox4ActionPerformed
+    }//GEN-LAST:event_counselorActionPerformed
 
-    private void jComboBox3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox3ActionPerformed
+    private void specializationActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_specializationActionPerformed
         // TODO add your handling code here:
-        String selectedSpecialization = (String) jComboBox3.getSelectedItem();
+        String selectedSpecialization = (String) specialization.getSelectedItem();
         
         if (selectedSpecialization != null && !selectedSpecialization.equals("-- Select Specialization --")) {
             loadCounselorsBySpecialization(selectedSpecialization);
         } else {
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Select Counselor --");
-            jComboBox4.setModel(model);
-            jTextArea2.setText("Select a specialization and counselor to view details.");
+            counselor.setModel(model);
+            counselordetails.setText("Select a specialization and counselor to view details.");
         }
-    }//GEN-LAST:event_jComboBox3ActionPerformed
+    }//GEN-LAST:event_specializationActionPerformed
 
     private Connection getConnection() {
         try {
@@ -501,7 +528,7 @@ public class student_bookappointment extends javax.swing.JFrame {
                 model.addElement(rs.getString("specialization"));
             }
             
-            jComboBox3.setModel(model);
+            specialization.setModel(model);
             rs.close();
             pst.close();
         } catch (SQLException e) {
@@ -529,8 +556,8 @@ public class student_bookappointment extends javax.swing.JFrame {
                 model.addElement(counselorDisplay);
             }
             
-            jComboBox4.setModel(model);
-            jTextArea2.setText("");
+            counselor.setModel(model);
+            counselordetails.setText("");
             
             rs.close();
             pst.close();
@@ -563,9 +590,9 @@ public class student_bookappointment extends javax.swing.JFrame {
                 info.append("Status: ").append(rs.getString("status")).append("\n\n");
                 info.append("═══════════════════════════════════\n");
                 
-                jTextArea2.setText(info.toString());
+                counselordetails.setText(info.toString());
             } else {
-                jTextArea2.setText("Counselor information not found.");
+                counselordetails.setText("Counselor information not found.");
             }
             
             rs.close();
@@ -579,7 +606,7 @@ public class student_bookappointment extends javax.swing.JFrame {
     
     public int getSelectedCounselorId() {
         try {
-            String selectedCounselor = (String) jComboBox4.getSelectedItem();
+            String selectedCounselor = (String) counselor.getSelectedItem();
             if (selectedCounselor == null || selectedCounselor.equals("-- Select Counselor --")) {
                 return -1;
             }
@@ -626,7 +653,7 @@ public class student_bookappointment extends javax.swing.JFrame {
         return; // No counselor selected
     }
 
-    java.util.Date selectedDate = jCalendar1.getDate();
+    java.util.Date selectedDate = schedulecalendar.getDate();
 
     if (selectedDate == null) {
         return;
@@ -646,7 +673,7 @@ public class student_bookappointment extends javax.swing.JFrame {
             JOptionPane.WARNING_MESSAGE);
 
         // Clear the selection by updating UI instead of setting to null
-        jCalendar1.getDayChooser().setDay(jCalendar1.getDayChooser().getDay());
+        schedulecalendar.getDayChooser().setDay(schedulecalendar.getDayChooser().getDay());
     }
 }
     
@@ -655,7 +682,7 @@ public class student_bookappointment extends javax.swing.JFrame {
         // Remove old evaluator if it exists
         if (currentEvaluator != null) {
             try {
-                jCalendar1.getDayChooser().removeDateEvaluator(currentEvaluator);
+                schedulecalendar.getDayChooser().removeDateEvaluator(currentEvaluator);
             } catch (Exception e) {
                 // Ignore if removal fails
             }
@@ -663,11 +690,11 @@ public class student_bookappointment extends javax.swing.JFrame {
         
         // Create and add new evaluator
         currentEvaluator = new CustomDateEvaluator(counselorId);
-        jCalendar1.getDayChooser().addDateEvaluator(currentEvaluator);
+        schedulecalendar.getDayChooser().addDateEvaluator(currentEvaluator);
         
         // Force calendar refresh
-        jCalendar1.getDayChooser().setCalendar(jCalendar1.getCalendar());
-        jCalendar1.updateUI();
+        schedulecalendar.getDayChooser().setCalendar(schedulecalendar.getCalendar());
+        schedulecalendar.updateUI();
         
         // Update text area with schedule info
         displayCounselorSchedule(counselorId);
@@ -758,7 +785,7 @@ public class student_bookappointment extends javax.swing.JFrame {
         info.append("Note: Unavailable dates are shown\n");
         info.append("in red on the calendar.\n");
         
-        jTextArea2.setText(info.toString());
+        counselordetails.setText(info.toString());
         
     } catch (SQLException e) {
         logger.log(java.util.logging.Level.SEVERE, "Error loading counselor schedule", e);
@@ -801,29 +828,32 @@ private String formatTime(String time) {
         java.awt.EventQueue.invokeLater(() -> new student_bookappointment().setVisible(true));
     }
     
-    private com.toedter.calendar.JCalendar jCalendar1;
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton4;
-    private javax.swing.JButton jButton5;
-    private javax.swing.JButton jButton6;
-    private javax.swing.JButton jButton7;
-    private javax.swing.JButton jButton8;
-    private javax.swing.JComboBox<String> jComboBox3;
-    private javax.swing.JComboBox<String> jComboBox4;
+    private javax.swing.JLabel appointmentlogo;
+    private javax.swing.JLabel book;
+    private javax.swing.JButton bookappointment;
+    private javax.swing.JLabel booklogo;
+    private javax.swing.JComboBox<String> counselor;
+    private javax.swing.JTextArea counselordetails;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTextArea jTextArea2;
+    private javax.swing.JSpinner jSpinner1;
+    private javax.swing.JButton logo_home;
+    private javax.swing.JButton logout;
+    private javax.swing.JButton myappointmets;
+    private javax.swing.JButton nextpage;
+    private javax.swing.JLabel profilelogo;
+    private com.toedter.calendar.JCalendar schedulecalendar;
+    private javax.swing.JButton select;
+    private javax.swing.JComboBox<String> specialization;
+    private javax.swing.JLabel user;
+    private javax.swing.JButton viewprofile;
+    private javax.swing.JLabel welcome;
     // End of variables declaration//GEN-END:variables
 }
