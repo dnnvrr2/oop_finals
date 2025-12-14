@@ -50,60 +50,109 @@ public class student_viewprofile extends javax.swing.JFrame {
     }
     
     /**
-     * Load student profile data from database
-     */
-    private void loadStudentProfileFromDB() {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
+    * Load student profile data from database - WITH DEBUG INFO
+    */
+   private void loadStudentProfileFromDB() {
+        System.out.println("========================================");
+        System.out.println("STARTING loadStudentProfileFromDB");
+        System.out.println("Looking for student_id: " + currentStudentId);
+        System.out.println("Database URL: " + DB_URL);
+        System.out.println("========================================");
         
-        try {
-            // Get database connection
-            conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-            
-            // SQL query to fetch student data using student_id (INT)
-            String query = "SELECT name, email, course, year_level, school_id FROM students WHERE student_id = ?";
-            pstmt = conn.prepareStatement(query);
-            pstmt.setInt(1, currentStudentId);
-            
-            rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                // Retrieve data from result set
-                studentName = rs.getString("name");
-                studentEmail = rs.getString("email");
-                studentCourse = rs.getString("course");
-                studentYearLevel = rs.getString("year_level");
-                studentSchoolID = rs.getString("school_id");
-                
-                // Populate text fields
-                jTextField1.setText(studentName);
-                jTextField2.setText(studentEmail);
-                jTextField3.setText(studentCourse);
-                jTextField4.setText(studentYearLevel);
-                jTextField5.setText(studentSchoolID);
-                
-                // Update welcome label
-                jLabel5.setText(studentName.toUpperCase() + "!");
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Student profile not found!",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-                logger.warning("No student found with ID: " + currentStudentId);
-            }
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Database error loading student profile", e);
-            JOptionPane.showMessageDialog(this,
-                "Error loading student profile: " + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
-        } finally {
-            // Close resources
-            closeResources(rs, pstmt, conn);
-        }
-    }
+       Connection conn = null;
+       PreparedStatement pstmt = null;
+       ResultSet rs = null;
+
+       try {
+           System.out.println("=== DEBUG INFO ===");
+           System.out.println("currentStudentId: " + currentStudentId);
+           System.out.println("currentStudentName: " + currentStudentName);
+
+           // If currentStudentId is 0, that means the default constructor was used
+           if (currentStudentId == 0) {
+               System.out.println("WARNING: currentStudentId is 0!");
+               System.out.println("This means you're using the default constructor.");
+               System.out.println("Please start from the login page, not directly from this class.");
+
+               JOptionPane.showMessageDialog(this,
+                   "Please login first!\n\nYou cannot access this page directly.\nStart from the login page.",
+                   "Login Required",
+                   JOptionPane.WARNING_MESSAGE);
+
+               this.dispose();
+               new login_page().setVisible(true);
+               return;
+           }
+
+           System.out.println("Attempting to load profile for student_id: " + currentStudentId);
+
+           // Get database connection
+           conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+           System.out.println("✓ Database connection successful");
+
+           // SQL query to fetch student data using student_id (INT)
+           String query = "SELECT name, email, course, year_level, student_number FROM students WHERE student_id = ?";
+           pstmt = conn.prepareStatement(query);
+           pstmt.setInt(1, currentStudentId);
+
+           System.out.println("✓ Executing query with student_id: " + currentStudentId);
+           rs = pstmt.executeQuery();
+
+           if (rs.next()) {
+               System.out.println("✓ Student record found!");
+
+               // Retrieve data from result set
+               studentName = rs.getString("name");
+               studentEmail = rs.getString("email");
+               studentCourse = rs.getString("course");
+               studentYearLevel = rs.getString("year_level");
+               studentSchoolID = rs.getString("student_number");
+
+               System.out.println("Name: " + studentName);
+               System.out.println("Email: " + studentEmail);
+               System.out.println("Course: " + studentCourse);
+               System.out.println("Year Level: " + studentYearLevel);
+               System.out.println("Student Number: " + studentSchoolID);
+
+               // Populate text fields
+               jTextField1.setText(studentName);
+               jTextField2.setText(studentEmail);
+               jTextField3.setText(studentCourse);
+               jTextField4.setText(studentYearLevel);
+               jTextField5.setText(studentSchoolID);
+
+               // Update welcome label
+               jLabel5.setText(studentName.toUpperCase() + "!");
+
+               System.out.println("✓ Profile loaded successfully!");
+           } else {
+               System.out.println("✗ No student found with ID: " + currentStudentId);
+               System.out.println("This could mean:");
+               System.out.println("1. The student_id doesn't exist in the database");
+               System.out.println("2. The database was not properly initialized");
+
+               JOptionPane.showMessageDialog(this,
+                   "Student profile not found!\n\nStudent ID: " + currentStudentId + " does not exist in the database.",
+                   "Error",
+                   JOptionPane.ERROR_MESSAGE);
+               logger.warning("No student found with ID: " + currentStudentId);
+           }
+
+       } catch (SQLException e) {
+           System.out.println("✗ SQL Error: " + e.getMessage());
+           e.printStackTrace();
+
+           logger.log(java.util.logging.Level.SEVERE, "Database error loading student profile", e);
+           JOptionPane.showMessageDialog(this,
+               "Error loading student profile: " + e.getMessage(),
+               "Database Error",
+               JOptionPane.ERROR_MESSAGE);
+       } finally {
+           System.out.println("=================\n");
+           // Close resources
+           closeResources(rs, pstmt, conn);
+       }
+   }
     
     /**
      * Update student profile in database
@@ -266,11 +315,11 @@ public class student_viewprofile extends javax.swing.JFrame {
                 .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton6)
-                .addGap(49, 49, 49)
+                .addGap(61, 61, 61)
                 .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton5)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(73, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -366,7 +415,7 @@ public class student_viewprofile extends javax.swing.JFrame {
 
         jLabel12.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel12.setForeground(new java.awt.Color(255, 195, 51));
-        jLabel12.setText("School ID");
+        jLabel12.setText("Student ID");
 
         jTextField5.setText("jTextField1");
 
@@ -422,27 +471,27 @@ public class student_viewprofile extends javax.swing.JFrame {
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(41, 41, 41)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(17, 17, 17)
+                .addGap(30, 30, 30)
                 .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jLabel6)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jLabel8)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jLabel9)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jLabel12)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(158, Short.MAX_VALUE))
+                .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(97, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -456,7 +505,10 @@ public class student_viewprofile extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         pack();

@@ -169,6 +169,7 @@ public class student_regis extends javax.swing.JFrame {
         jTextField5 = new javax.swing.JTextField();
         jPasswordField1 = new javax.swing.JPasswordField();
         jButton2 = new javax.swing.JButton();
+        jTextField6 = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -190,12 +191,17 @@ public class student_regis extends javax.swing.JFrame {
 
         jTextField1.setForeground(new java.awt.Color(255, 195, 51));
         jTextField1.setText("Full name");
+        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField1ActionPerformed(evt);
+            }
+        });
 
         jTextField2.setForeground(new java.awt.Color(255, 195, 51));
         jTextField2.setText("Email");
 
         jTextField3.setForeground(new java.awt.Color(255, 195, 51));
-        jTextField3.setText("Year level & Program");
+        jTextField3.setText("Year level");
 
         jTextField4.setForeground(new java.awt.Color(255, 195, 51));
         jTextField4.setText("ID num");
@@ -205,6 +211,11 @@ public class student_regis extends javax.swing.JFrame {
 
         jPasswordField1.setForeground(new java.awt.Color(255, 195, 51));
         jPasswordField1.setText("jPasswordField1");
+        jPasswordField1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jPasswordField1ActionPerformed(evt);
+            }
+        });
 
         jButton2.setBackground(new java.awt.Color(255, 195, 51));
         jButton2.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -216,14 +227,13 @@ public class student_regis extends javax.swing.JFrame {
             }
         });
 
+        jTextField6.setForeground(new java.awt.Color(255, 195, 51));
+        jTextField6.setText("Course");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(0, 198, Short.MAX_VALUE)
-                .addComponent(jLabel1)
-                .addGap(185, 185, 185))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
@@ -231,24 +241,30 @@ public class student_regis extends javax.swing.JFrame {
                         .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(244, 244, 244)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jTextField1)
-                            .addComponent(jTextField2)
-                            .addComponent(jTextField3, javax.swing.GroupLayout.DEFAULT_SIZE, 306, Short.MAX_VALUE)
-                            .addComponent(jTextField4)
-                            .addComponent(jTextField5)
-                            .addComponent(jPasswordField1)))
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 306, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(jTextField1)
+                                .addComponent(jTextField2)
+                                .addComponent(jTextField3, javax.swing.GroupLayout.DEFAULT_SIZE, 306, Short.MAX_VALUE)
+                                .addComponent(jTextField4)
+                                .addComponent(jTextField5)
+                                .addComponent(jPasswordField1))))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(344, 344, 344)
+                        .addGap(345, 345, 345)
                         .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addGap(0, 193, Short.MAX_VALUE)
+                .addComponent(jLabel1)
+                .addGap(190, 190, 190))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(34, 34, 34)
                 .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(94, 94, 94)
+                .addGap(71, 71, 71)
                 .addComponent(jLabel1)
                 .addGap(18, 18, 18)
                 .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -257,6 +273,8 @@ public class student_regis extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -264,7 +282,7 @@ public class student_regis extends javax.swing.JFrame {
                 .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(151, Short.MAX_VALUE))
+                .addContainerGap(126, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -289,7 +307,8 @@ public class student_regis extends javax.swing.JFrame {
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
     String fullname = jTextField1.getText().trim();
     String email = jTextField2.getText().trim();
-    String course = jTextField3.getText().trim(); // Year & Program
+    String yearlvl = jTextField3.getText().trim();
+    String course = jTextField6.getText().trim();
     String studentNumber = jTextField4.getText().trim();
     String password = jTextField5.getText().trim();
     String confirmPassword = String.valueOf(jPasswordField1.getPassword()).trim();
@@ -297,7 +316,8 @@ public class student_regis extends javax.swing.JFrame {
     // ================= VALIDATION =================
     if (fullname.isEmpty() || fullname.equals("Full name") ||
         email.isEmpty() || email.equals("Email") ||
-        course.isEmpty() || course.equals("Year level & Program") ||
+        yearlvl.isEmpty() || yearlvl.equals("Year level") ||
+        course.isEmpty() || course.equals("Course") ||
         studentNumber.isEmpty() || studentNumber.equals("ID num") ||
         password.isEmpty() || password.equals("Password") ||
         confirmPassword.isEmpty()) {
@@ -355,8 +375,8 @@ public class student_regis extends javax.swing.JFrame {
         "VALUES ('Student', ?, ?, ?, 'Pending')";
 
     String insertStudent =
-        "INSERT INTO students (user_id, name, email, course, student_number, password, status) " +
-        "VALUES (?, ?, ?, ?, ?, ?, 'Pending')";
+        "INSERT INTO students (user_id, name, email, yearlvl, course, student_number, password, status) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')";
 
     try (Connection con = DatabaseConnection.getConnection()) {
         con.setAutoCommit(false);
@@ -383,9 +403,10 @@ public class student_regis extends javax.swing.JFrame {
             ps.setInt(1, userId);
             ps.setString(2, fullname);
             ps.setString(3, email);
-            ps.setString(4, course);
-            ps.setString(5, studentNumber);
-            ps.setString(6, password);
+            ps.setString(4, yearlvl);
+            ps.setString(5, course);
+            ps.setString(6, studentNumber);
+            ps.setString(7, password);
             ps.executeUpdate();
         }
 
@@ -406,6 +427,14 @@ public class student_regis extends javax.swing.JFrame {
                 JOptionPane.ERROR_MESSAGE);
     }
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jPasswordField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordField1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jPasswordField1ActionPerformed
+
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -436,5 +465,6 @@ public class student_regis extends javax.swing.JFrame {
     private javax.swing.JTextField jTextField3;
     private javax.swing.JTextField jTextField4;
     private javax.swing.JTextField jTextField5;
+    private javax.swing.JTextField jTextField6;
     // End of variables declaration//GEN-END:variables
 }
