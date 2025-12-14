@@ -390,6 +390,7 @@ public class student_viewprofile extends javax.swing.JFrame {
         );
 
         jTextField1.setText("jTextField1");
+        jTextField1.setFocusable(false);
 
         jLabel3.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel3.setForeground(new java.awt.Color(255, 195, 51));
@@ -404,20 +405,24 @@ public class student_viewprofile extends javax.swing.JFrame {
         jLabel8.setText("Course");
 
         jTextField2.setText("jTextField1");
+        jTextField2.setFocusable(false);
 
         jTextField3.setText("jTextField1");
+        jTextField3.setFocusable(false);
 
         jLabel9.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel9.setForeground(new java.awt.Color(255, 195, 51));
         jLabel9.setText("Year Level");
 
         jTextField4.setText("jTextField1");
+        jTextField4.setFocusable(false);
 
         jLabel12.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel12.setForeground(new java.awt.Color(255, 195, 51));
         jLabel12.setText("Student ID");
 
         jTextField5.setText("jTextField1");
+        jTextField5.setFocusable(false);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
