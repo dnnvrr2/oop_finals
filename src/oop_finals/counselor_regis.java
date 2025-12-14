@@ -340,7 +340,7 @@ public class counselor_regis extends javax.swing.JFrame {
                 = "INSERT INTO users (user_type, name, email, password, status) "
                 + "VALUES ('Counselor', ?, ?, ?, 'Pending')";
 
-        String insertStudent 
+        String insertCounselor 
                 = "INSERT INTO students (user_id, name, email, course, student_number, password, status) " 
                 + "VALUES (?, ?, ?, ?, ?, ?, 'Pending')";
 
@@ -365,7 +365,7 @@ public class counselor_regis extends javax.swing.JFrame {
             }
 
             // Insert into COUNSELORS
-            try (PreparedStatement ps = con.prepareStatement(insertStudent)) {
+            try (PreparedStatement ps = con.prepareStatement(insertCounselor)) {
                 ps.setInt(1, userId);
                 ps.setString(2, fullname);
                 ps.setString(3, email);
