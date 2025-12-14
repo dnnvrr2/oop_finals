@@ -151,6 +151,10 @@ public class student_regis extends javax.swing.JFrame {
     return EMAIL_PATTERN.matcher(email).matches();
     
     }
+    
+    
+    
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -316,127 +320,129 @@ public class student_regis extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-    String fullname = jTextField1.getText().trim();
-    String email = jTextField2.getText().trim();
-    String yearlvl = jTextField3.getText().trim();
-    String course = jTextField6.getText().trim();
-    String studentNumber = jTextField4.getText().trim();
-    String password = jTextField5.getText().trim();
-    String confirmPassword = String.valueOf(jPasswordField1.getPassword()).trim();
+    // REGISTER BUTTON ACTION - FIXED VERSION                                       
+        String fullname = jTextField1.getText().trim();
+        String email = jTextField2.getText().trim();
+        String yearLevel = jTextField3.getText().trim();
+        String course = jTextField6.getText().trim();
+        String studentNumber = jTextField4.getText().trim();
+        String password = jTextField5.getText().trim();
+        String confirmPassword = String.valueOf(jPasswordField1.getPassword()).trim();
 
-    // ================= VALIDATION =================
-    if (fullname.isEmpty() || fullname.equals("Full name") ||
-        email.isEmpty() || email.equals("Email") ||
-        yearlvl.isEmpty() || yearlvl.equals("Year level") ||
-        course.isEmpty() || course.equals("Course") ||
-        studentNumber.isEmpty() || studentNumber.equals("ID Number") ||
-        password.isEmpty() || password.equals("Password") ||
-        confirmPassword.isEmpty()) {
+        // ================= VALIDATION =================
+        if (fullname.isEmpty() || fullname.equals("Full name") ||
+            email.isEmpty() || email.equals("Email") ||
+            yearLevel.isEmpty() || yearLevel.equals("Year level") ||
+            course.isEmpty() || course.equals("Course") ||
+            studentNumber.isEmpty() || studentNumber.equals("ID Number") ||
+            password.isEmpty() || password.equals("Password") ||
+            confirmPassword.isEmpty()) {
 
-        JOptionPane.showMessageDialog(this,
-                "Please complete all fields.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+            JOptionPane.showMessageDialog(this,
+                    "Please complete all fields.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    if (!isValidEmail(email)) {
-        JOptionPane.showMessageDialog(this,
-                "Invalid email format.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+        if (!isValidEmail(email)) {
+            JOptionPane.showMessageDialog(this,
+                    "Invalid email format.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    if (password.length() < 6) {
-        JOptionPane.showMessageDialog(this,
-                "Password must be at least 6 characters.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+        if (password.length() < 6) {
+            JOptionPane.showMessageDialog(this,
+                    "Password must be at least 6 characters.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    if (!password.equals(confirmPassword)) {
-        JOptionPane.showMessageDialog(this,
-                "Passwords do not match.",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
+        if (!password.equals(confirmPassword)) {
+            JOptionPane.showMessageDialog(this,
+                    "Passwords do not match.",
+                    "Validation Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    if (emailExists(email)) {
-        JOptionPane.showMessageDialog(this,
-                "Email already registered.",
-                "Registration Error",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
+        if (emailExists(email)) {
+            JOptionPane.showMessageDialog(this,
+                    "Email already registered.",
+                    "Registration Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    if (studentNumberExists(studentNumber)) {
-        JOptionPane.showMessageDialog(this,
-                "Student number already registered.",
-                "Registration Error",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
+        if (studentNumberExists(studentNumber)) {
+            JOptionPane.showMessageDialog(this,
+                    "Student number already registered.",
+                    "Registration Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    // ================= DATABASE INSERT =================
-    String insertUser =
-        "INSERT INTO users (user_type, name, email, password, status) " +
-        "VALUES ('Student', ?, ?, ?, 'Pending')";
+        // ================= DATABASE INSERT =================
+        String insertUser =
+            "INSERT INTO users (user_type, name, email, password, status) " +
+            "VALUES ('Student', ?, ?, ?, 'Pending')";
 
-    String insertStudent =
-        "INSERT INTO students (user_id, name, email, yearlvl, course, student_number, password, status) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')";
+        // FIXED: Changed yearlvl to year_level to match database schema
+        String insertStudent =
+            "INSERT INTO students (user_id, name, email, year_level, course, student_number, password, status) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')";
 
-    try (Connection con = DatabaseConnection.getConnection()) {
-        con.setAutoCommit(false);
+        try (Connection con = DatabaseConnection.getConnection()) {
+            con.setAutoCommit(false);
 
-        // Insert into USERS
-        int userId;
-        try (PreparedStatement ps = con.prepareStatement(insertUser, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, fullname);
-            ps.setString(2, email);
-            ps.setString(3, password);
-            ps.executeUpdate();
+            // Insert into USERS
+            int userId;
+            try (PreparedStatement ps = con.prepareStatement(insertUser, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, fullname);
+                ps.setString(2, email);
+                ps.setString(3, password);
+                ps.executeUpdate();
 
-            ResultSet rs = ps.getGeneratedKeys();
-            if (!rs.next()) {
-                con.rollback();
-                JOptionPane.showMessageDialog(this, "User creation failed.");
-                return;
+                ResultSet rs = ps.getGeneratedKeys();
+                if (!rs.next()) {
+                    con.rollback();
+                    JOptionPane.showMessageDialog(this, "User creation failed.");
+                    return;
+                }
+                userId = rs.getInt(1);
             }
-            userId = rs.getInt(1);
+
+            // Insert into STUDENTS
+            try (PreparedStatement ps = con.prepareStatement(insertStudent)) {
+                ps.setInt(1, userId);
+                ps.setString(2, fullname);
+                ps.setString(3, email);
+                ps.setString(4, yearLevel);  // FIXED: Now correctly maps to year_level
+                ps.setString(5, course);
+                ps.setString(6, studentNumber);
+                ps.setString(7, password);
+                ps.executeUpdate();
+            }
+
+            con.commit();
+
+            JOptionPane.showMessageDialog(this,
+                    "Registration successful!\n\nPlease wait for admin approval.",
+                    "Registration Submitted",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            this.dispose();
+            new new_account().setVisible(true);
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Registration failed:\n" + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
-
-        // Insert into STUDENTS
-        try (PreparedStatement ps = con.prepareStatement(insertStudent)) {
-            ps.setInt(1, userId);
-            ps.setString(2, fullname);
-            ps.setString(3, email);
-            ps.setString(4, yearlvl);
-            ps.setString(5, course);
-            ps.setString(6, studentNumber);
-            ps.setString(7, password);
-            ps.executeUpdate();
-        }
-
-        con.commit();
-
-        JOptionPane.showMessageDialog(this,
-                "Registration successful!\n\nPlease wait for admin approval.",
-                "Registration Submitted",
-                JOptionPane.INFORMATION_MESSAGE);
-
-        this.dispose();
-        new new_account().setVisible(true);
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this,
-                "Registration failed:\n" + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
-    }
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jPasswordField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordField1ActionPerformed

@@ -32,30 +32,38 @@ public class PendingUsers extends javax.swing.JFrame {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
 
-        String sql
-                = "SELECT u.user_id, u.name, u.user_type, "
-                + "COALESCE(s.course, c.specialization) AS info, u.status "
-                + "FROM users u "
-                + "LEFT JOIN students s ON u.user_id = s.user_id "
-                + "LEFT JOIN counselors c ON u.user_id = c.user_id "
-                + "WHERE u.status = 'Pending'";
+        String sql =
+            "SELECT u.user_id, u.name, u.user_type, u.email, " +
+            "COALESCE(s.course, c.specialization, 'N/A') AS info, " +
+            "COALESCE(s.student_number, c.license_number, 'N/A') AS id_number, " +
+            "u.status " +
+            "FROM users u " +
+            "LEFT JOIN students s ON u.user_id = s.user_id " +
+            "LEFT JOIN counselors c ON u.user_id = c.user_id " +
+            "WHERE u.status = 'Pending' " +
+            "ORDER BY u.created_at DESC";
 
         try (Connection con = DatabaseConnection.getConnection(); 
-             PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = con.prepareStatement(sql); 
+             ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 model.addRow(new Object[]{
                     rs.getInt("user_id"),
                     rs.getString("name"),
                     rs.getString("user_type"),
+                    rs.getString("email"),
                     rs.getString("info"),
+                    rs.getString("id_number"),
                     rs.getString("status")
                 });
             }
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
-                    "Error loading pending users:\n" + e.getMessage());
+                    "Error loading pending users:\n" + e.getMessage(),
+                    "DAtabase error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -65,12 +73,25 @@ public class PendingUsers extends javax.swing.JFrame {
         int row = jTable1.getSelectedRow();
 
         if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a user first.");
+            JOptionPane.showMessageDialog(this,
+                    "Please select a user first.",
+                    "No selection",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        int userId = (int) jTable1.getValueAt(row, 0);   // USER ID
+        int userId = (int) jTable1.getValueAt(row, 0);
+        String userName = jTable1.getValueAt(row, 1).toString();
         String userType = jTable1.getValueAt(row, 2).toString();
+        
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to " + newStatus.toLowerCase() + " " + userName + "?",
+                "Confirm " + newStatus,
+                JOptionPane.YES_NO_OPTION);
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
 
         try (Connection con = DatabaseConnection.getConnection()) {
             con.setAutoCommit(false);
@@ -87,8 +108,12 @@ public class PendingUsers extends javax.swing.JFrame {
             String roleSql;
             if (userType.equalsIgnoreCase("Student")) {
                 roleSql = "UPDATE students SET status = ? WHERE user_id = ?";
-            } else {
+            } else if (userType.equalsIgnoreCase("Counselor")) {
                 roleSql = "UPDATE counselors SET status = ? WHERE user_id = ?";
+            } else {
+                con.rollback();
+                JOptionPane.showMessageDialog(this, "Unknown user type.");
+                return;
             }
 
             try (PreparedStatement ps = con.prepareStatement(roleSql)) {
@@ -99,12 +124,22 @@ public class PendingUsers extends javax.swing.JFrame {
 
             con.commit();
 
+            String message = newStatus.equals("APPROVED") 
+                ? "User approved successfully!\n" + userName + " can now login."
+                : "User rejected successfully.";
+
             JOptionPane.showMessageDialog(this,
-                    "User " + newStatus.toLowerCase() + " successfully.");
+                    message,
+                    "Status Updated",
+                    JOptionPane.INFORMATION_MESSAGE);
+            
             loadPendingUsers();
 
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Update failed:\n" + e.getMessage());
+            JOptionPane.showMessageDialog(this, 
+                    "Update failed:\n" + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -112,45 +147,58 @@ public class PendingUsers extends javax.swing.JFrame {
         // SEARCH FILTER
         private void setupSearch() {
         Search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-        public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
-        public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
-        public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
 
-        private void search() {
-            String keyword = Search.getText();
-            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-            model.setRowCount(0);
+            private void search() {
+                String keyword = Search.getText().trim();
+                DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+                model.setRowCount(0);
 
-            String sql
-                    = "SELECT u.user_id, u.name, u.user_type, "
-                    + "COALESCE(s.course, c.specialization) AS info, u.status "
-                    + "FROM users u "
-                    + "LEFT JOIN students s ON u.user_id = s.user_id "
-                    + "LEFT JOIN counselors c ON u.user_id = c.user_id "
-                    + "WHERE u.status = 'Pending' AND u.name LIKE ?";
+                String sql =
+                    "SELECT u.user_id, u.name, u.user_type, u.email, " +
+                    "COALESCE(s.course, c.specialization, 'N/A') AS info, " +
+                    "COALESCE(s.student_number, c.license_number, 'N/A') AS id_number, " +
+                    "u.status " +
+                    "FROM users u " +
+                    "LEFT JOIN students s ON u.user_id = s.user_id " +
+                    "LEFT JOIN counselors c ON u.user_id = c.user_id " +
+                    "WHERE u.status = 'Pending' " +
+                    "AND (u.name LIKE ? OR u.email LIKE ? OR u.user_type LIKE ?) " +
+                    "ORDER BY u.created_at DESC";
 
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement(sql)) {
+                try (Connection con = DatabaseConnection.getConnection();
+                     PreparedStatement ps = con.prepareStatement(sql)) {
 
-                ps.setString(1, "%" + keyword + "%");
-                ResultSet rs = ps.executeQuery();
+                    String searchPattern = "%" + keyword + "%";
+                    ps.setString(1, searchPattern);
+                    ps.setString(2, searchPattern);
+                    ps.setString(3, searchPattern);
+                    
+                    ResultSet rs = ps.executeQuery();
 
-                while (rs.next()) {
-                    model.addRow(new Object[]{
-                        rs.getInt("user_id"),
-                        rs.getString("name"),
-                        rs.getString("user_type"),
-                        rs.getString("info"),
-                        rs.getString("status")
-                    });
+                    while (rs.next()) {
+                        model.addRow(new Object[]{
+                            rs.getInt("user_id"),
+                            rs.getString("name"),
+                            rs.getString("user_type"),
+                            rs.getString("email"),
+                            rs.getString("info"),
+                            rs.getString("id_number"),
+                            rs.getString("status")
+                        });
+                    }
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, 
+                            "Search failed:\n" + ex.getMessage(),
+                            "Database Error",
+                            JOptionPane.ERROR_MESSAGE);
                 }
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, ex.getMessage());
             }
-        }
-    });
-}
+        });
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -456,11 +504,11 @@ public class PendingUsers extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
-        updateUserStatus("REJECTED");
+        updateUserStatus("Inactive");
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
-        updateUserStatus("APPROVED");
+        updateUserStatus("Active");
     }//GEN-LAST:event_jButton10ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed

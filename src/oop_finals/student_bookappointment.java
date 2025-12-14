@@ -949,26 +949,23 @@ public LocalDate getSelectedDate() {
             return;
         }
 
-        if (selectedDate == null) {
-            JOptionPane.showMessageDialog(this, "Please select a date from the calendar.",
-                    "Date Required", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
         int counselorId = getSelectedCounselorId();
 
         if (counselorId == -1) {
-            JOptionPane.showMessageDialog(this, "Error retrieving counselor information.",
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+               JOptionPane.showMessageDialog(this, "Error retrieving counselor information.",
+                       "Error", JOptionPane.ERROR_MESSAGE);
+               return;
+           }
 
-        java.util.Date utilDate = java.util.Date.from(
-                selectedDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-
-        student_bookappointment2nd d = new student_bookappointment2nd(currentStudentId, currentStudentName, counselorId, utilDate);
-        d.setVisible(true);
-        this.dispose();
+           // Pass null for the date parameter or handle it in the next form
+           student_bookappointment2nd d = new student_bookappointment2nd(
+               currentStudentId, 
+               currentStudentName, 
+               counselorId, 
+               null  // Pass null instead of selectedDate
+           );
+           d.setVisible(true);
+           this.dispose();
     }//GEN-LAST:event_nextpageActionPerformed
 
     private void selectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectActionPerformed
