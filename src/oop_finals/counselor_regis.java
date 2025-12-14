@@ -150,6 +150,36 @@ public class counselor_regis extends javax.swing.JFrame {
     return EMAIL_PATTERN.matcher(email).matches();
     
     }
+    
+    private boolean emailExistsInRequests(String email) {
+        String sql = "SELECT 1 FROM user_requests WHERE email = ?";
+        try (Connection con = DatabaseConnection.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
+            return true;
+        }
+    }
+
+    private boolean licenseExistsInRequests(String licenseNumber) {
+        String sql = "SELECT 1 FROM user_requests WHERE license_number = ?";
+        try (Connection con = DatabaseConnection.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, licenseNumber);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
+            return true;
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -297,11 +327,11 @@ public class counselor_regis extends javax.swing.JFrame {
 
     private void jButton58ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton58ActionPerformed
         String fullname = jTextField141.getText().trim();
-        String email = jTextField142.getText().trim();
-        String specialization = jTextField143.getText().trim();
-        String licenseId = jTextField144.getText().trim();
-        String password = jTextField147.getText().trim();
-        String confirmPassword = String.valueOf(jPasswordField1.getPassword()).trim();
+    String email = jTextField142.getText().trim();
+    String specialization = jTextField143.getText().trim();
+    String licenseId = jTextField144.getText().trim();
+    String password = jTextField147.getText().trim();
+    String confirmPassword = String.valueOf(jPasswordField1.getPassword()).trim();
 
     // ================= VALIDATION =================
     if (fullname.isEmpty() || fullname.equals("Full name") ||
@@ -342,66 +372,41 @@ public class counselor_regis extends javax.swing.JFrame {
         return;
     }
 
-    if (emailExists(email)) {
+    // Check if email already exists in user_requests OR users table
+    if (emailExistsInRequests(email) || emailExists(email)) {
         JOptionPane.showMessageDialog(this,
-                "Email already registered.",
+                "Email already registered or pending approval.",
                 "Registration Error",
                 JOptionPane.ERROR_MESSAGE);
         return;
     }
 
-    if (counselorLicenseExists(licenseId)) {
+    // Check if license number already exists in user_requests OR counselors table
+    if (licenseExistsInRequests(licenseId) || counselorLicenseExists(licenseId)) {
         JOptionPane.showMessageDialog(this,
-                "License number already registered.",
+                "License number already registered or pending approval.",
                 "Registration Error",
                 JOptionPane.ERROR_MESSAGE);
         return;
     }
 
-    // ================= DATABASE INSERT =================
-    String insertUser =
-        "INSERT INTO users (user_type, name, email, password, status) " +
-        "VALUES ('Counselor', ?, ?, ?, 'Pending')";
+    // ================= INSERT INTO user_requests TABLE =================
+    String insertRequest =
+        "INSERT INTO user_requests (user_type, name, email, password, specialization, license_number, status) " +
+        "VALUES ('Counselor', ?, ?, ?, ?, ?, 'Pending')";
 
-    String insertCounselor =
-    "INSERT INTO counselors (user_id, name, email, specialization, license_number, password, status) " +
-    "VALUES (?, ?, ?, ?, ?, ?, 'Pending')";
-
-    try (Connection con = DatabaseConnection.getConnection()) {
-        con.setAutoCommit(false);
-
-        // Insert into USERS
-        int userId;
-        try (PreparedStatement ps = con.prepareStatement(insertUser, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, fullname);
-            ps.setString(2, email);
-            ps.setString(3, password);
-            ps.executeUpdate();
-
-            ResultSet rs = ps.getGeneratedKeys();
-            if (!rs.next()) {
-                con.rollback();
-                JOptionPane.showMessageDialog(this, "User creation failed.");
-                return;
-            }
-            userId = rs.getInt(1);
-        }
-
-        // Insert into COUNSELOR
-        try (PreparedStatement ps = con.prepareStatement(insertCounselor)) {
-            ps.setInt(1, userId);
-            ps.setString(2, fullname);
-            ps.setString(3, email);
-            ps.setString(4, specialization);
-            ps.setString(5, licenseId);
-            ps.setString(6, password);
-            ps.executeUpdate();
-        }
-
-        con.commit();
+    try (Connection con = DatabaseConnection.getConnection();
+         PreparedStatement ps = con.prepareStatement(insertRequest)) {
+        
+        ps.setString(1, fullname);
+        ps.setString(2, email);
+        ps.setString(3, password);
+        ps.setString(4, specialization);
+        ps.setString(5, licenseId);
+        ps.executeUpdate();
 
         JOptionPane.showMessageDialog(this,
-                "Registration successful!\n\nPlease wait for admin approval.",
+                "Registration successful!\n\nYour application has been submitted.\nPlease wait for admin approval.",
                 "Registration Submitted",
                 JOptionPane.INFORMATION_MESSAGE);
 

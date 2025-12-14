@@ -23,6 +23,9 @@ public class admin_allusers extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(admin_allusers.class.getName());
     private TableRowSorter<DefaultTableModel> sorter;
     private DefaultTableModel tableModel;
+    
+    private int currentAdminId;
+    private String currentAdminName;
 
     /**
      * Creates new form admin_allusers
@@ -37,6 +40,21 @@ public class admin_allusers extends javax.swing.JFrame {
         setupPlaceholders();
     }
     
+    public admin_allusers(int adminId, String adminName) {
+        this.currentAdminId = adminId;
+        this.currentAdminName = adminName;
+        initComponents();
+        setupTable();
+        setupTableClickListener();
+        setupButtons();
+        loadUsers();
+        setupSearchBar();
+        setupPlaceholders();
+
+        // Set the admin name in the UI
+        jLabel5.setText(adminName + "!");
+    }
+   
     private void setupSearchBar() {
     // Create a sorter for the table
     sorter = new TableRowSorter<>(tableModel);
@@ -560,10 +578,16 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
+        PendingUsers pu = new PendingUsers(currentAdminId, currentAdminName);
+        pu.setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
+        admin_allusers b = new admin_allusers(currentAdminId, currentAdminName);
+        b.setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
@@ -582,6 +606,9 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
+        admin_dashboard d = new admin_dashboard(currentAdminId, currentAdminName);
+        d.setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
@@ -596,7 +623,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         this.dispose();
-        new admin_dashboard().setVisible(true);
+        new admin_dashboard(currentAdminId, currentAdminName).setVisible(true);
     }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
