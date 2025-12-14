@@ -30,12 +30,15 @@ public class PendingUsers extends javax.swing.JFrame {
     }
     
     // LOAD PENDING USERS
-    private void loadPendingUsers() {
+        private void loadPendingUsers() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
 
-        String sql = "SELECT full_name, user_type, id, email " +
-                 "FROM students WHERE status = 'PENDING'";
+        String sql =
+            "SELECT u.user_id, u.name, u.user_type, s.course, u.status " +
+            "FROM users u " +
+            "JOIN students s ON u.user_id = s.user_id " +
+            "WHERE u.user_type = 'Student' AND u.status = 'Pending'";
 
         try (Connection con = DatabaseConnection.getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -43,16 +46,17 @@ public class PendingUsers extends javax.swing.JFrame {
 
             while (rs.next()) {
                 model.addRow(new Object[]{
-                    rs.getString("full_name"),
+                    rs.getInt("user_id"),
+                    rs.getString("name"),
                     rs.getString("user_type"),
-                    rs.getInt("id"),
-                    rs.getString("email"),
-                    "View"
-            });
+                    rs.getString("course"),
+                    rs.getString("status")
+                });
             }
 
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error loading pending users:\n" + e.getMessage());
+            JOptionPane.showMessageDialog(this,
+                "Error loading pending users:\n" + e.getMessage());
         }
     }
 
@@ -84,44 +88,46 @@ public class PendingUsers extends javax.swing.JFrame {
         }
     }
 
-    // SEARCH FILTER
-    private void setupSearch() {
-        Search.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { search(); }
-            public void removeUpdate(DocumentEvent e) { search(); }
-            public void changedUpdate(DocumentEvent e) { search(); }
+        // SEARCH FILTER
+        private void setupSearch() {
+        Search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
+        public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
+        public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
 
-            private void search() {
-                String keyword = Search.getText();
+        private void search() {
+            String keyword = Search.getText();
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
 
-                DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-                model.setRowCount(0);
+            String sql =
+                "SELECT u.user_id, u.name, u.user_type, s.course, u.status " +
+                "FROM users u JOIN students s ON u.user_id = s.user_id " +
+                "WHERE u.user_type = 'Student' AND u.status = 'Pending' " +
+                "AND u.name LIKE ?";
 
-                String sql = "SELECT full_name, user_type, id, email " +
-                         "FROM students WHERE status = 'PENDING' AND full_name LIKE ?";
+            try (Connection con = DatabaseConnection.getConnection();
+                 PreparedStatement ps = con.prepareStatement(sql)) {
 
-                try (Connection con = DatabaseConnection.getConnection();
-                    PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, "%" + keyword + "%");
+                ResultSet rs = ps.executeQuery();
 
-                    ps.setString(1, "%" + keyword + "%");
-                    ResultSet rs = ps.executeQuery();
-                
-                    while (rs.next()) {
-                        model.addRow(new Object[]{
-                            rs.getString("full_name"),
-                            rs.getString("user_type"),
-                            rs.getInt("id"),
-                            rs.getString("email"),
-                            "View"
-                        });
-                    }
-
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, ex.getMessage());
+                while (rs.next()) {
+                    model.addRow(new Object[]{
+                        rs.getInt("user_id"),
+                        rs.getString("name"),
+                        rs.getString("user_type"),
+                        rs.getString("course"),
+                        rs.getString("status")
+                    });
                 }
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(null, ex.getMessage());
             }
-        });
-    }
+        }
+    });
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -238,6 +244,8 @@ public class PendingUsers extends javax.swing.JFrame {
             }
         });
 
+        jScrollPane1.setToolTipText("");
+
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null, null},
@@ -246,7 +254,7 @@ public class PendingUsers extends javax.swing.JFrame {
                 {null, null, null, null, null}
             },
             new String [] {
-                "Name", "Type", "ID", "Email", "Profile"
+                "User ID", "Name", "Type", "Course", "Status"
             }
         ) {
             Class[] types = new Class [] {
@@ -346,7 +354,7 @@ public class PendingUsers extends javax.swing.JFrame {
                 .addComponent(jLabel1)
                 .addGap(18, 18, 18)
                 .addComponent(jLabel3)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
+                .addGap(8, 8, 8)
                 .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(29, 29, 29)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 400, javax.swing.GroupLayout.PREFERRED_SIZE)
