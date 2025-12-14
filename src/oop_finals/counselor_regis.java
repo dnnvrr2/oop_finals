@@ -8,15 +8,147 @@ package oop_finals;
  *
  * @author Gian
  */
+import java.awt.Color;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.util.regex.Pattern;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
+
 public class counselor_regis extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(counselor_regis.class.getName());
-
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_regis.class.getName());
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
+    
     /**
      * Creates new form counselor_regis
      */
     public counselor_regis() {
         initComponents();
+        setupPlaceholders();
+    }
+    
+    private boolean emailExists(String email) {
+        String sql = "SELECT 1 FROM users WHERE email = ?";
+        try (Connection con = DatabaseConnection.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
+            return true;
+        }
+    }
+
+    private boolean counselorLicenseExists(String licenseId) {
+        String sql = "SELECT 1 FROM counselors WHERE license_id = ?";
+        try (Connection con = DatabaseConnection.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, licenseId);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
+            return true;
+        }
+    }
+    
+    private void setupPlaceholders(){
+        setupPlaceholder(jTextField141, "Full name");
+        setupPlaceholder(jTextField142, "Email");
+        setupPlaceholder(jTextField143, "Specialization");
+        setupPlaceholder(jTextField144, "License ID");
+        setupPasswordPlaceholder(jTextField147, "Password");
+        setupPasswordPlaceholder(jPasswordField1, "Confirm Password");
+    }
+    
+    private void setupPlaceholder(javax.swing.JTextField textField, String placeholder) {
+        textField.setText(placeholder);
+        textField.setForeground(Color.GRAY);
+        textField.addFocusListener(new FocusAdapter() {
+            
+        @Override
+        public void focusGained(FocusEvent e) {
+            if (textField.getText().equals(placeholder)) {
+                textField.setText("");
+                textField.setForeground(new Color(255, 195, 51));
+            }
+        }
+
+        @Override
+        public void focusLost(FocusEvent e) {
+            if (textField.getText().isEmpty()) {
+                textField.setText(placeholder);
+                textField.setForeground(Color.GRAY);
+            }
+        }
+    });
+    }
+    
+    private void setupPasswordPlaceholder(javax.swing.JComponent passwordField, String placeholder) {
+        if (passwordField instanceof javax.swing.JPasswordField) {
+            javax.swing.JPasswordField pf = (javax.swing.JPasswordField) passwordField;
+            pf.setText(placeholder);
+            pf.setForeground(Color.GRAY);
+            pf.setEchoChar((char) 0);
+
+            pf.addFocusListener(new FocusAdapter() {
+            
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (String.valueOf(pf.getPassword()).equals(placeholder)) {
+                    pf.setText("");
+                    pf.setForeground(new Color(255, 195, 51));
+                    pf.setEchoChar('•');
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (String.valueOf(pf.getPassword()).isEmpty()) {
+                    pf.setText(placeholder);
+                    pf.setForeground(Color.GRAY);
+                    pf.setEchoChar((char) 0);
+                }
+            }
+        });
+        } else if (passwordField instanceof javax.swing.JTextField) {
+            javax.swing.JTextField tf = (javax.swing.JTextField) passwordField;
+            tf.setText(placeholder);
+            tf.setForeground(Color.GRAY);
+
+            tf.addFocusListener(new FocusAdapter() {
+            
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (tf.getText().equals(placeholder)) {
+                    tf.setText("");
+                    tf.setForeground(new Color(255, 195, 51));
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (tf.getText().isEmpty()) {
+                    tf.setText(placeholder);
+                    tf.setForeground(Color.GRAY);
+                }
+            }
+        });
+        }
+    }
+    
+    private boolean isValidEmail(String email) {
+    return EMAIL_PATTERN.matcher(email).matches();
+    
     }
 
     /**
@@ -35,9 +167,9 @@ public class counselor_regis extends javax.swing.JFrame {
         jTextField142 = new javax.swing.JTextField();
         jTextField143 = new javax.swing.JTextField();
         jTextField144 = new javax.swing.JTextField();
-        jTextField145 = new javax.swing.JTextField();
-        jPasswordField29 = new javax.swing.JPasswordField();
         jButton58 = new javax.swing.JButton();
+        jTextField147 = new javax.swing.JTextField();
+        jPasswordField1 = new javax.swing.JPasswordField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -74,23 +206,25 @@ public class counselor_regis extends javax.swing.JFrame {
         jTextField144.setForeground(new java.awt.Color(255, 195, 51));
         jTextField144.setText("License ID");
 
-        jTextField145.setForeground(new java.awt.Color(255, 195, 51));
-        jTextField145.setText("Password");
-
-        jPasswordField29.setText("jPasswordField29");
-
         jButton58.setBackground(new java.awt.Color(255, 195, 51));
+        jButton58.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jButton58.setForeground(new java.awt.Color(255, 255, 255));
-        jButton58.setText("Register");
+        jButton58.setText("REGISTER");
+        jButton58.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton58ActionPerformed(evt);
+            }
+        });
+
+        jTextField147.setForeground(new java.awt.Color(255, 195, 51));
+        jTextField147.setText("Password");
+
+        jPasswordField1.setText("jPasswordField1");
 
         javax.swing.GroupLayout jPanel24Layout = new javax.swing.GroupLayout(jPanel24);
         jPanel24.setLayout(jPanel24Layout);
         jPanel24Layout.setHorizontalGroup(
             jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel24Layout.createSequentialGroup()
-                .addContainerGap(177, Short.MAX_VALUE)
-                .addComponent(jLabel29)
-                .addGap(160, 160, 160))
             .addGroup(jPanel24Layout.createSequentialGroup()
                 .addGroup(jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel24Layout.createSequentialGroup()
@@ -98,17 +232,21 @@ public class counselor_regis extends javax.swing.JFrame {
                         .addComponent(jButton57, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel24Layout.createSequentialGroup()
                         .addGap(238, 238, 238)
-                        .addGroup(jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jTextField141)
-                            .addComponent(jTextField142)
-                            .addComponent(jTextField143)
-                            .addComponent(jTextField144)
-                            .addComponent(jTextField145)
-                            .addComponent(jPasswordField29, javax.swing.GroupLayout.DEFAULT_SIZE, 305, Short.MAX_VALUE)))
+                        .addGroup(jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(jTextField141)
+                                .addComponent(jTextField142)
+                                .addComponent(jTextField143, javax.swing.GroupLayout.DEFAULT_SIZE, 305, Short.MAX_VALUE)
+                                .addComponent(jTextField144)
+                                .addComponent(jTextField147))))
                     .addGroup(jPanel24Layout.createSequentialGroup()
-                        .addGap(338, 338, 338)
+                        .addGap(165, 165, 165)
+                        .addComponent(jLabel29))
+                    .addGroup(jPanel24Layout.createSequentialGroup()
+                        .addGap(337, 337, 337)
                         .addComponent(jButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(174, Short.MAX_VALUE))
         );
         jPanel24Layout.setVerticalGroup(
             jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -126,12 +264,12 @@ public class counselor_regis extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jTextField144, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jTextField145, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jTextField147, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jPasswordField29, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
                 .addComponent(jButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(169, Short.MAX_VALUE))
+                .addContainerGap(163, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -151,22 +289,136 @@ public class counselor_regis extends javax.swing.JFrame {
     private void jButton57ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton57ActionPerformed
         this.dispose();
         new new_account().setVisible(true);
-        // TODO add your handling code here:
     }//GEN-LAST:event_jButton57ActionPerformed
 
     private void jTextField142ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField142ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField142ActionPerformed
 
+    private void jButton58ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton58ActionPerformed
+        String fullname = jTextField141.getText().trim();
+        String email = jTextField142.getText().trim();
+        String specialization = jTextField143.getText().trim();
+        String licenseId = jTextField144.getText().trim();
+        String password = jTextField147.getText().trim();
+        String confirmPassword = String.valueOf(jPasswordField1.getPassword()).trim();
+
+    // ================= VALIDATION =================
+    if (fullname.isEmpty() || fullname.equals("Full name") ||
+        email.isEmpty() || email.equals("Email") ||
+        specialization.isEmpty() || specialization.equals("Specialization") ||
+        licenseId.isEmpty() || licenseId.equals("License ID") ||
+        password.isEmpty() || password.equals("Password") ||
+        confirmPassword.isEmpty()) {
+
+        JOptionPane.showMessageDialog(this,
+                "Please complete all fields.",
+                "Validation Error",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    if (!isValidEmail(email)) {
+        JOptionPane.showMessageDialog(this,
+                "Invalid email format.",
+                "Validation Error",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    if (password.length() < 6) {
+        JOptionPane.showMessageDialog(this,
+                "Password must be at least 6 characters.",
+                "Validation Error",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    if (!password.equals(confirmPassword)) {
+        JOptionPane.showMessageDialog(this,
+                "Passwords do not match.",
+                "Validation Error",
+                JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    if (emailExists(email)) {
+        JOptionPane.showMessageDialog(this,
+                "Email already registered.",
+                "Registration Error",
+                JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    if (counselorLicenseExists(licenseId)) {
+        JOptionPane.showMessageDialog(this,
+                "License number already registered.",
+                "Registration Error",
+                JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    // ================= DATABASE INSERT =================
+    String insertUser =
+        "INSERT INTO users (user_type, name, email, password, status) " +
+        "VALUES ('Counselor', ?, ?, ?, 'Pending')";
+
+    String insertCounselor =
+        "INSERT INTO counselors (user_id, name, email, specialization, license_id, status) " +
+        "VALUES (?, ?, ?, ?, ?, 'Pending')";
+
+    try (Connection con = DatabaseConnection.getConnection()) {
+        con.setAutoCommit(false);
+
+        // Insert into USERS
+        int userId;
+        try (PreparedStatement ps = con.prepareStatement(insertUser, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, fullname);
+            ps.setString(2, email);
+            ps.setString(3, password);
+            ps.executeUpdate();
+
+            ResultSet rs = ps.getGeneratedKeys();
+            if (!rs.next()) {
+                con.rollback();
+                JOptionPane.showMessageDialog(this, "User creation failed.");
+                return;
+            }
+            userId = rs.getInt(1);
+        }
+
+        // Insert into COUNSELOR
+        try (PreparedStatement ps = con.prepareStatement(insertCounselor)) {
+            ps.setInt(1, userId);
+            ps.setString(2, fullname);
+            ps.setString(3, email);
+            ps.setString(4, specialization);
+            ps.setString(5, licenseId);
+            ps.executeUpdate();
+        }
+
+        con.commit();
+
+        JOptionPane.showMessageDialog(this,
+                "Registration successful!\n\nPlease wait for admin approval.",
+                "Registration Submitted",
+                JOptionPane.INFORMATION_MESSAGE);
+
+        this.dispose();
+        new new_account().setVisible(true);
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this,
+                "Registration failed:\n" + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
+    }//GEN-LAST:event_jButton58ActionPerformed
+
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -177,302 +429,20 @@ public class counselor_regis extends javax.swing.JFrame {
         } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
             logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
 
-        /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> new counselor_regis().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton10;
-    private javax.swing.JButton jButton11;
-    private javax.swing.JButton jButton12;
-    private javax.swing.JButton jButton13;
-    private javax.swing.JButton jButton14;
-    private javax.swing.JButton jButton15;
-    private javax.swing.JButton jButton16;
-    private javax.swing.JButton jButton17;
-    private javax.swing.JButton jButton18;
-    private javax.swing.JButton jButton19;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton20;
-    private javax.swing.JButton jButton21;
-    private javax.swing.JButton jButton22;
-    private javax.swing.JButton jButton23;
-    private javax.swing.JButton jButton24;
-    private javax.swing.JButton jButton25;
-    private javax.swing.JButton jButton26;
-    private javax.swing.JButton jButton27;
-    private javax.swing.JButton jButton28;
-    private javax.swing.JButton jButton29;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton30;
-    private javax.swing.JButton jButton31;
-    private javax.swing.JButton jButton32;
-    private javax.swing.JButton jButton33;
-    private javax.swing.JButton jButton34;
-    private javax.swing.JButton jButton35;
-    private javax.swing.JButton jButton36;
-    private javax.swing.JButton jButton37;
-    private javax.swing.JButton jButton38;
-    private javax.swing.JButton jButton39;
-    private javax.swing.JButton jButton4;
-    private javax.swing.JButton jButton40;
-    private javax.swing.JButton jButton41;
-    private javax.swing.JButton jButton42;
-    private javax.swing.JButton jButton43;
-    private javax.swing.JButton jButton44;
-    private javax.swing.JButton jButton45;
-    private javax.swing.JButton jButton46;
-    private javax.swing.JButton jButton47;
-    private javax.swing.JButton jButton48;
-    private javax.swing.JButton jButton49;
-    private javax.swing.JButton jButton5;
-    private javax.swing.JButton jButton50;
-    private javax.swing.JButton jButton51;
-    private javax.swing.JButton jButton52;
-    private javax.swing.JButton jButton53;
-    private javax.swing.JButton jButton54;
-    private javax.swing.JButton jButton55;
-    private javax.swing.JButton jButton56;
     private javax.swing.JButton jButton57;
     private javax.swing.JButton jButton58;
-    private javax.swing.JButton jButton6;
-    private javax.swing.JButton jButton7;
-    private javax.swing.JButton jButton8;
-    private javax.swing.JButton jButton9;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
-    private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
-    private javax.swing.JLabel jLabel15;
-    private javax.swing.JLabel jLabel16;
-    private javax.swing.JLabel jLabel17;
-    private javax.swing.JLabel jLabel18;
-    private javax.swing.JLabel jLabel19;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel20;
-    private javax.swing.JLabel jLabel21;
-    private javax.swing.JLabel jLabel22;
-    private javax.swing.JLabel jLabel23;
-    private javax.swing.JLabel jLabel24;
-    private javax.swing.JLabel jLabel25;
-    private javax.swing.JLabel jLabel26;
-    private javax.swing.JLabel jLabel27;
-    private javax.swing.JLabel jLabel28;
     private javax.swing.JLabel jLabel29;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel10;
-    private javax.swing.JPanel jPanel11;
-    private javax.swing.JPanel jPanel12;
-    private javax.swing.JPanel jPanel13;
-    private javax.swing.JPanel jPanel14;
-    private javax.swing.JPanel jPanel15;
-    private javax.swing.JPanel jPanel16;
-    private javax.swing.JPanel jPanel17;
-    private javax.swing.JPanel jPanel18;
-    private javax.swing.JPanel jPanel19;
-    private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel20;
-    private javax.swing.JPanel jPanel21;
-    private javax.swing.JPanel jPanel22;
-    private javax.swing.JPanel jPanel23;
     private javax.swing.JPanel jPanel24;
-    private javax.swing.JPanel jPanel25;
-    private javax.swing.JPanel jPanel26;
-    private javax.swing.JPanel jPanel27;
-    private javax.swing.JPanel jPanel28;
-    private javax.swing.JPanel jPanel29;
-    private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
-    private javax.swing.JPanel jPanel5;
-    private javax.swing.JPanel jPanel6;
-    private javax.swing.JPanel jPanel7;
-    private javax.swing.JPanel jPanel8;
-    private javax.swing.JPanel jPanel9;
     private javax.swing.JPasswordField jPasswordField1;
-    private javax.swing.JPasswordField jPasswordField10;
-    private javax.swing.JPasswordField jPasswordField11;
-    private javax.swing.JPasswordField jPasswordField12;
-    private javax.swing.JPasswordField jPasswordField13;
-    private javax.swing.JPasswordField jPasswordField14;
-    private javax.swing.JPasswordField jPasswordField15;
-    private javax.swing.JPasswordField jPasswordField16;
-    private javax.swing.JPasswordField jPasswordField17;
-    private javax.swing.JPasswordField jPasswordField18;
-    private javax.swing.JPasswordField jPasswordField19;
-    private javax.swing.JPasswordField jPasswordField2;
-    private javax.swing.JPasswordField jPasswordField20;
-    private javax.swing.JPasswordField jPasswordField21;
-    private javax.swing.JPasswordField jPasswordField22;
-    private javax.swing.JPasswordField jPasswordField23;
-    private javax.swing.JPasswordField jPasswordField24;
-    private javax.swing.JPasswordField jPasswordField25;
-    private javax.swing.JPasswordField jPasswordField26;
-    private javax.swing.JPasswordField jPasswordField27;
-    private javax.swing.JPasswordField jPasswordField28;
-    private javax.swing.JPasswordField jPasswordField29;
-    private javax.swing.JPasswordField jPasswordField3;
-    private javax.swing.JPasswordField jPasswordField4;
-    private javax.swing.JPasswordField jPasswordField5;
-    private javax.swing.JPasswordField jPasswordField6;
-    private javax.swing.JPasswordField jPasswordField7;
-    private javax.swing.JPasswordField jPasswordField8;
-    private javax.swing.JPasswordField jPasswordField9;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField10;
-    private javax.swing.JTextField jTextField100;
-    private javax.swing.JTextField jTextField101;
-    private javax.swing.JTextField jTextField102;
-    private javax.swing.JTextField jTextField103;
-    private javax.swing.JTextField jTextField104;
-    private javax.swing.JTextField jTextField105;
-    private javax.swing.JTextField jTextField106;
-    private javax.swing.JTextField jTextField107;
-    private javax.swing.JTextField jTextField108;
-    private javax.swing.JTextField jTextField109;
-    private javax.swing.JTextField jTextField11;
-    private javax.swing.JTextField jTextField110;
-    private javax.swing.JTextField jTextField111;
-    private javax.swing.JTextField jTextField112;
-    private javax.swing.JTextField jTextField113;
-    private javax.swing.JTextField jTextField114;
-    private javax.swing.JTextField jTextField115;
-    private javax.swing.JTextField jTextField116;
-    private javax.swing.JTextField jTextField117;
-    private javax.swing.JTextField jTextField118;
-    private javax.swing.JTextField jTextField119;
-    private javax.swing.JTextField jTextField12;
-    private javax.swing.JTextField jTextField120;
-    private javax.swing.JTextField jTextField121;
-    private javax.swing.JTextField jTextField122;
-    private javax.swing.JTextField jTextField123;
-    private javax.swing.JTextField jTextField124;
-    private javax.swing.JTextField jTextField125;
-    private javax.swing.JTextField jTextField126;
-    private javax.swing.JTextField jTextField127;
-    private javax.swing.JTextField jTextField128;
-    private javax.swing.JTextField jTextField129;
-    private javax.swing.JTextField jTextField13;
-    private javax.swing.JTextField jTextField130;
-    private javax.swing.JTextField jTextField131;
-    private javax.swing.JTextField jTextField132;
-    private javax.swing.JTextField jTextField133;
-    private javax.swing.JTextField jTextField134;
-    private javax.swing.JTextField jTextField135;
-    private javax.swing.JTextField jTextField136;
-    private javax.swing.JTextField jTextField137;
-    private javax.swing.JTextField jTextField138;
-    private javax.swing.JTextField jTextField139;
-    private javax.swing.JTextField jTextField14;
-    private javax.swing.JTextField jTextField140;
     private javax.swing.JTextField jTextField141;
     private javax.swing.JTextField jTextField142;
     private javax.swing.JTextField jTextField143;
     private javax.swing.JTextField jTextField144;
-    private javax.swing.JTextField jTextField145;
-    private javax.swing.JTextField jTextField15;
-    private javax.swing.JTextField jTextField16;
-    private javax.swing.JTextField jTextField17;
-    private javax.swing.JTextField jTextField18;
-    private javax.swing.JTextField jTextField19;
-    private javax.swing.JTextField jTextField2;
-    private javax.swing.JTextField jTextField20;
-    private javax.swing.JTextField jTextField21;
-    private javax.swing.JTextField jTextField22;
-    private javax.swing.JTextField jTextField23;
-    private javax.swing.JTextField jTextField24;
-    private javax.swing.JTextField jTextField25;
-    private javax.swing.JTextField jTextField26;
-    private javax.swing.JTextField jTextField27;
-    private javax.swing.JTextField jTextField28;
-    private javax.swing.JTextField jTextField29;
-    private javax.swing.JTextField jTextField3;
-    private javax.swing.JTextField jTextField30;
-    private javax.swing.JTextField jTextField31;
-    private javax.swing.JTextField jTextField32;
-    private javax.swing.JTextField jTextField33;
-    private javax.swing.JTextField jTextField34;
-    private javax.swing.JTextField jTextField35;
-    private javax.swing.JTextField jTextField36;
-    private javax.swing.JTextField jTextField37;
-    private javax.swing.JTextField jTextField38;
-    private javax.swing.JTextField jTextField39;
-    private javax.swing.JTextField jTextField4;
-    private javax.swing.JTextField jTextField40;
-    private javax.swing.JTextField jTextField41;
-    private javax.swing.JTextField jTextField42;
-    private javax.swing.JTextField jTextField43;
-    private javax.swing.JTextField jTextField44;
-    private javax.swing.JTextField jTextField45;
-    private javax.swing.JTextField jTextField46;
-    private javax.swing.JTextField jTextField47;
-    private javax.swing.JTextField jTextField48;
-    private javax.swing.JTextField jTextField49;
-    private javax.swing.JTextField jTextField5;
-    private javax.swing.JTextField jTextField50;
-    private javax.swing.JTextField jTextField51;
-    private javax.swing.JTextField jTextField52;
-    private javax.swing.JTextField jTextField53;
-    private javax.swing.JTextField jTextField54;
-    private javax.swing.JTextField jTextField55;
-    private javax.swing.JTextField jTextField56;
-    private javax.swing.JTextField jTextField57;
-    private javax.swing.JTextField jTextField58;
-    private javax.swing.JTextField jTextField59;
-    private javax.swing.JTextField jTextField6;
-    private javax.swing.JTextField jTextField60;
-    private javax.swing.JTextField jTextField61;
-    private javax.swing.JTextField jTextField62;
-    private javax.swing.JTextField jTextField63;
-    private javax.swing.JTextField jTextField64;
-    private javax.swing.JTextField jTextField65;
-    private javax.swing.JTextField jTextField66;
-    private javax.swing.JTextField jTextField67;
-    private javax.swing.JTextField jTextField68;
-    private javax.swing.JTextField jTextField69;
-    private javax.swing.JTextField jTextField7;
-    private javax.swing.JTextField jTextField70;
-    private javax.swing.JTextField jTextField71;
-    private javax.swing.JTextField jTextField72;
-    private javax.swing.JTextField jTextField73;
-    private javax.swing.JTextField jTextField74;
-    private javax.swing.JTextField jTextField75;
-    private javax.swing.JTextField jTextField76;
-    private javax.swing.JTextField jTextField77;
-    private javax.swing.JTextField jTextField78;
-    private javax.swing.JTextField jTextField79;
-    private javax.swing.JTextField jTextField8;
-    private javax.swing.JTextField jTextField80;
-    private javax.swing.JTextField jTextField81;
-    private javax.swing.JTextField jTextField82;
-    private javax.swing.JTextField jTextField83;
-    private javax.swing.JTextField jTextField84;
-    private javax.swing.JTextField jTextField85;
-    private javax.swing.JTextField jTextField86;
-    private javax.swing.JTextField jTextField87;
-    private javax.swing.JTextField jTextField88;
-    private javax.swing.JTextField jTextField89;
-    private javax.swing.JTextField jTextField9;
-    private javax.swing.JTextField jTextField90;
-    private javax.swing.JTextField jTextField91;
-    private javax.swing.JTextField jTextField92;
-    private javax.swing.JTextField jTextField93;
-    private javax.swing.JTextField jTextField94;
-    private javax.swing.JTextField jTextField95;
-    private javax.swing.JTextField jTextField96;
-    private javax.swing.JTextField jTextField97;
-    private javax.swing.JTextField jTextField98;
-    private javax.swing.JTextField jTextField99;
+    private javax.swing.JTextField jTextField147;
     // End of variables declaration//GEN-END:variables
 }
