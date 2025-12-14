@@ -8,6 +8,9 @@ package oop_finals;
  *
  * @author Admin
  */
+import java.awt.Color;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import javax.swing.table.DefaultTableModel; // ADD THIS IMPORT
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -27,22 +30,19 @@ public class admin_allusers extends javax.swing.JFrame {
         initComponents();
         setupTable();
         setupTableClickListener();
-        setupSearchBar();
         setupButtons();
         loadUsers();
+        setupSearchBar();
+        setupPlaceholders();
     }
     
     private void setupSearchBar() {
-    // Remove the default text
-    jTextField1.setText("");
-    jTextField1.setToolTipText("Search by Name, Type, ID, or Email");
-    
     // Create a sorter for the table
     sorter = new TableRowSorter<>(tableModel);
     jTable1.setRowSorter(sorter);
     
     // Add document listener for real-time search
-    jTextField1.getDocument().addDocumentListener(new DocumentListener() {
+    Search.getDocument().addDocumentListener(new DocumentListener() {
         @Override
         public void insertUpdate(DocumentEvent e) {
             search();
@@ -59,9 +59,10 @@ public class admin_allusers extends javax.swing.JFrame {
         }
         
         private void search() {
-            String text = jTextField1.getText().trim();
+            String text = Search.getText().trim();
             
-            if (text.length() == 0) {
+            // Ignore placeholder text
+            if (text.length() == 0 || text.equals("Search")) {
                 sorter.setRowFilter(null);
             } else {
                 // Search across all columns
@@ -70,7 +71,33 @@ public class admin_allusers extends javax.swing.JFrame {
         }
     });
 }
+    private void setupPlaceholders() {
+    // Setup username placeholder
+    Search.setText("Search");
+    Search.setForeground(Color.GRAY);
     
+    Search.addFocusListener(new FocusAdapter() {
+        @Override
+        public void focusGained(FocusEvent e) {
+            if (Search.getText().equals("Search")) {
+                Search.setText("");
+                Search.setForeground(new Color(0, 0, 0)); 
+            }
+        }
+        
+        @Override
+        public void focusLost(FocusEvent e) {
+            if (Search.getText().isEmpty()) {
+                Search.setText("Search");
+                Search.setForeground(Color.GRAY);
+                // Clear any filters when placeholder is restored
+                if (sorter != null) {
+                    sorter.setRowFilter(null);
+                }
+            }
+        }
+    });
+}
     private void setupButtons() {
     // Get references to your activate/deactivate buttons
     // Assuming you have buttons in your GUI - adjust names as needed
@@ -302,7 +329,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jLabel1 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
+        Search = new javax.swing.JTextField();
         jButton9 = new javax.swing.JButton();
         jButton10 = new javax.swing.JButton();
 
@@ -421,7 +448,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         jLabel1.setForeground(new java.awt.Color(255, 195, 51));
         jLabel1.setText("ALL USERS");
 
-        jTextField1.setText("jTextField1");
+        Search.setText("Search");
 
         jButton9.setBackground(new java.awt.Color(255, 195, 51));
         jButton9.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -470,7 +497,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addComponent(jLabel1)
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 663, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 428, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, 428, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
@@ -490,7 +517,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
                 .addGap(36, 36, 36)
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 16, Short.MAX_VALUE)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 400, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(29, 29, 29)
@@ -555,6 +582,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
     }
         
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTextField Search;
     private javax.swing.JButton jButton10;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton6;
@@ -570,6 +598,5 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
-    private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
 }
