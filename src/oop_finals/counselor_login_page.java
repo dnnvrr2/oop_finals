@@ -212,71 +212,92 @@ public class counselor_login_page extends javax.swing.JFrame {
     private void loginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginActionPerformed
         // TODO add your handling code here:
         String usernameText = username.getText();
-        String passwordText = String.valueOf(password.getPassword());
+    String passwordText = String.valueOf(password.getPassword());
+    
+    // Validate input
+    if (usernameText.equals("Username") || usernameText.trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, 
+            "Please enter your username!", 
+            "Validation Error", 
+            JOptionPane.WARNING_MESSAGE);
+        username.requestFocus();
+        return;
+    }
+    
+    if (passwordText.equals("Password") || passwordText.trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, 
+            "Please enter your password!", 
+            "Validation Error", 
+            JOptionPane.WARNING_MESSAGE);
+        password.requestFocus();
+        return;
+    }
+    
+    // First check if credentials are correct and get status
+    String checkQuery = "SELECT u.*, c.* FROM users u " +
+                       "JOIN counselors c ON u.user_id = c.user_id " +
+                       "WHERE c.email = ? AND c.password = ?";
+    
+    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+         PreparedStatement pst = conn.prepareStatement(checkQuery)) {
         
-        // Validate input
-        if (usernameText.equals("Username") || usernameText.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                "Please enter your username!", 
-                "Validation Error", 
-                JOptionPane.WARNING_MESSAGE);
-            username.requestFocus();
-            return;
-        }
+        pst.setString(1, usernameText);
+        pst.setString(2, passwordText);
         
-        if (passwordText.equals("Password") || passwordText.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                "Please enter your password!", 
-                "Validation Error", 
-                JOptionPane.WARNING_MESSAGE);
-            password.requestFocus();
-            return;
-        }
-        
-        // FIXED: Correct SQL query for COUNSELOR login
-        // Changed from "JOIN counselor" to "JOIN counselors" (table name is plural)
-        // Changed from "student_id" to "counselor_id"
-        // Changed from "student_dashboard" to "counselor_dashboard"
-        String query = "SELECT u.*, c.* FROM users u " +
-                      "JOIN counselors c ON u.user_id = c.user_id " +
-                      "WHERE c.email = ? AND c.password = ? AND u.status = 'Active'";
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pst = conn.prepareStatement(query)) {
-            
-            pst.setString(1, usernameText);
-            pst.setString(2, passwordText);
-            
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    // Login successful - get COUNSELOR data
+        try (ResultSet rs = pst.executeQuery()) {
+            if (rs.next()) {
+                String status = rs.getString("status");
+                String name = rs.getString("name");
+                String specialization = rs.getString("specialization");
+                
+                // Check status
+                if (status.equals("Active")) {
+                    // Login successful
                     int counselorId = rs.getInt("counselor_id");
-                    String name = rs.getString("name");
-                    String specialization = rs.getString("specialization");
                     
                     JOptionPane.showMessageDialog(this, 
                         "Welcome, " + name + "!\nSpecialization: " + specialization, 
                         "Login Successful", 
                         JOptionPane.INFORMATION_MESSAGE);
                     
-                    // Open COUNSELOR dashboard with proper data
                     this.dispose();
                     new counselor_dashboard(counselorId, name).setVisible(true);
-                } else {
+                    
+                } else if (status.equals("Pending")) {
                     JOptionPane.showMessageDialog(this, 
-                        "Invalid email or password!\nPlease check your credentials and try again.", 
-                        "Login Failed", 
+                        "Your account is pending admin approval.\nPlease wait for approval before logging in.", 
+                        "Account Pending", 
+                        JOptionPane.WARNING_MESSAGE);
+                    
+                } else if (status.equals("Rejected")) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Your registration has been rejected by the administrator.\nPlease contact the guidance office for more information.", 
+                        "Account Rejected", 
+                        JOptionPane.ERROR_MESSAGE);
+                    
+                } else if (status.equals("Inactive")) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Your account has been deactivated.\nPlease contact the administrator.", 
+                        "Account Inactive", 
                         JOptionPane.ERROR_MESSAGE);
                 }
+                
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Invalid email or password!\nPlease check your credentials and try again.", 
+                    "Login Failed", 
+                    JOptionPane.ERROR_MESSAGE);
             }
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Database error during login", e);
-            JOptionPane.showMessageDialog(this, 
-                "Database connection error: " + e.getMessage(), 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
         }
+        
+    } catch (SQLException e) {
+        logger.log(java.util.logging.Level.SEVERE, "Database error during login", e);
+        JOptionPane.showMessageDialog(this, 
+            "Database connection error: " + e.getMessage(), 
+            "Error", 
+            JOptionPane.ERROR_MESSAGE);
+    }
+    
     }//GEN-LAST:event_loginActionPerformed
 
     /**

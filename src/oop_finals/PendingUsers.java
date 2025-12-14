@@ -320,20 +320,20 @@ public class PendingUsers extends javax.swing.JFrame {
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null}
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null}
             },
             new String [] {
-                "User ID", "Name", "Type", "Extra Info", "Status"
+                "User ID", "Name", "Type", "Email", "Extra Info", "ID Number", "Status"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
+                java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false
+                false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -504,11 +504,155 @@ public class PendingUsers extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
-        updateUserStatus("Inactive");
+    int row = jTable1.getSelectedRow();
+
+    if (row == -1) {
+        JOptionPane.showMessageDialog(this,
+                "Please select a user first.",
+                "No selection",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    int userId = (int) jTable1.getValueAt(row, 0);
+    String userName = jTable1.getValueAt(row, 1).toString();
+    String userType = jTable1.getValueAt(row, 2).toString();
+    
+    // Ask for rejection reason
+    String reason = JOptionPane.showInputDialog(this,
+            "Enter reason for rejection (optional):",
+            "Reject User",
+            JOptionPane.QUESTION_MESSAGE);
+    
+    // If user cancelled the dialog, return
+    if (reason == null) {
+        return;
+    }
+    
+    int confirm = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to reject " + userName + "?\nThis will prevent them from logging in.",
+            "Confirm Rejection",
+            JOptionPane.YES_NO_OPTION);
+
+    if (confirm != JOptionPane.YES_OPTION) {
+        return;
+    }
+
+    try (Connection con = DatabaseConnection.getConnection()) {
+        con.setAutoCommit(false);
+
+        // Update USERS table to Rejected status
+        String updateUser = "UPDATE users SET status = ? WHERE user_id = ?";
+        try (PreparedStatement ps = con.prepareStatement(updateUser)) {
+            ps.setString(1, "Rejected");
+            ps.setInt(2, userId);
+            ps.executeUpdate();
+        }
+
+        // Update role-specific table
+        String roleSql;
+        if (userType.equalsIgnoreCase("Student")) {
+            roleSql = "UPDATE students SET status = ? WHERE user_id = ?";
+        } else if (userType.equalsIgnoreCase("Counselor")) {
+            roleSql = "UPDATE counselors SET status = ? WHERE user_id = ?";
+        } else {
+            con.rollback();
+            JOptionPane.showMessageDialog(this, "Unknown user type.");
+            return;
+        }
+
+        try (PreparedStatement ps = con.prepareStatement(roleSql)) {
+            ps.setString(1, "Rejected");
+            ps.setInt(2, userId);
+            ps.executeUpdate();
+        }
+
+        con.commit();
+
+        JOptionPane.showMessageDialog(this,
+                "User rejected successfully.\n" + userName + " will not be able to login.",
+                "Status Updated",
+                JOptionPane.INFORMATION_MESSAGE);
+        
+        loadPendingUsers();
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, 
+                "Update failed:\n" + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
+    
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
-        updateUserStatus("Active");
+        int row = jTable1.getSelectedRow();
+
+    if (row == -1) {
+        JOptionPane.showMessageDialog(this,
+                "Please select a user first.",
+                "No selection",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    int userId = (int) jTable1.getValueAt(row, 0);
+    String userName = jTable1.getValueAt(row, 1).toString();
+    String userType = jTable1.getValueAt(row, 2).toString();
+    
+    int confirm = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to approve " + userName + "?",
+            "Confirm Approval",
+            JOptionPane.YES_NO_OPTION);
+
+    if (confirm != JOptionPane.YES_OPTION) {
+        return;
+    }
+
+    try (Connection con = DatabaseConnection.getConnection()) {
+        con.setAutoCommit(false);
+
+        // Update USERS table to Active status
+        String updateUser = "UPDATE users SET status = ? WHERE user_id = ?";
+        try (PreparedStatement ps = con.prepareStatement(updateUser)) {
+            ps.setString(1, "Active");
+            ps.setInt(2, userId);
+            ps.executeUpdate();
+        }
+
+        // Update role-specific table
+        String roleSql;
+        if (userType.equalsIgnoreCase("Student")) {
+            roleSql = "UPDATE students SET status = ? WHERE user_id = ?";
+        } else if (userType.equalsIgnoreCase("Counselor")) {
+            roleSql = "UPDATE counselors SET status = ? WHERE user_id = ?";
+        } else {
+            con.rollback();
+            JOptionPane.showMessageDialog(this, "Unknown user type.");
+            return;
+        }
+
+        try (PreparedStatement ps = con.prepareStatement(roleSql)) {
+            ps.setString(1, "Active");
+            ps.setInt(2, userId);
+            ps.executeUpdate();
+        }
+
+        con.commit();
+
+        JOptionPane.showMessageDialog(this,
+                "User approved successfully!\n" + userName + " can now login.",
+                "Status Updated",
+                JOptionPane.INFORMATION_MESSAGE);
+        
+        loadPendingUsers();
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, 
+                "Update failed:\n" + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
     }//GEN-LAST:event_jButton10ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed

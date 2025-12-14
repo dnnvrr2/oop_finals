@@ -47,7 +47,7 @@ public class counselor_regis extends javax.swing.JFrame {
     }
 
     private boolean counselorLicenseExists(String licenseId) {
-        String sql = "SELECT 1 FROM counselors WHERE license_id = ?";
+        String sql = "SELECT 1 FROM counselors WHERE license_number = ?";
         try (Connection con = DatabaseConnection.getConnection();
             PreparedStatement ps = con.prepareStatement(sql)) {
 
@@ -364,8 +364,8 @@ public class counselor_regis extends javax.swing.JFrame {
         "VALUES ('Counselor', ?, ?, ?, 'Pending')";
 
     String insertCounselor =
-        "INSERT INTO counselors (user_id, name, email, specialization, license_id, status) " +
-        "VALUES (?, ?, ?, ?, ?, 'Pending')";
+    "INSERT INTO counselors (user_id, name, email, specialization, license_number, password, status) " +
+    "VALUES (?, ?, ?, ?, ?, ?, 'Pending')";
 
     try (Connection con = DatabaseConnection.getConnection()) {
         con.setAutoCommit(false);
@@ -394,6 +394,7 @@ public class counselor_regis extends javax.swing.JFrame {
             ps.setString(3, email);
             ps.setString(4, specialization);
             ps.setString(5, licenseId);
+            ps.setString(6, password);
             ps.executeUpdate();
         }
 
