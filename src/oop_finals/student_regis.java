@@ -64,8 +64,9 @@ public class student_regis extends javax.swing.JFrame {
     private void setupPlaceholders(){
         setupPlaceholder(jTextField1, "Full name");
         setupPlaceholder(jTextField2, "Email");
-        setupPlaceholder(jTextField3, "Year level & Program");
-        setupPlaceholder(jTextField4, "ID num");
+        setupPlaceholder(jTextField3, "Year level");
+        setupPlaceholder(jTextField6, "Course");
+        setupPlaceholder(jTextField4, "ID Number");
         setupPasswordPlaceholder(jTextField5, "Password");
         setupPasswordPlaceholder(jPasswordField1, "Confirm Password");
     }
@@ -209,7 +210,7 @@ public class student_regis extends javax.swing.JFrame {
         });
 
         jTextField4.setForeground(new java.awt.Color(255, 195, 51));
-        jTextField4.setText("ID num");
+        jTextField4.setText("ID Number");
 
         jTextField5.setForeground(new java.awt.Color(255, 195, 51));
         jTextField5.setText("Password");
@@ -234,6 +235,11 @@ public class student_regis extends javax.swing.JFrame {
 
         jTextField6.setForeground(new java.awt.Color(255, 195, 51));
         jTextField6.setText("Course");
+        jTextField6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField6ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -323,7 +329,7 @@ public class student_regis extends javax.swing.JFrame {
         email.isEmpty() || email.equals("Email") ||
         yearlvl.isEmpty() || yearlvl.equals("Year level") ||
         course.isEmpty() || course.equals("Course") ||
-        studentNumber.isEmpty() || studentNumber.equals("ID num") ||
+        studentNumber.isEmpty() || studentNumber.equals("ID Number") ||
         password.isEmpty() || password.equals("Password") ||
         confirmPassword.isEmpty()) {
 
@@ -444,6 +450,10 @@ public class student_regis extends javax.swing.JFrame {
     private void jTextField3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField3ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField3ActionPerformed
+
+    private void jTextField6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField6ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField6ActionPerformed
 
     /**
      * @param args the command line arguments
