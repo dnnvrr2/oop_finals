@@ -26,12 +26,8 @@ public class student_dashboard extends javax.swing.JFrame {
 
     // Default constructor
     public student_dashboard() {
-        this.currentStudentId = 1;
-        this.currentStudentName = "John Doe";
         initComponents();
-        // Test with student ID 1 (John Doe)
-        
-        loadDashboardData();
+        setLocationRelativeTo(null);
     }
     
     // Constructor with student information (call this from login page)
@@ -523,33 +519,35 @@ public class student_dashboard extends javax.swing.JFrame {
 
     private void viewallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewallActionPerformed
         // TODO add your handling code here:
-        student_myappointment d = new student_myappointment();
+        student_myappointment d = new student_myappointment(currentStudentId, currentStudentName);
         d.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_viewallActionPerformed
 
     private void logoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoActionPerformed
         // TODO add your handling code here:
-        loadDashboardData();
+        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
+        d.setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_logoActionPerformed
 
     private void myappointmentsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_myappointmentsActionPerformed
         // TODO add your handling code here:
-        student_myappointment b = new student_myappointment();
+        student_myappointment b = new student_myappointment(currentStudentId, currentStudentName);
         b.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_myappointmentsActionPerformed
 
     private void view_profileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_view_profileActionPerformed
         // TODO add your handling code here:
-        student_viewprofile c = new student_viewprofile();
+        student_viewprofile c = new student_viewprofile(currentStudentId, currentStudentName);
         c.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_view_profileActionPerformed
 
     private void bookappointmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bookappointmentActionPerformed
         // TODO add your handling code here:
-        student_bookappointment a = new student_bookappointment();
+        student_bookappointment a = new student_bookappointment(currentStudentId, currentStudentName);
         a.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_bookappointmentActionPerformed

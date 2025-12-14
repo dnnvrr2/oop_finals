@@ -47,8 +47,9 @@ public class student_bookappointment extends javax.swing.JFrame {
         counselordetails.setEditable(false);
         counselordetails.setText("Select a specialization and counselor to view details.");
         initializeCalendar();
-}
-    
+    }
+
+
     public student_bookappointment(int studentId, String studentName) {
         initComponents();
         this.currentStudentId = studentId;
@@ -164,6 +165,8 @@ public class student_bookappointment extends javax.swing.JFrame {
         });
         
         updateCalendarDisplay();
+        updateMonthLabel(); 
+        updateNavigationButtons();
     }
 
 private void updateCalendarDisplay() {
@@ -313,21 +316,31 @@ public LocalDate getSelectedDate() {
     }
 
     public void navigateToPreviousMonth() {
-        currentMonth = currentMonth.minusMonths(1);
-        selectedDate = null;
-        updateCalendarDisplay();
+        YearMonth now = YearMonth.now();
+        
+            if (currentMonth.isAfter(now)) {
+            currentMonth = currentMonth.minusMonths(1);
+            selectedDate = null;
+            updateCalendarDisplay();
+        }
     }
 
     public void navigateToNextMonth() {
-        currentMonth = currentMonth.plusMonths(1);
-        selectedDate = null;
-        updateCalendarDisplay();
+        YearMonth now = YearMonth.now();
+        YearMonth maxMonth = now.plusMonths(1);
+            if (currentMonth.isBefore(maxMonth)) {
+            currentMonth = currentMonth.plusMonths(1);
+            selectedDate = null;
+            updateCalendarDisplay();
+        }
     }
 
     public void navigateToToday() {
         currentMonth = YearMonth.now();
         selectedDate = null;
         updateCalendarDisplay();
+        updateMonthLabel();
+        updateNavigationButtons();
     }
 
 // ============================================================================
@@ -521,6 +534,9 @@ public LocalDate getSelectedDate() {
         jLabel8 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        previousmonth = new javax.swing.JButton();
+        currentmonth = new javax.swing.JLabel();
+        nextmonth = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -582,7 +598,7 @@ public LocalDate getSelectedDate() {
                 .addComponent(profilelogo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(viewprofile)
-                .addContainerGap(99, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -713,6 +729,25 @@ public LocalDate getSelectedDate() {
         ));
         jScrollPane1.setViewportView(jTable1);
 
+        previousmonth.setText("◀");
+        previousmonth.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                previousmonthActionPerformed(evt);
+            }
+        });
+
+        currentmonth.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        currentmonth.setForeground(new java.awt.Color(255, 255, 255));
+        currentmonth.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        currentmonth.setText("Month Year");
+
+        nextmonth.setText("▶");
+        nextmonth.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                nextmonthActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -738,25 +773,36 @@ public LocalDate getSelectedDate() {
                             .addGroup(jPanel2Layout.createSequentialGroup()
                                 .addGap(0, 0, Short.MAX_VALUE)
                                 .addComponent(nextpage, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jLabel6, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
-                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel3)
-                                            .addComponent(specialization, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                                .addComponent(jLabel8)
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 168, Short.MAX_VALUE))
-                                            .addComponent(counselor, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addGroup(jPanel2Layout.createSequentialGroup()
-                                        .addGap(0, 0, Short.MAX_VALUE)
-                                        .addComponent(select))
-                                    .addComponent(jScrollPane2))
-                                .addGap(18, 18, 18)
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 293, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
+                                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jLabel3)
+                                                    .addComponent(specialization, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addGroup(jPanel2Layout.createSequentialGroup()
+                                                        .addComponent(jLabel8)
+                                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                                    .addComponent(counselor, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                                .addGap(0, 0, Short.MAX_VALUE)
+                                                .addComponent(select))
+                                            .addComponent(jScrollPane2))
+                                        .addGap(18, 18, 18))
+                                    .addGroup(jPanel2Layout.createSequentialGroup()
+                                        .addComponent(jLabel6)
+                                        .addGap(296, 296, 296)))
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addGroup(jPanel2Layout.createSequentialGroup()
+                                        .addComponent(previousmonth)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(currentmonth)
+                                        .addGap(64, 64, 64)
+                                        .addComponent(nextmonth))
+                                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 293, javax.swing.GroupLayout.PREFERRED_SIZE))))))
                 .addGap(40, 40, 40))
         );
         jPanel2Layout.setVerticalGroup(
@@ -777,7 +823,12 @@ public LocalDate getSelectedDate() {
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jLabel6)
-                .addGap(24, 24, 24)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(previousmonth)
+                    .addComponent(currentmonth)
+                    .addComponent(nextmonth))
+                .addGap(1, 1, 1)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(jLabel8))
@@ -787,14 +838,14 @@ public LocalDate getSelectedDate() {
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(specialization, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(counselor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jScrollPane2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(select)
-                .addGap(18, 18, 18)
+                        .addComponent(select))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 317, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
                 .addComponent(nextpage)
-                .addContainerGap(89, Short.MAX_VALUE))
+                .addGap(45, 45, 45))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -813,35 +864,72 @@ public LocalDate getSelectedDate() {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void updateMonthLabel() {
+        // Format: "January 2025"
+        java.time.format.DateTimeFormatter formatter = 
+            java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy");
+        currentmonth.setText(currentMonth.format(formatter));
+    }
+    
+    private void updateNavigationButtons() {
+        YearMonth now = YearMonth.now();
+        YearMonth maxMonth = now.plusMonths(1); // Only allow up to next month
+
+        // Disable previous button if we're at current month
+        previousmonth.setEnabled(!currentMonth.equals(now));
+
+        // Disable next button if we're at max month (next month)
+        nextmonth.setEnabled(!currentMonth.equals(maxMonth));
+    }
+    
     private void bookappointmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bookappointmentActionPerformed
         // TODO add your handling code here:
-        student_bookappointment a = new student_bookappointment();
+        student_bookappointment a = new student_bookappointment(currentStudentId, currentStudentName);
         a.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_bookappointmentActionPerformed
 
     private void viewprofileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewprofileActionPerformed
         // TODO add your handling code here:
-        student_viewprofile b = new student_viewprofile();
+        student_viewprofile b = new student_viewprofile(currentStudentId, currentStudentName);
         b.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_viewprofileActionPerformed
 
     private void myappointmetsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_myappointmetsActionPerformed
         // TODO add your handling code here:
-        student_myappointment c = new student_myappointment();
+        student_myappointment c = new student_myappointment(currentStudentId, currentStudentName);
         c.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_myappointmetsActionPerformed
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
         // TODO add your handling code here:
+        int confirmation = JOptionPane.showConfirmDialog(this, 
+            "Are you sure you want to logout?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE);
+    
+        if (confirmation == JOptionPane.YES_OPTION) {
+            try {
+                this.dispose();
+                new login_page().setVisible(true);
+            } catch (Exception e) {
+                logger.log(java.util.logging.Level.SEVERE, "Error during logout", e);
+                JOptionPane.showMessageDialog(this, 
+                    "Error during logout", 
+                    "Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }//GEN-LAST:event_logoutActionPerformed
 
     private void logo_homeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logo_homeActionPerformed
         // TODO add your handling code here:
+        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
+        d.setVisible(true);
         this.dispose();
-        new student_dashboard().setVisible(true);
     }//GEN-LAST:event_logo_homeActionPerformed
 
     private void nextpageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nextpageActionPerformed
@@ -886,59 +974,59 @@ public LocalDate getSelectedDate() {
     private void selectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectActionPerformed
         // TODO add your handling code here:
         String selectedSpecialization = (String) specialization.getSelectedItem();
-    String selectedCounselor = (String) counselor.getSelectedItem();
-    
-    if (selectedSpecialization == null || selectedSpecialization.equals("-- Select Specialization --")) {
-        JOptionPane.showMessageDialog(this, "Please select a specialization first.",
+        String selectedCounselor = (String) counselor.getSelectedItem();
+
+        if (selectedSpecialization == null || selectedSpecialization.equals("-- Select Specialization --")) {
+            JOptionPane.showMessageDialog(this, "Please select a specialization first.",
                 "Selection Required", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    if (selectedCounselor == null || selectedCounselor.equals("-- Select Counselor --")) {
-        JOptionPane.showMessageDialog(this, "Please select a counselor.",
+            return;
+        }
+
+        if (selectedCounselor == null || selectedCounselor.equals("-- Select Counselor --")) {
+            JOptionPane.showMessageDialog(this, "Please select a counselor.",
                 "Selection Required", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    int confirm = JOptionPane.showConfirmDialog(this,
-            "You have selected:\nCounselor: " + selectedCounselor + 
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "You have selected:\nCounselor: " + selectedCounselor +
             "\nSpecialization: " + selectedSpecialization + "\n\nProceed?",
             "Confirm Selection",
             JOptionPane.YES_NO_OPTION);
-    
-    if (confirm == JOptionPane.YES_OPTION) {
-        JOptionPane.showMessageDialog(this, "Counselor selected successfully!",
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            JOptionPane.showMessageDialog(this, "Counselor selected successfully!",
                 "Success", JOptionPane.INFORMATION_MESSAGE);
-    }
+        }
     }//GEN-LAST:event_selectActionPerformed
 
     private void counselorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_counselorActionPerformed
         // TODO add your handling code here:
         String selectedCounselor = (String) counselor.getSelectedItem();
 
-    if (selectedCounselor != null && !selectedCounselor.equals("-- Select Counselor --")) {
-        displayCounselorInfo(selectedCounselor);
-        
-        // Update selected counselor ID for calendar
-        selectedCounselorId = getSelectedCounselorId();
-        
-        // Refresh calendar to show availability
-        if (selectedCounselorId != -1) {
-            selectedDate = null; // Clear selection when changing counselor
+        if (selectedCounselor != null && !selectedCounselor.equals("-- Select Counselor --")) {
+            displayCounselorInfo(selectedCounselor);
+
+            // Update selected counselor ID for calendar
+            selectedCounselorId = getSelectedCounselorId();
+
+            // Refresh calendar to show availability
+            if (selectedCounselorId != -1) {
+                selectedDate = null; // Clear selection when changing counselor
+                updateCalendarDisplay();
+            }
+        } else {
+            counselordetails.setText("Select a counselor to view details.");
+            selectedCounselorId = -1;
+            selectedDate = null;
             updateCalendarDisplay();
         }
-    } else {
-        counselordetails.setText("Select a counselor to view details.");
-        selectedCounselorId = -1;
-        selectedDate = null;
-        updateCalendarDisplay();
-    }
     }//GEN-LAST:event_counselorActionPerformed
 
     private void specializationActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_specializationActionPerformed
         // TODO add your handling code here:
         String selectedSpecialization = (String) specialization.getSelectedItem();
-    
+
         if (selectedSpecialization != null && !selectedSpecialization.equals("-- Select Specialization --")) {
             loadCounselorsBySpecialization(selectedSpecialization);
         } else {
@@ -948,6 +1036,22 @@ public LocalDate getSelectedDate() {
             counselordetails.setText("Select a specialization and counselor to view details.");
         }
     }//GEN-LAST:event_specializationActionPerformed
+
+    private void previousmonthActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_previousmonthActionPerformed
+        // TODO add your handling code here:
+        navigateToPreviousMonth();
+        updateMonthLabel();
+        updateCalendarDisplay();
+        updateNavigationButtons();
+    }//GEN-LAST:event_previousmonthActionPerformed
+
+    private void nextmonthActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nextmonthActionPerformed
+        // TODO add your handling code here:
+        navigateToNextMonth();
+        updateMonthLabel();
+        updateCalendarDisplay();
+        updateNavigationButtons();
+    }//GEN-LAST:event_nextmonthActionPerformed
 
     /**
      * @param args the command line arguments
@@ -981,6 +1085,7 @@ public LocalDate getSelectedDate() {
     private javax.swing.JLabel booklogo;
     private javax.swing.JComboBox<String> counselor;
     private javax.swing.JTextArea counselordetails;
+    private javax.swing.JLabel currentmonth;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel6;
@@ -995,7 +1100,9 @@ public LocalDate getSelectedDate() {
     private javax.swing.JButton logo_home;
     private javax.swing.JButton logout;
     private javax.swing.JButton myappointmets;
+    private javax.swing.JButton nextmonth;
     private javax.swing.JButton nextpage;
+    private javax.swing.JButton previousmonth;
     private javax.swing.JLabel profilelogo;
     private javax.swing.JButton select;
     private javax.swing.JComboBox<String> specialization;

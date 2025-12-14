@@ -4,6 +4,8 @@
  */
 package oop_finals;
 
+import java.sql.*;
+import javax.swing.JOptionPane;
 /**
  *
  * @author Admin
@@ -11,64 +13,211 @@ package oop_finals;
 public class student_bookappointment2nd extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_bookappointment2nd.class.getName());
+    
+    private int currentStudentId;
+    private String currentStudentName;
+    private int selectedCounselorId;
+    private java.util.Date selectedDate;
+    
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "";
 
     /**
      * Creates new form student_bookappointment2nd
      */
     public student_bookappointment2nd() {
         initComponents();
+        setLocationRelativeTo(null);
         
         jDateChooser1.setDateFormatString("yyyy-MM-dd");
         jDateChooser1.setMinSelectableDate(new java.util.Date());
-
-        // Populate time slots for JComboBox (8 AM to 5 PM)
         populateTimeSlots();
-}
-
-    private void populateTimeSlots() {
-    java.util.List<String> timeSlots = new java.util.ArrayList<>();
-    
-    // Generate time slots from 8 AM to 4:30 PM (excluding 12 PM to 1 PM)
-    for (int hour = 8; hour <= 16; hour++) { // Changed from 17 to 16
-        // Skip 12 PM hour (lunch break)
-        if (hour == 12) {
-            continue;
-        }
-        
-        for (int minute = 0; minute < 60; minute += 30) { // 30-minute intervals
-            
-            // Stop at 4:30 PM (16:30)
-            if (hour == 16 && minute == 30) {
-                // Convert to 12-hour format
-                int displayHour = 4;
-                String ampm = "PM";
-                String timeSlot = String.format("%02d:%02d %s", displayHour, minute, ampm);
-                timeSlots.add(timeSlot);
-                break; // Exit the minute loop
-            }
-            
-            // Convert to 12-hour format
-            int displayHour = hour;
-            String ampm = "AM";
-            
-            if (hour >= 12) {
-                ampm = "PM";
-                if (hour > 12) {
-                    displayHour = hour - 12;
-                }
-            }
-            
-            // Format time string
-            String timeSlot = String.format("%02d:%02d %s", displayHour, minute, ampm);
-            timeSlots.add(timeSlot);
-        }
     }
     
-    // Set the model for JComboBox
-    jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(
-        timeSlots.toArray(new String[0])
-    ));
+    public student_bookappointment2nd(int studentId, String studentName, int counselorId, java.util.Date appointmentDate) {
+        initComponents();
+        this.currentStudentId = studentId;
+        this.currentStudentName = studentName;
+        this.selectedCounselorId = counselorId;
+        this.selectedDate = appointmentDate;
+        
+        setLocationRelativeTo(null);
+        jLabel5.setText(studentName + "!");
+        
+        // Set the pre-selected date
+        jDateChooser1.setDate(appointmentDate);
+        jDateChooser1.setDateFormatString("yyyy-MM-dd");
+        jDateChooser1.setMinSelectableDate(new java.util.Date());
+        
+        populateTimeSlots();
+    }
+
+    private void populateTimeSlots() {
+        java.util.List<String> timeSlots = new java.util.ArrayList<>();
+        
+        // Generate time slots from 8 AM to 4:30 PM (excluding 12 PM to 1 PM)
+        for (int hour = 8; hour <= 16; hour++) {
+            // Skip 12 PM hour (lunch break)
+            if (hour == 12) {
+                continue;
+            }
+            
+            for (int minute = 0; minute < 60; minute += 30) {
+                
+                // Stop at 4:30 PM (16:30)
+                if (hour == 16 && minute == 30) {
+                    int displayHour = 4;
+                    String ampm = "PM";
+                    String timeSlot = String.format("%02d:%02d %s", displayHour, minute, ampm);
+                    timeSlots.add(timeSlot);
+                    break;
+                }
+                
+                // Convert to 12-hour format
+                int displayHour = hour;
+                String ampm = "AM";
+                
+                if (hour >= 12) {
+                    ampm = "PM";
+                    if (hour > 12) {
+                        displayHour = hour - 12;
+                    }
+                }
+                
+                String timeSlot = String.format("%02d:%02d %s", displayHour, minute, ampm);
+                timeSlots.add(timeSlot);
+            }
+        }
+        
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(
+            timeSlots.toArray(new String[0])
+        ));
+    }
+    
+    private void bookAppointment() {
+         java.util.Date selectedDate = jDateChooser1.getDate();
+    String selectedTime = (String) jComboBox1.getSelectedItem();
+    String reason = jTextArea1.getText().trim();
+
+    // Validate inputs
+    if (selectedDate == null) {
+        JOptionPane.showMessageDialog(this, 
+            "Please select a date", 
+            "Validation Error", 
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    if (selectedTime == null || selectedTime.isEmpty()) {
+        JOptionPane.showMessageDialog(this, 
+            "Please select a time", 
+            "Validation Error", 
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    // Convert time from 12-hour format to 24-hour format for database
+    String time24Hour = convertTo24Hour(selectedTime);
+    
+    // Check if time slot is already taken
+    if (isTimeSlotTaken(selectedDate, time24Hour)) {
+        JOptionPane.showMessageDialog(this,
+            "This time slot is already booked. Please select another time.",
+            "Time Slot Unavailable",
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+    // Insert appointment into database
+    String insertQuery = "INSERT INTO appointments (student_id, counselor_id, appointment_date, " +
+                       "appointment_time, reason, status, created_at, updated_at) " +
+                       "VALUES (?, ?, ?, ?, ?, 'Pending', NOW(), NOW())";
+    
+    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+         PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
+        
+        pstmt.setInt(1, currentStudentId);
+        pstmt.setInt(2, selectedCounselorId);
+        pstmt.setDate(3, new java.sql.Date(selectedDate.getTime()));
+        pstmt.setTime(4, java.sql.Time.valueOf(time24Hour + ":00"));
+        pstmt.setString(5, reason.isEmpty() ? null : reason);
+        
+        int rowsAffected = pstmt.executeUpdate();
+        
+        if (rowsAffected > 0) {
+            java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
+            String dateStr = dateFormat.format(selectedDate);
+            
+            JOptionPane.showMessageDialog(this, 
+                "Appointment request submitted successfully!\n\n" +
+                "Date: " + dateStr + "\n" +
+                "Time: " + selectedTime + "\n" +
+                "Status: Pending approval\n\n" +
+                "You will be notified once the counselor approves your appointment.", 
+                "Success", 
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            // Navigate back to dashboard
+            student_dashboard dashboard = new student_dashboard(currentStudentId, currentStudentName);
+            dashboard.setVisible(true);
+            this.dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, 
+                "Failed to submit appointment request. Please try again.", 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+        
+    } catch (SQLException e) {
+        logger.log(java.util.logging.Level.SEVERE, "Error booking appointment", e);
+        JOptionPane.showMessageDialog(this, 
+            "Database error: " + e.getMessage(), 
+            "Error", 
+            JOptionPane.ERROR_MESSAGE);
+    }
 }
+    private boolean isTimeSlotTaken(java.util.Date date, String time24Hour) {
+    String query = "SELECT COUNT(*) as count FROM appointments " +
+                  "WHERE counselor_id = ? " +
+                  "AND appointment_date = ? " +
+                  "AND appointment_time = ? " +
+                  "AND status IN ('Upcoming', 'Pending')";
+    
+    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        
+        pstmt.setInt(1, selectedCounselorId);
+        pstmt.setDate(2, new java.sql.Date(date.getTime()));
+        pstmt.setTime(3, java.sql.Time.valueOf(time24Hour + ":00"));
+        
+        ResultSet rs = pstmt.executeQuery();
+        
+        if (rs.next()) {
+            return rs.getInt("count") > 0;
+        }
+        
+    } catch (SQLException e) {
+        logger.log(java.util.logging.Level.SEVERE, "Error checking time slot", e);
+    }
+    
+    return false;
+}
+    
+    /**
+     * Convert 12-hour time format to 24-hour format
+     */
+    private String convertTo24Hour(String time12Hour) {
+        try {
+            java.text.SimpleDateFormat displayFormat = new java.text.SimpleDateFormat("hh:mm a");
+            java.text.SimpleDateFormat dbFormat = new java.text.SimpleDateFormat("HH:mm");
+            java.util.Date date = displayFormat.parse(time12Hour);
+            return dbFormat.format(date);
+        } catch (java.text.ParseException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error parsing time", e);
+            return "08:00"; // Default to 8:00 AM
+        }
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -169,7 +318,7 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
                 .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton5)
-                .addContainerGap(93, Short.MAX_VALUE))
+                .addContainerGap(105, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -292,7 +441,7 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
                             .addComponent(jLabel6)
                             .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel9))
-                        .addContainerGap(553, Short.MAX_VALUE))
+                        .addContainerGap(565, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING)
@@ -343,10 +492,7 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -358,26 +504,45 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
-        student_bookappointment a = new student_bookappointment();
+        student_bookappointment a = new student_bookappointment(currentStudentId, currentStudentName);
         a.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
-        student_myappointment b = new student_myappointment();
+        student_myappointment b = new student_myappointment(currentStudentId, currentStudentName);
         b.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
         // TODO add your handling code here:
+        int confirmation = JOptionPane.showConfirmDialog(this, 
+            "Are you sure you want to logout?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE);
+    
+    if (confirmation == JOptionPane.YES_OPTION) {
+        try {
+            this.dispose();
+            new login_page().setVisible(true);
+        } catch (Exception e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error during logout", e);
+            JOptionPane.showMessageDialog(this, 
+                "Error during logout", 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
+        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
+        d.setVisible(true);
         this.dispose();
-        new student_dashboard().setVisible(true);
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
@@ -412,9 +577,7 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
         String dateStr = dateFormat.format(selectedDate);
 
         // Display or save the appointment
-        System.out.println("Date: " + dateStr);
-        System.out.println("Time: " + selectedTime);
-        System.out.println("Reason: " + reason);
+        bookAppointment();
 
         // Show confirmation
         javax.swing.JOptionPane.showMessageDialog(this, 
@@ -425,7 +588,7 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         // TODO add your handling code here:
-        student_viewprofile d = new student_viewprofile();
+        student_viewprofile d = new student_viewprofile(currentStudentId, currentStudentName);
         d.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton5ActionPerformed
