@@ -4,6 +4,8 @@
  */
 package oop_finals;
 
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author Admin
@@ -13,7 +15,7 @@ import javax.swing.JOptionPane;
 
 public class student_dashboard extends javax.swing.JFrame {
     
-     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_dashboard.class.getName());
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_dashboard.class.getName());
     private int currentStudentId;
     private String currentStudentName;
     
@@ -189,7 +191,6 @@ public class student_dashboard extends javax.swing.JFrame {
         book = new javax.swing.JLabel();
         welcome = new javax.swing.JLabel();
         user = new javax.swing.JLabel();
-        logout = new javax.swing.JButton();
         logo = new javax.swing.JButton();
         dashboard = new javax.swing.JLabel();
         jPanel5 = new javax.swing.JPanel();
@@ -208,6 +209,7 @@ public class student_dashboard extends javax.swing.JFrame {
         jScrollPane2 = new javax.swing.JScrollPane();
         upcomingappointment2 = new javax.swing.JTextArea();
         viewall = new javax.swing.JButton();
+        logout = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setBackground(new java.awt.Color(38, 36, 68));
@@ -290,16 +292,6 @@ public class student_dashboard extends javax.swing.JFrame {
 
         user.setForeground(new java.awt.Color(255, 255, 255));
         user.setText("USER!");
-
-        logout.setBackground(new java.awt.Color(204, 0, 0));
-        logout.setForeground(new java.awt.Color(255, 255, 255));
-        logout.setText("LOGOUT");
-        logout.setBorderPainted(false);
-        logout.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                logoutActionPerformed(evt);
-            }
-        });
 
         logo.setBackground(new java.awt.Color(38, 36, 68));
         logo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/oop_finals/images/logo.png"))); // NOI18N
@@ -399,14 +391,14 @@ public class student_dashboard extends javax.swing.JFrame {
                     .addGroup(jPanel5Layout.createSequentialGroup()
                         .addGap(157, 157, 157)
                         .addComponent(upcominglabel)
-                        .addGap(143, 143, 143)
+                        .addGap(135, 135, 135)
                         .addComponent(pendinglabel)
-                        .addGap(133, 133, 133)
+                        .addGap(142, 142, 142)
                         .addComponent(completedlabel))
                     .addGroup(jPanel5Layout.createSequentialGroup()
                         .addGap(46, 46, 46)
                         .addComponent(upcomingappointments)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(128, Short.MAX_VALUE))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -445,6 +437,16 @@ public class student_dashboard extends javax.swing.JFrame {
             }
         });
 
+        logout.setBackground(new java.awt.Color(204, 0, 0));
+        logout.setForeground(new java.awt.Color(255, 255, 255));
+        logout.setText("LOGOUT");
+        logout.setBorderPainted(false);
+        logout.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                logoutActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -457,9 +459,9 @@ public class student_dashboard extends javax.swing.JFrame {
                 .addComponent(welcome)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(user)
-                .addGap(37, 37, 37)
+                .addGap(27, 27, 27)
                 .addComponent(logout)
-                .addGap(38, 38, 38))
+                .addGap(49, 49, 49))
             .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -483,9 +485,9 @@ public class student_dashboard extends javax.swing.JFrame {
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(13, 13, 13)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(logout)
                             .addComponent(welcome)
-                            .addComponent(user)))
+                            .addComponent(user)
+                            .addComponent(logout)))
                     .addComponent(logo, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -519,19 +521,17 @@ public class student_dashboard extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void bookappointmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bookappointmentActionPerformed
+    private void viewallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewallActionPerformed
         // TODO add your handling code here:
-        student_bookappointment a = new student_bookappointment();
-        a.setVisible(true);
+        student_myappointment d = new student_myappointment();
+        d.setVisible(true);
         this.dispose();
-    }//GEN-LAST:event_bookappointmentActionPerformed
+    }//GEN-LAST:event_viewallActionPerformed
 
-    private void view_profileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_view_profileActionPerformed
+    private void logoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoActionPerformed
         // TODO add your handling code here:
-        student_viewprofile c = new student_viewprofile();
-        c.setVisible(true);
-        this.dispose();
-    }//GEN-LAST:event_view_profileActionPerformed
+        loadDashboardData();
+    }//GEN-LAST:event_logoActionPerformed
 
     private void myappointmentsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_myappointmentsActionPerformed
         // TODO add your handling code here:
@@ -540,21 +540,34 @@ public class student_dashboard extends javax.swing.JFrame {
         this.dispose();
     }//GEN-LAST:event_myappointmentsActionPerformed
 
+    private void view_profileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_view_profileActionPerformed
+        // TODO add your handling code here:
+        student_viewprofile c = new student_viewprofile();
+        c.setVisible(true);
+        this.dispose();
+    }//GEN-LAST:event_view_profileActionPerformed
+
+    private void bookappointmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bookappointmentActionPerformed
+        // TODO add your handling code here:
+        student_bookappointment a = new student_bookappointment();
+        a.setVisible(true);
+        this.dispose();
+    }//GEN-LAST:event_bookappointmentActionPerformed
+
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
         // TODO add your handling code here:
+        int confirmation = JOptionPane.showConfirmDialog(null, 
+                "Are you sure you want to logout?",
+                "Confirm logout",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        
+        if (confirmation == JOptionPane.YES_OPTION) {
+            this.dispose();
+            new login_page().setVisible(true);
+        }
+        // TODO add your handling code here        
     }//GEN-LAST:event_logoutActionPerformed
-
-    private void logoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoActionPerformed
-        // TODO add your handling code here:
-        loadDashboardData();
-    }//GEN-LAST:event_logoActionPerformed
-
-    private void viewallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewallActionPerformed
-        // TODO add your handling code here:
-        student_myappointment d = new student_myappointment();
-        d.setVisible(true);
-        this.dispose();
-    }//GEN-LAST:event_viewallActionPerformed
 
     /**
      * @param args the command line arguments
@@ -588,24 +601,12 @@ public class student_dashboard extends javax.swing.JFrame {
     private javax.swing.JLabel completed;
     private javax.swing.JLabel completedlabel;
     private javax.swing.JLabel dashboard;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel14;
-    private javax.swing.JLabel jLabel15;
-    private javax.swing.JLabel jLabel16;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel10;
-    private javax.swing.JPanel jPanel11;
     private javax.swing.JPanel jPanel12;
     private javax.swing.JPanel jPanel13;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
-    private javax.swing.JPanel jPanel7;
-    private javax.swing.JPanel jPanel8;
-    private javax.swing.JPanel jPanel9;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JButton logo;

@@ -11,6 +11,7 @@ package oop_finals;
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel; // ADD THIS IMPORT
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -324,7 +325,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         jLabel2 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
-        jButton7 = new javax.swing.JButton();
+        logout = new javax.swing.JButton();
         jButton8 = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
@@ -397,13 +398,13 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         jLabel5.setForeground(new java.awt.Color(255, 255, 255));
         jLabel5.setText("USER!");
 
-        jButton7.setBackground(new java.awt.Color(204, 0, 0));
-        jButton7.setForeground(new java.awt.Color(255, 255, 255));
-        jButton7.setText("LOGOUT");
-        jButton7.setBorderPainted(false);
-        jButton7.addActionListener(new java.awt.event.ActionListener() {
+        logout.setBackground(new java.awt.Color(204, 0, 0));
+        logout.setForeground(new java.awt.Color(255, 255, 255));
+        logout.setText("LOGOUT");
+        logout.setBorderPainted(false);
+        logout.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton7ActionPerformed(evt);
+                logoutActionPerformed(evt);
             }
         });
 
@@ -485,7 +486,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel5)
                 .addGap(37, 37, 37)
-                .addComponent(jButton7)
+                .addComponent(logout)
                 .addGap(38, 38, 38))
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(61, 61, 61)
@@ -508,7 +509,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(13, 13, 13)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jButton7)
+                            .addComponent(logout)
                             .addComponent(jLabel4)
                             .addComponent(jLabel5)))
                     .addComponent(jButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -552,9 +553,19 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton6ActionPerformed
 
-    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+    private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton7ActionPerformed
+        int confirmation = JOptionPane.showConfirmDialog(null, 
+                "Are you sure you want to logout?",
+                "Confirm logout",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        
+        if (confirmation == JOptionPane.YES_OPTION) {
+            this.dispose();
+            new login_page().setVisible(true);
+        }          
+    }//GEN-LAST:event_logoutActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
@@ -586,7 +597,6 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JButton jButton10;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton6;
-    private javax.swing.JButton jButton7;
     private javax.swing.JButton jButton8;
     private javax.swing.JButton jButton9;
     private javax.swing.JLabel jLabel1;
@@ -598,5 +608,6 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
+    private javax.swing.JButton logout;
     // End of variables declaration//GEN-END:variables
 }
