@@ -47,39 +47,89 @@ public class student_dashboard extends javax.swing.JFrame {
         // Load appointment counts for the cards
         loadAppointmentCounts();
         
-        // Load upcoming appointments in first text area
-        loadUpcomingAppointments();
+        // Load upcoming appointments into the table
+        loadUpcomingAppointmentsTable();
         
-        // Load pending appointments in second text area
-        loadPendingAppointments();
     }
     
-    // Load appointment counts for dashboard cards (jLabel1, jLabel3, jLabel8)
+    // Add this new method to load upcoming appointments into the table
+    private void loadUpcomingAppointmentsTable() {
+        System.out.println("=== Loading Upcoming Appointments Into Table ===");
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            // Clear existing table data
+            javax.swing.table.DefaultTableModel model = 
+                (javax.swing.table.DefaultTableModel) pendingrequesttable.getModel();
+            model.setRowCount(0); // Clear all rows
+
+            // Load upcoming appointments for this student
+            String query = "SELECT a.appointment_date, a.appointment_time, c.name as counselor_name " +
+                          "FROM appointments a " +
+                          "JOIN counselors c ON a.counselor_id = c.counselor_id " +
+                          "WHERE a.student_id = ? AND a.status = 'Upcoming' " +
+                          "ORDER BY a.appointment_date, a.appointment_time";
+
+            try (PreparedStatement pst = conn.prepareStatement(query)) {
+                pst.setInt(1, currentStudentId);
+                ResultSet rs = pst.executeQuery();
+
+                int count = 0;
+                while (rs.next()) {
+                    String date = rs.getDate("appointment_date").toString();
+                    String time = rs.getTime("appointment_time").toString();
+                    String counselorName = rs.getString("counselor_name");
+
+                    // Add row to table
+                    model.addRow(new Object[]{date, time, counselorName});
+                    count++;
+
+                    System.out.println("✓ Added appointment: " + date + " at " + time + " with " + counselorName);
+                }
+
+                if (count == 0) {
+                    System.out.println("○ No upcoming appointments found");
+                    // Add empty row to show "No data"
+                    model.addRow(new Object[]{"No upcoming appointments", "", ""});
+                } else {
+                    System.out.println("✓ Loaded " + count + " upcoming appointments into table");
+                }
+
+            }
+
+            System.out.println("=== Finished Loading Upcoming Appointments ===");
+
+        } catch (SQLException e) {
+            System.err.println("✗ Error loading upcoming appointments table: " + e.getMessage());
+            e.printStackTrace();
+            logger.log(java.util.logging.Level.SEVERE, "Error loading upcoming appointments table", e);
+        }
+    }
+
+        // Load appointment counts for dashboard cards
     private void loadAppointmentCounts() {
         String query = "SELECT " +
                       "COUNT(CASE WHEN status = 'Upcoming' THEN 1 END) as upcoming_count, " +
                       "COUNT(CASE WHEN status = 'Pending' THEN 1 END) as pending_count, " +
                       "COUNT(CASE WHEN status = 'Completed' THEN 1 END) as completed_count " +
                       "FROM appointments WHERE student_id = ?";
-        
+
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
+
             pstmt.setInt(1, currentStudentId);
             ResultSet rs = pstmt.executeQuery();
-            
+
             if (rs.next()) {
                 int upcomingCount = rs.getInt("upcoming_count");
                 int pendingCount = rs.getInt("pending_count");
                 int completedCount = rs.getInt("completed_count");
-                
-                // Update the labels
+
                 // Update the labels
                 upcoming.setText(String.valueOf(upcomingCount));
                 pending.setText(String.valueOf(pendingCount));
                 completed.setText(String.valueOf(completedCount));
             }
-            
+
         } catch (SQLException e) {
             logger.log(java.util.logging.Level.SEVERE, "Error loading appointment counts", e);
             JOptionPane.showMessageDialog(this, 
@@ -88,84 +138,7 @@ public class student_dashboard extends javax.swing.JFrame {
                 JOptionPane.ERROR_MESSAGE);
         }
     }
-    
-    // Load upcoming appointments into jTextArea1
-    private void loadUpcomingAppointments() {
-        String query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, " +
-                      "a.reason, c.name as counselor_name, c.specialization " +
-                      "FROM appointments a " +
-                      "JOIN counselors c ON a.counselor_id = c.counselor_id " +
-                      "WHERE a.student_id = ? AND a.status = 'Upcoming' " +
-                      "ORDER BY a.appointment_date, a.appointment_time LIMIT 1";
-        
-        StringBuilder appointmentText = new StringBuilder();
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
-            pstmt.setInt(1, currentStudentId);
-            ResultSet rs = pstmt.executeQuery();
-            
-            int count = 0;
-            while (rs.next()) {
-                count++;
-                appointmentText.append("Appointment #").append(count).append("\n");
-                appointmentText.append("Date:           ").append(rs.getDate("appointment_date")).append("\n");
-                appointmentText.append("Time:           ").append(rs.getTime("appointment_time")).append("\n");
-                appointmentText.append("Counselor:      ").append(rs.getString("counselor_name")).append("\n");
-                appointmentText.append("Specialization: ").append(rs.getString("specialization")).append("\n");
-                appointmentText.append("Reason:         ").append(rs.getString("reason")).append("\n");
-            }
-            
-            if (count == 0) {
-                appointmentText.append("\n         No upcoming appointments scheduled.\n");
-                appointmentText.append("     Click 'BOOK APPOINTMENT' to schedule one!\n\n");
-            }
-            
-            upcomingappointment1.setText(appointmentText.toString());
-            upcomingappointment1.setCaretPosition(0); // Scroll to top
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading upcoming appointments", e);
-            upcomingappointment1.setText("Error loading appointments: " + e.getMessage());
-        }
-    }
-    
-    // Load pending appointments into jTextArea2
-    private void loadPendingAppointments() {
-        String query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, " +
-                      "a.reason, c.name as counselor_name, c.specialization " +
-                      "FROM appointments a " +
-                      "JOIN counselors c ON a.counselor_id = c.counselor_id " +
-                      "WHERE a.student_id = ? AND a.status = 'Upcoming' " +
-                      "ORDER BY a.appointment_date, a.appointment_time LIMIT 1 OFFSET 1";
-        
-        StringBuilder appointmentText = new StringBuilder();
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
-            pstmt.setInt(1, currentStudentId);
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                appointmentText.append("Date: ").append(rs.getDate("appointment_date")).append("\n");
-                appointmentText.append("Time: ").append(rs.getTime("appointment_time")).append("\n");
-                appointmentText.append("Counselor: ").append(rs.getString("counselor_name")).append("\n");
-                appointmentText.append("Specialization: ").append(rs.getString("specialization")).append("\n");
-                appointmentText.append("Reason: ").append(rs.getString("reason"));
-            } else {
-                appointmentText.append("No additional upcoming appointments.");
-            }
-            
-            upcomingappointment2.setText(appointmentText.toString());
-            upcomingappointment2.setCaretPosition(0);
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading upcoming appointments", e);
-            upcomingappointment2.setText("Error loading upcoming appointments: " + e.getMessage());
-        }
-    }
+  
 
 
     /**
@@ -200,12 +173,10 @@ public class student_dashboard extends javax.swing.JFrame {
         pendinglabel = new javax.swing.JLabel();
         completedlabel = new javax.swing.JLabel();
         upcomingappointments = new javax.swing.JLabel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        upcomingappointment1 = new javax.swing.JTextArea();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        upcomingappointment2 = new javax.swing.JTextArea();
         viewall = new javax.swing.JButton();
         logout = new javax.swing.JButton();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        pendingrequesttable = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setBackground(new java.awt.Color(38, 36, 68));
@@ -413,16 +384,6 @@ public class student_dashboard extends javax.swing.JFrame {
                 .addComponent(upcomingappointments))
         );
 
-        upcomingappointment1.setColumns(20);
-        upcomingappointment1.setFont(new java.awt.Font("Segoe UI", 1, 10)); // NOI18N
-        upcomingappointment1.setRows(5);
-        jScrollPane1.setViewportView(upcomingappointment1);
-
-        upcomingappointment2.setColumns(20);
-        upcomingappointment2.setFont(new java.awt.Font("Segoe UI", 1, 10)); // NOI18N
-        upcomingappointment2.setRows(5);
-        jScrollPane2.setViewportView(upcomingappointment2);
-
         viewall.setBackground(new java.awt.Color(255, 195, 51));
         viewall.setForeground(new java.awt.Color(255, 255, 255));
         viewall.setText("View All");
@@ -442,6 +403,29 @@ public class student_dashboard extends javax.swing.JFrame {
                 logoutActionPerformed(evt);
             }
         });
+
+        pendingrequesttable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null},
+                {null, null, null}
+            },
+            new String [] {
+                "Date", "Time", "Counselor Name"
+            }
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        pendingrequesttable.setRowHeight(90);
+        pendingrequesttable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        pendingrequesttable.setShowGrid(false);
+        pendingrequesttable.setShowHorizontalLines(true);
+        jScrollPane3.setViewportView(pendingrequesttable);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -465,13 +449,13 @@ public class student_dashboard extends javax.swing.JFrame {
                         .addGap(48, 48, 48)
                         .addComponent(dashboard))
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(102, 102, 102)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(viewall)
-                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(jScrollPane1)
-                                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 572, Short.MAX_VALUE)))))
+                        .addGap(601, 601, 601)
+                        .addComponent(viewall)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 666, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(62, 62, 62))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -491,11 +475,9 @@ public class student_dashboard extends javax.swing.JFrame {
                 .addComponent(dashboard)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 109, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 202, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(39, 39, 39)
                 .addComponent(viewall)
                 .addContainerGap(45, Short.MAX_VALUE))
         );
@@ -605,17 +587,15 @@ public class student_dashboard extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JButton logo;
     private javax.swing.JButton logout;
     private javax.swing.JButton myappointments;
     private javax.swing.JLabel pending;
     private javax.swing.JLabel pendinglabel;
+    private javax.swing.JTable pendingrequesttable;
     private javax.swing.JLabel profile;
     private javax.swing.JLabel upcoming;
-    private javax.swing.JTextArea upcomingappointment1;
-    private javax.swing.JTextArea upcomingappointment2;
     private javax.swing.JLabel upcomingappointments;
     private javax.swing.JLabel upcominglabel;
     private javax.swing.JLabel user;

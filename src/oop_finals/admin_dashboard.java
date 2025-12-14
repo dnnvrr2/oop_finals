@@ -156,62 +156,58 @@ public class admin_dashboard extends javax.swing.JFrame {
         }
     }
 
-// 3. ADD debug logging to loadPendingRequestsPreview
-private void loadPendingRequestsPreview() {
-        System.out.println("=== Loading Pending Requests Preview ===");
-        
+    // 3. ADD debug logging to loadPendingRequestsPreview
+    private void loadPendingRequestsPreview() {
+        System.out.println("=== Loading Pending Requests Into Table ===");
+
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-            
-            // Load first pending counselor request
-            String query1 = "SELECT * FROM user_requests WHERE user_type='Counselor' AND status='Pending' ORDER BY requested_at DESC LIMIT 1";
-            try (PreparedStatement pst = conn.prepareStatement(query1);
+            // Clear existing table data
+            javax.swing.table.DefaultTableModel model = 
+                (javax.swing.table.DefaultTableModel) pendingrequesttable.getModel();
+            model.setRowCount(0); // Clear all rows
+
+            // Load all pending requests (both counselors and students)
+            String query = "SELECT request_id, name, user_type, email, requested_at, status " +
+                          "FROM user_requests " +
+                          "WHERE status='Pending' " +
+                          "ORDER BY requested_at DESC";
+
+            try (PreparedStatement pst = conn.prepareStatement(query);
                  ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    currentRequestId = rs.getInt("request_id");
-                    currentRequestType = "Counselor";
-                    
-                    StringBuilder info = new StringBuilder();
-                    info.append("Type: COUNSELOR\n");
-                    info.append("Name: ").append(rs.getString("name")).append("\n");
-                    info.append("Email: ").append(rs.getString("email")).append("\n");
-                    info.append("Specialization: ").append(rs.getString("specialization")).append("\n");
-                    info.append("License: ").append(rs.getString("license_number")).append("\n");
-                    info.append("Requested: ").append(rs.getTimestamp("requested_at"));
-                    
-                    userrequest1.setText(info.toString());
-                    System.out.println("✓ Loaded counselor request: " + rs.getString("name"));
-                } else {
-                    currentRequestId = -1;
-                    currentRequestType = "";
-                    userrequest1.setText("No pending counselor requests");
-                    System.out.println("○ No pending counselor requests found");
+
+                int count = 0;
+                while (rs.next()) {
+                    String name = rs.getString("name");
+                    String type = rs.getString("user_type");
+                    int id = rs.getInt("request_id");
+                    String date = rs.getTimestamp("requested_at").toString();
+                    String status = rs.getString("status");
+
+                    // Add row to table
+                    model.addRow(new Object[]{name, type, id, date, status});
+                    count++;
+
+                    System.out.println("✓ Added request: " + name + " (" + type + ")");
                 }
-            }
-            
-            // Load first pending student request
-            String query2 = "SELECT * FROM user_requests WHERE user_type='Student' AND status='Pending' ORDER BY requested_at DESC LIMIT 1";
-            try (PreparedStatement pst = conn.prepareStatement(query2);
-                 ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    // Store the second request info if needed
-                    StringBuilder info = new StringBuilder();
-                    info.append("Type: STUDENT\n");
-                    info.append("Name: ").append(rs.getString("name")).append("\n");
-                    info.append("Email: ").append(rs.getString("email")).append("\n");
-                    info.append("Course: ").append(rs.getString("course")).append("\n");
-                    info.append("Student #: ").append(rs.getString("student_number")).append("\n");
-                    info.append("Requested: ").append(rs.getTimestamp("requested_at"));
-                    
-                    userrequest2.setText(info.toString());
-                    System.out.println("✓ Loaded student request: " + rs.getString("name"));
+
+                if (count == 0) {
+                    System.out.println("○ No pending requests found");
+                    // Add empty row to show "No data"
+                    model.addRow(new Object[]{"No pending requests", "", "", "", ""});
                 } else {
-                    userrequest2.setText("No pending student requests");
-                    System.out.println("○ No pending student requests found");
+                    System.out.println("✓ Loaded " + count + " pending requests into table");
+
+                    // Automatically select the first row
+                    if (pendingrequesttable.getRowCount() > 0) {
+                        pendingrequesttable.setRowSelectionInterval(0, 0);
+                        updateCurrentRequest(0);
+                    }
                 }
+
             }
-            
+
             System.out.println("=== Finished Loading Pending Requests ===");
-            
+
         } catch (SQLException e) {
             System.err.println("✗ Error loading pending requests: " + e.getMessage());
             e.printStackTrace();
@@ -219,48 +215,67 @@ private void loadPendingRequestsPreview() {
         }
     }
 
+    // Add this helper method to track which request is selected
+    private void updateCurrentRequest(int row) {
+        if (row >= 0 && row < pendingrequesttable.getRowCount()) {
+            Object idObj = pendingrequesttable.getValueAt(row, 2); // ID column
+            Object typeObj = pendingrequesttable.getValueAt(row, 1); // Type column
 
-private void testDatabaseConnection() {
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-            System.out.println("✓ DATABASE CONNECTION SUCCESSFUL");
-            
-            // Test each table
-            String[] queries = {
-                "SELECT COUNT(*) FROM users",
-                "SELECT COUNT(*) FROM students", 
-                "SELECT COUNT(*) FROM counselors",
-                "SELECT COUNT(*) FROM admins",
-                "SELECT COUNT(*) FROM user_requests",
-                "SELECT COUNT(*) FROM appointments"
-            };
-            
-            for (String query : queries) {
-                try (PreparedStatement pst = conn.prepareStatement(query);
-                     ResultSet rs = pst.executeQuery()) {
-                    if (rs.next()) {
-                        String tableName = query.substring(query.indexOf("FROM") + 5);
-                        System.out.println("  " + tableName + ": " + rs.getInt(1) + " records");
-                    }
+            if (idObj != null && typeObj != null) {
+                try {
+                    currentRequestId = Integer.parseInt(idObj.toString());
+                    currentRequestType = typeObj.toString();
+                    System.out.println("Selected request: ID=" + currentRequestId + ", Type=" + currentRequestType);
+                } catch (NumberFormatException e) {
+                    currentRequestId = -1;
+                    currentRequestType = "";
                 }
             }
-            
-            JOptionPane.showMessageDialog(this, 
-                "Database connection successful!\nCheck console for details.",
-                "Connection Test", 
-                JOptionPane.INFORMATION_MESSAGE);
-                
-        } catch (SQLException e) {
-            System.err.println("✗ DATABASE CONNECTION FAILED");
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
-            
-            JOptionPane.showMessageDialog(this,
-                "Database connection failed!\n" + e.getMessage(),
-                "Connection Error",
-                JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
+
+    private void testDatabaseConnection() {
+            try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+                System.out.println("✓ DATABASE CONNECTION SUCCESSFUL");
+
+                // Test each table
+                String[] queries = {
+                    "SELECT COUNT(*) FROM users",
+                    "SELECT COUNT(*) FROM students", 
+                    "SELECT COUNT(*) FROM counselors",
+                    "SELECT COUNT(*) FROM admins",
+                    "SELECT COUNT(*) FROM user_requests",
+                    "SELECT COUNT(*) FROM appointments"
+                };
+
+                for (String query : queries) {
+                    try (PreparedStatement pst = conn.prepareStatement(query);
+                         ResultSet rs = pst.executeQuery()) {
+                        if (rs.next()) {
+                            String tableName = query.substring(query.indexOf("FROM") + 5);
+                            System.out.println("  " + tableName + ": " + rs.getInt(1) + " records");
+                        }
+                    }
+                }
+
+                JOptionPane.showMessageDialog(this, 
+                    "Database connection successful!\nCheck console for details.",
+                    "Connection Test", 
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            } catch (SQLException e) {
+                System.err.println("✗ DATABASE CONNECTION FAILED");
+                System.err.println("Error: " + e.getMessage());
+                e.printStackTrace();
+
+                JOptionPane.showMessageDialog(this,
+                    "Database connection failed!\n" + e.getMessage(),
+                    "Connection Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
     /**
      * Default constructor
      */
@@ -289,7 +304,6 @@ private void testDatabaseConnection() {
         logout = new javax.swing.JButton();
         jButton8 = new javax.swing.JButton();
         jLabel6 = new javax.swing.JLabel();
-        jLabel9 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         jPanel4 = new javax.swing.JPanel();
         jPanel6 = new javax.swing.JPanel();
@@ -323,13 +337,12 @@ private void testDatabaseConnection() {
         jPanel24 = new javax.swing.JPanel();
         totalappointments = new javax.swing.JLabel();
         jLabel18 = new javax.swing.JLabel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        userrequest1 = new javax.swing.JTextArea();
+        jLabel9 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        pendingrequesttable = new javax.swing.JTable();
         accept = new javax.swing.JButton();
         reject = new javax.swing.JButton();
         viewall = new javax.swing.JButton();
-        jScrollPane3 = new javax.swing.JScrollPane();
-        userrequest2 = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -417,10 +430,6 @@ private void testDatabaseConnection() {
         jLabel6.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel6.setForeground(new java.awt.Color(255, 195, 51));
         jLabel6.setText("DASHBOARD");
-
-        jLabel9.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jLabel9.setForeground(new java.awt.Color(255, 195, 51));
-        jLabel9.setText("PENDING USER REQUESTS");
 
         jPanel1.setBackground(new java.awt.Color(38, 36, 68));
         jPanel1.setPreferredSize(new java.awt.Dimension(75, 75));
@@ -639,7 +648,7 @@ private void testDatabaseConnection() {
                 .addComponent(jPanel16, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel12)
-                .addContainerGap(35, Short.MAX_VALUE))
+                .addContainerGap(34, Short.MAX_VALUE))
         );
         jPanel15Layout.setVerticalGroup(
             jPanel15Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -730,7 +739,7 @@ private void testDatabaseConnection() {
                 .addComponent(jPanel20, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel16)
-                .addContainerGap(10, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel19Layout.setVerticalGroup(
             jPanel19Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -788,56 +797,90 @@ private void testDatabaseConnection() {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
+        jLabel9.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jLabel9.setForeground(new java.awt.Color(255, 195, 51));
+        jLabel9.setText("PENDING USER REQUESTS");
+
+        pendingrequesttable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null},
+                {null, null, null, null, null}
+            },
+            new String [] {
+                "Name", "Type", "ID", "Date", "Status"
+            }
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        pendingrequesttable.setRowHeight(90);
+        pendingrequesttable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        pendingrequesttable.setShowGrid(false);
+        pendingrequesttable.setShowHorizontalLines(true);
+        jScrollPane2.setViewportView(pendingrequesttable);
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(46, 46, 46)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 223, Short.MAX_VALUE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel9)
                     .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 224, Short.MAX_VALUE)
+                            .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, 224, Short.MAX_VALUE))
+                        .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jPanel17, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jPanel13, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(26, 26, 26)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jPanel23, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jPanel19, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(jPanel15, javax.swing.GroupLayout.PREFERRED_SIZE, 217, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(29, Short.MAX_VALUE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jPanel17, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jPanel13, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(26, 26, 26)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jPanel23, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jPanel19, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(jPanel15, javax.swing.GroupLayout.PREFERRED_SIZE, 217, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap(16, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 666, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(50, 50, 50))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addGap(16, 16, 16)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                         .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(27, 27, 27)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 31, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jPanel19, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jPanel13, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(27, 27, 27)
+                        .addGap(12, 12, 12)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jPanel17, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jPanel23, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jPanel17, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jPanel23, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jPanel15, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(18, 18, 18))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel9)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 202, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-
-        userrequest1.setColumns(20);
-        userrequest1.setRows(5);
-        jScrollPane1.setViewportView(userrequest1);
 
         accept.setBackground(new java.awt.Color(255, 195, 51));
         accept.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -872,10 +915,6 @@ private void testDatabaseConnection() {
             }
         });
 
-        userrequest2.setColumns(20);
-        userrequest2.setRows(5);
-        jScrollPane3.setViewportView(userrequest2);
-
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -891,22 +930,22 @@ private void testDatabaseConnection() {
                 .addGap(37, 37, 37)
                 .addComponent(logout)
                 .addGap(38, 38, 38))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(accept, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(65, 65, 65)
-                .addComponent(reject, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(67, 67, 67)
-                .addComponent(viewall, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(98, 98, 98))
-            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 788, Short.MAX_VALUE)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(48, 48, 48)
+                .addContainerGap()
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 776, Short.MAX_VALUE)
+                .addContainerGap())
+            .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 693, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel6)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 693, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel9))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(49, 49, 49)
+                        .addComponent(jLabel6))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(102, 102, 102)
+                        .addComponent(accept, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(63, 63, 63)
+                        .addComponent(reject, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(70, 70, 70)
+                        .addComponent(viewall, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
@@ -923,22 +962,16 @@ private void testDatabaseConnection() {
                     .addComponent(jButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jLabel6)
-                .addGap(18, 18, 18)
-                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 317, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel9)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 501, Short.MAX_VALUE)
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(accept)
                     .addComponent(reject)
                     .addComponent(viewall))
-                .addGap(24, 24, 24))
+                .addGap(17, 17, 17))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -952,7 +985,7 @@ private void testDatabaseConnection() {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         pack();
@@ -1212,18 +1245,17 @@ private void testDatabaseConnection() {
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
-    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JButton logout;
     private javax.swing.JLabel pendingappointment;
     private javax.swing.JLabel pendingcounselor;
+    private javax.swing.JTable pendingrequesttable;
     private javax.swing.JLabel pendingstudents;
     private javax.swing.JButton reject;
     private javax.swing.JLabel totalappointments;
     private javax.swing.JLabel totalcounselors;
     private javax.swing.JLabel totalstudents;
-    private javax.swing.JTextArea userrequest1;
-    private javax.swing.JTextArea userrequest2;
     private javax.swing.JButton viewall;
     // End of variables declaration//GEN-END:variables
 }
