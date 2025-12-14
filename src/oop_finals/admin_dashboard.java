@@ -16,143 +16,136 @@ import java.sql.SQLException;
  * @author Admin
  */
 public class admin_dashboard extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(admin_dashboard.class.getName());
-    
+
     private int currentAdminId;
     private String currentAdminName;
-    
+
     private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "";
-    
+
     private int currentRequestId = -1;
     private String currentRequestType = "";
+
     /**
      * Creates new form admin_dashboard
      */
-    
+
     // Add this constructor
     public admin_dashboard(int adminId, String adminName) {
         this.currentAdminId = adminId;
         this.currentAdminName = adminName;
         initComponents();
-        
+
         jLabel5.setText(adminName.toUpperCase() + "!");
-    
+
         loadDashboardData();
-        
+
         // Set the admin name in your UI if you have a label
         // Example: adminNameLabel.setText(adminName);
     }
-    
+
     private void loadDashboardData() {
-    System.out.println("=== Loading Dashboard Data ===");
-        
+        System.out.println("=== Loading Dashboard Data ===");
+
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
             System.out.println("✓ Database connection successful");
-            
+
             // 1. Count Pending Counselors
             String query1 = "SELECT COUNT(*) as count FROM user_requests WHERE user_type='Counselor' AND status='Pending'";
-            try (PreparedStatement pst = conn.prepareStatement(query1);
-                 ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement pst = conn.prepareStatement(query1); ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt("count");
                     System.out.println("Pending Counselors: " + count);
                     pendingcounselor.setText(String.valueOf(count));
                 }
             }
-            
+
             // 2. Count Approved Counselors
             String query2 = "SELECT COUNT(*) as count FROM counselors WHERE status='Active'";
-            try (PreparedStatement pst = conn.prepareStatement(query2);
-                 ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement pst = conn.prepareStatement(query2); ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt("count");
                     System.out.println("Approved Counselors: " + count);
                     approvedconselors.setText(String.valueOf(count));
                 }
             }
-            
+
             // 3. Count Total Counselors
             String query3 = "SELECT COUNT(*) as count FROM counselors";
-            try (PreparedStatement pst = conn.prepareStatement(query3);
-                 ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement pst = conn.prepareStatement(query3); ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt("count");
                     System.out.println("Total Counselors: " + count);
                     totalcounselors.setText(String.valueOf(count));
                 }
             }
-            
+
             // 4. Count Pending Students
             String query4 = "SELECT COUNT(*) as count FROM user_requests WHERE user_type='Student' AND status='Pending'";
-            try (PreparedStatement pst = conn.prepareStatement(query4);
-                 ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement pst = conn.prepareStatement(query4); ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt("count");
                     System.out.println("Pending Students: " + count);
                     pendingstudents.setText(String.valueOf(count));
                 }
             }
-            
+
             // 5. Count Approved Students
             String query5 = "SELECT COUNT(*) as count FROM students WHERE status='Active'";
-            try (PreparedStatement pst = conn.prepareStatement(query5);
-                 ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement pst = conn.prepareStatement(query5); ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt("count");
                     System.out.println("Approved Students: " + count);
                     approvedstudents.setText(String.valueOf(count));
                 }
             }
-            
+
             // 6. Count Total Students
             String query6 = "SELECT COUNT(*) as count FROM students";
-            try (PreparedStatement pst = conn.prepareStatement(query6);
-                 ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement pst = conn.prepareStatement(query6); ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt("count");
                     System.out.println("Total Students: " + count);
                     totalstudents.setText(String.valueOf(count));
                 }
             }
-            
+
             // 7. Count Pending Appointments
             String query7 = "SELECT COUNT(*) as count FROM appointments WHERE status='Pending'";
-            try (PreparedStatement pst = conn.prepareStatement(query7);
-                 ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement pst = conn.prepareStatement(query7); ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt("count");
                     System.out.println("Pending Appointments: " + count);
                     pendingappointment.setText(String.valueOf(count));
                 }
             }
-            
+
             // 8. Count Total Appointments
             String query8 = "SELECT COUNT(*) as count FROM appointments";
-            try (PreparedStatement pst = conn.prepareStatement(query8);
-                 ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement pst = conn.prepareStatement(query8); ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt("count");
                     System.out.println("Total Appointments: " + count);
                     totalappointments.setText(String.valueOf(count));
                 }
             }
-            
+
             System.out.println("✓ All statistics loaded successfully");
-            
+
             // Load pending user requests preview
             loadPendingRequestsPreview();
-            
+
         } catch (SQLException e) {
             System.err.println("✗ Database error: " + e.getMessage());
             e.printStackTrace();
             logger.log(java.util.logging.Level.SEVERE, "Error loading dashboard data", e);
             JOptionPane.showMessageDialog(this,
-                "Error loading dashboard statistics: " + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
+                    "Error loading dashboard statistics: " + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -162,18 +155,17 @@ public class admin_dashboard extends javax.swing.JFrame {
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
             // Clear existing table data
-            javax.swing.table.DefaultTableModel model = 
-                (javax.swing.table.DefaultTableModel) pendingrequesttable.getModel();
+            javax.swing.table.DefaultTableModel model
+                    = (javax.swing.table.DefaultTableModel) pendingrequesttable.getModel();
             model.setRowCount(0); // Clear all rows
 
             // Load all pending requests (both counselors and students)
-            String query = "SELECT request_id, name, user_type, email, requested_at, status " +
-                          "FROM user_requests " +
-                          "WHERE status='Pending' " +
-                          "ORDER BY requested_at DESC";
+            String query = "SELECT request_id, name, user_type, email, requested_at, status "
+                    + "FROM user_requests "
+                    + "WHERE status='Pending' "
+                    + "ORDER BY requested_at DESC";
 
-            try (PreparedStatement pst = conn.prepareStatement(query);
-                 ResultSet rs = pst.executeQuery()) {
+            try (PreparedStatement pst = conn.prepareStatement(query); ResultSet rs = pst.executeQuery()) {
 
                 int count = 0;
                 while (rs.next()) {
@@ -234,47 +226,45 @@ public class admin_dashboard extends javax.swing.JFrame {
         }
     }
 
-
     private void testDatabaseConnection() {
-            try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-                System.out.println("✓ DATABASE CONNECTION SUCCESSFUL");
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            System.out.println("✓ DATABASE CONNECTION SUCCESSFUL");
 
-                // Test each table
-                String[] queries = {
-                    "SELECT COUNT(*) FROM users",
-                    "SELECT COUNT(*) FROM students", 
-                    "SELECT COUNT(*) FROM counselors",
-                    "SELECT COUNT(*) FROM admins",
-                    "SELECT COUNT(*) FROM user_requests",
-                    "SELECT COUNT(*) FROM appointments"
-                };
+            // Test each table
+            String[] queries = {
+                "SELECT COUNT(*) FROM users",
+                "SELECT COUNT(*) FROM students",
+                "SELECT COUNT(*) FROM counselors",
+                "SELECT COUNT(*) FROM admins",
+                "SELECT COUNT(*) FROM user_requests",
+                "SELECT COUNT(*) FROM appointments"
+            };
 
-                for (String query : queries) {
-                    try (PreparedStatement pst = conn.prepareStatement(query);
-                         ResultSet rs = pst.executeQuery()) {
-                        if (rs.next()) {
-                            String tableName = query.substring(query.indexOf("FROM") + 5);
-                            System.out.println("  " + tableName + ": " + rs.getInt(1) + " records");
-                        }
+            for (String query : queries) {
+                try (PreparedStatement pst = conn.prepareStatement(query); ResultSet rs = pst.executeQuery()) {
+                    if (rs.next()) {
+                        String tableName = query.substring(query.indexOf("FROM") + 5);
+                        System.out.println("  " + tableName + ": " + rs.getInt(1) + " records");
                     }
                 }
+            }
 
-                JOptionPane.showMessageDialog(this, 
+            JOptionPane.showMessageDialog(this,
                     "Database connection successful!\nCheck console for details.",
-                    "Connection Test", 
+                    "Connection Test",
                     JOptionPane.INFORMATION_MESSAGE);
 
-            } catch (SQLException e) {
-                System.err.println("✗ DATABASE CONNECTION FAILED");
-                System.err.println("Error: " + e.getMessage());
-                e.printStackTrace();
+        } catch (SQLException e) {
+            System.err.println("✗ DATABASE CONNECTION FAILED");
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
 
-                JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(this,
                     "Database connection failed!\n" + e.getMessage(),
                     "Connection Error",
                     JOptionPane.ERROR_MESSAGE);
-            }
         }
+    }
 
     /**
      * Default constructor
@@ -282,7 +272,6 @@ public class admin_dashboard extends javax.swing.JFrame {
     public admin_dashboard() {
         initComponents();
     }
-    
    
     /**
      * This method is called from within the constructor to initialize the form.
@@ -994,26 +983,26 @@ public class admin_dashboard extends javax.swing.JFrame {
     private void viewallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewallActionPerformed
         // TODO add your handling code here:
         JOptionPane.showMessageDialog(this,
-            "View all pending requests feature coming soon!",
-            "Information",
-            JOptionPane.INFORMATION_MESSAGE);
+                "View all pending requests feature coming soon!",
+                "Information",
+                JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_viewallActionPerformed
 
     private void rejectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rejectActionPerformed
         // TODO add your handling code here:
         if (currentRequestId == -1) {
             JOptionPane.showMessageDialog(this,
-                "No request selected",
-                "Information",
-                JOptionPane.INFORMATION_MESSAGE);
+                    "No request selected",
+                    "Information",
+                    JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        
+
         String reason = JOptionPane.showInputDialog(this,
-            "Enter rejection reason:",
-            "Reject Request",
-            JOptionPane.QUESTION_MESSAGE);
-        
+                "Enter rejection reason:",
+                "Reject Request",
+                JOptionPane.QUESTION_MESSAGE);
+
         if (reason != null && !reason.trim().isEmpty()) {
             rejectUserRequest(currentRequestId, reason);
         }
@@ -1023,17 +1012,17 @@ public class admin_dashboard extends javax.swing.JFrame {
         // TODO add your handling code here:
         if (currentRequestId == -1) {
             JOptionPane.showMessageDialog(this,
-                "No request selected",
-                "Information",
-                JOptionPane.INFORMATION_MESSAGE);
+                    "No request selected",
+                    "Information",
+                    JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        
+
         int confirmation = JOptionPane.showConfirmDialog(this,
-            "Are you sure you want to approve this " + currentRequestType.toLowerCase() + " request?",
-            "Confirm Approval",
-            JOptionPane.YES_NO_OPTION);
-        
+                "Are you sure you want to approve this " + currentRequestType.toLowerCase() + " request?",
+                "Confirm Approval",
+                JOptionPane.YES_NO_OPTION);
+
         if (confirmation == JOptionPane.YES_OPTION) {
             approveUserRequest(currentRequestId, currentRequestType);
         }
@@ -1041,17 +1030,19 @@ public class admin_dashboard extends javax.swing.JFrame {
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
-        loadDashboardData();
+        admin_dashboard b = new admin_dashboard(currentAdminId, currentAdminName);
+        b.setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
         // TODO add your handling code here:\
-        int confirmation = JOptionPane.showConfirmDialog(null, 
+        int confirmation = JOptionPane.showConfirmDialog(null,
                 "Are you sure you want to logout?",
                 "Confirm logout",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE);
-        
+
         if (confirmation == JOptionPane.YES_OPTION) {
             this.dispose();
             new login_page().setVisible(true);
@@ -1060,25 +1051,29 @@ public class admin_dashboard extends javax.swing.JFrame {
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
+        admin_allusers e = new admin_allusers(currentAdminId, currentAdminName);
+        e.setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
+        PendingUsers pu = new PendingUsers(currentAdminId, currentAdminName);
+        pu.setVisible(true);
         this.dispose();
-        new PendingUsers().setVisible(true);
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void approveUserRequest(int requestId, String userType) {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
             conn.setAutoCommit(false);
-            
+
             try {
                 // Get request details
                 String getRequestQuery = "SELECT * FROM user_requests WHERE request_id = ?";
                 PreparedStatement getPst = conn.prepareStatement(getRequestQuery);
                 getPst.setInt(1, requestId);
                 ResultSet rs = getPst.executeQuery();
-                
+
                 if (rs.next()) {
                     // Create user in users table
                     String insertUserQuery = "INSERT INTO users (user_type, name, email, password, status) VALUES (?, ?, ?, ?, 'Active')";
@@ -1088,11 +1083,11 @@ public class admin_dashboard extends javax.swing.JFrame {
                     userPst.setString(3, rs.getString("email"));
                     userPst.setString(4, rs.getString("password"));
                     userPst.executeUpdate();
-                    
+
                     ResultSet generatedKeys = userPst.getGeneratedKeys();
                     if (generatedKeys.next()) {
                         int userId = generatedKeys.getInt(1);
-                        
+
                         // Insert into specific table
                         if (userType.equals("Counselor")) {
                             String insertCounselorQuery = "INSERT INTO counselors (user_id, name, email, specialization, license_number, password, status) VALUES (?, ?, ?, ?, ?, ?, 'Active')";
@@ -1105,48 +1100,55 @@ public class admin_dashboard extends javax.swing.JFrame {
                             counselorPst.setString(6, rs.getString("password"));
                             counselorPst.executeUpdate();
                         } else if (userType.equals("Student")) {
-                            String insertStudentQuery = "INSERT INTO students (user_id, name, email, course, student_number, password, status) VALUES (?, ?, ?, ?, ?, ?, 'Active')";
+                            String insertStudentQuery = "INSERT INTO students (user_id, name, email, course, year_level, student_number, password, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')";
                             PreparedStatement studentPst = conn.prepareStatement(insertStudentQuery);
                             studentPst.setInt(1, userId);
                             studentPst.setString(2, rs.getString("name"));
                             studentPst.setString(3, rs.getString("email"));
                             studentPst.setString(4, rs.getString("course"));
-                            studentPst.setString(5, rs.getString("student_number"));
-                            studentPst.setString(6, rs.getString("password"));
+
+                            String yearLevel = rs.getString("year_level");
+                            if (yearLevel == null || yearLevel.trim().isEmpty()) {
+                                yearLevel = "Not Specified"; // Default value
+                            }
+                            studentPst.setString(5, yearLevel);
+
+                            studentPst.setString(6, rs.getString("student_number"));
+                            studentPst.setString(7, rs.getString("password"));
                             studentPst.executeUpdate();
                         }
                     }
-                    
+
                     // Update request status
                     String updateRequestQuery = "UPDATE user_requests SET status = 'Approved', processed_at = NOW(), processed_by = ? WHERE request_id = ?";
                     PreparedStatement updatePst = conn.prepareStatement(updateRequestQuery);
                     updatePst.setInt(1, currentAdminId);
                     updatePst.setInt(2, requestId);
                     updatePst.executeUpdate();
-                    
+
                     conn.commit();
-                    
+
                     JOptionPane.showMessageDialog(this,
-                        "User request approved successfully!",
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                    
+                            "User request approved successfully!",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+
                     // Reload dashboard
                     loadDashboardData();
                 }
-                
+
             } catch (SQLException e) {
                 conn.rollback();
                 throw e;
             }
-            
+
         } catch (SQLException e) {
             System.err.println("Error approving request: " + e.getMessage());
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error approving request: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+                    "Error approving request: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -1160,26 +1162,26 @@ public class admin_dashboard extends javax.swing.JFrame {
             pst.setString(1, reason);
             pst.setInt(2, currentAdminId);
             pst.setInt(3, requestId);
-            
+
             int rowsAffected = pst.executeUpdate();
-            
+
             if (rowsAffected > 0) {
                 JOptionPane.showMessageDialog(this,
-                    "User request rejected",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
+                        "User request rejected",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+
                 // Reload dashboard
                 loadDashboardData();
             }
-            
+
         } catch (SQLException e) {
             System.err.println("Error rejecting request: " + e.getMessage());
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error rejecting request: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+                    "Error rejecting request: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
     /**
