@@ -13,8 +13,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 
 public class PendingUsers extends javax.swing.JFrame {
     
@@ -30,35 +28,37 @@ public class PendingUsers extends javax.swing.JFrame {
     }
     
     // LOAD PENDING USERS
-        private void loadPendingUsers() {
+    private void loadPendingUsers() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
 
-        String sql =
-            "SELECT u.user_id, u.name, u.user_type, s.course, u.status " +
-            "FROM users u " +
-            "JOIN students s ON u.user_id = s.user_id " +
-            "WHERE u.user_type = 'Student' AND u.status = 'Pending'";
+        String sql
+                = "SELECT u.user_id, u.name, u.user_type, "
+                + "COALESCE(s.course, c.specialization) AS info, u.status "
+                + "FROM users u "
+                + "LEFT JOIN students s ON u.user_id = s.user_id "
+                + "LEFT JOIN counselors c ON u.user_id = c.user_id "
+                + "WHERE u.status = 'Pending'";
 
-        try (Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery()) {
+        try (Connection con = DatabaseConnection.getConnection(); 
+             PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 model.addRow(new Object[]{
                     rs.getInt("user_id"),
                     rs.getString("name"),
                     rs.getString("user_type"),
-                    rs.getString("course"),
+                    rs.getString("info"),
                     rs.getString("status")
                 });
             }
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
-                "Error loading pending users:\n" + e.getMessage());
+                    "Error loading pending users:\n" + e.getMessage());
         }
     }
+
 
     // UPDATE STATUS (APPROVE / REJECT)
     private void updateUserStatus(String newStatus) {
@@ -69,24 +69,45 @@ public class PendingUsers extends javax.swing.JFrame {
             return;
         }
 
-        int userId = (int) jTable1.getValueAt(row, 2);
+        int userId = (int) jTable1.getValueAt(row, 0);   // USER ID
+        String userType = jTable1.getValueAt(row, 2).toString();
 
-        String sql = "UPDATE students SET status = ? WHERE id = ?";
+        try (Connection con = DatabaseConnection.getConnection()) {
+            con.setAutoCommit(false);
 
-        try (Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)) {
+            // Update USERS table
+            String updateUser = "UPDATE users SET status = ? WHERE user_id = ?";
+            try (PreparedStatement ps = con.prepareStatement(updateUser)) {
+                ps.setString(1, newStatus);
+                ps.setInt(2, userId);
+                ps.executeUpdate();
+            }
 
-            ps.setString(1, newStatus);
-            ps.setInt(2, userId);
-            ps.executeUpdate();
+            // Update role-specific table
+            String roleSql;
+            if (userType.equalsIgnoreCase("Student")) {
+                roleSql = "UPDATE students SET status = ? WHERE user_id = ?";
+            } else {
+                roleSql = "UPDATE counselors SET status = ? WHERE user_id = ?";
+            }
 
-            JOptionPane.showMessageDialog(this, "User " + newStatus.toLowerCase() + " successfully.");
+            try (PreparedStatement ps = con.prepareStatement(roleSql)) {
+                ps.setString(1, newStatus);
+                ps.setInt(2, userId);
+                ps.executeUpdate();
+            }
+
+            con.commit();
+
+            JOptionPane.showMessageDialog(this,
+                    "User " + newStatus.toLowerCase() + " successfully.");
             loadPendingUsers();
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Update failed:\n" + e.getMessage());
         }
     }
+
 
         // SEARCH FILTER
         private void setupSearch() {
@@ -100,11 +121,13 @@ public class PendingUsers extends javax.swing.JFrame {
             DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
             model.setRowCount(0);
 
-            String sql =
-                "SELECT u.user_id, u.name, u.user_type, s.course, u.status " +
-                "FROM users u JOIN students s ON u.user_id = s.user_id " +
-                "WHERE u.user_type = 'Student' AND u.status = 'Pending' " +
-                "AND u.name LIKE ?";
+            String sql
+                    = "SELECT u.user_id, u.name, u.user_type, "
+                    + "COALESCE(s.course, c.specialization) AS info, u.status "
+                    + "FROM users u "
+                    + "LEFT JOIN students s ON u.user_id = s.user_id "
+                    + "LEFT JOIN counselors c ON u.user_id = c.user_id "
+                    + "WHERE u.status = 'Pending' AND u.name LIKE ?";
 
             try (Connection con = DatabaseConnection.getConnection();
                  PreparedStatement ps = con.prepareStatement(sql)) {
@@ -117,7 +140,7 @@ public class PendingUsers extends javax.swing.JFrame {
                         rs.getInt("user_id"),
                         rs.getString("name"),
                         rs.getString("user_type"),
-                        rs.getString("course"),
+                        rs.getString("info"),
                         rs.getString("status")
                     });
                 }
@@ -254,7 +277,7 @@ public class PendingUsers extends javax.swing.JFrame {
                 {null, null, null, null, null}
             },
             new String [] {
-                "User ID", "Name", "Type", "Course", "Status"
+                "User ID", "Name", "Type", "Extra Info", "Status"
             }
         ) {
             Class[] types = new Class [] {
