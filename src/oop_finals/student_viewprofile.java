@@ -5,6 +5,7 @@
 package oop_finals;
 
 import javax.swing.JOptionPane;
+import java.sql.*;
 
 /**
  *
@@ -13,12 +14,166 @@ import javax.swing.JOptionPane;
 public class student_viewprofile extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_viewprofile.class.getName());
+    
+    private String studentName;
+    private String studentEmail;
+    private String studentCourse;
+    private String studentYearLevel;
+    private String studentSchoolID;
+    private int currentStudentId;
+    private String currentStudentName;
+    
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "";
 
     /**
      * Creates new form student_viewprofile
      */
     public student_viewprofile() {
         initComponents();
+        setLocationRelativeTo(null);
+        setTextFieldsEditable(false);
+        loadStudentProfileFromDB();
+    }
+    
+    /**
+     * Constructor with student ID
+     */
+    public student_viewprofile(int studentId, String studentName) {
+        initComponents();
+        this.currentStudentId = studentId;
+        this.currentStudentName = studentName;
+        setLocationRelativeTo(null);
+        setTextFieldsEditable(false);
+        loadStudentProfileFromDB();
+    }
+    
+    /**
+     * Load student profile data from database
+     */
+    private void loadStudentProfileFromDB() {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        try {
+            // Get database connection
+            conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            
+            // SQL query to fetch student data using student_id (INT)
+            String query = "SELECT name, email, course, year_level, school_id FROM students WHERE student_id = ?";
+            pstmt = conn.prepareStatement(query);
+            pstmt.setInt(1, currentStudentId);
+            
+            rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                // Retrieve data from result set
+                studentName = rs.getString("name");
+                studentEmail = rs.getString("email");
+                studentCourse = rs.getString("course");
+                studentYearLevel = rs.getString("year_level");
+                studentSchoolID = rs.getString("school_id");
+                
+                // Populate text fields
+                jTextField1.setText(studentName);
+                jTextField2.setText(studentEmail);
+                jTextField3.setText(studentCourse);
+                jTextField4.setText(studentYearLevel);
+                jTextField5.setText(studentSchoolID);
+                
+                // Update welcome label
+                jLabel5.setText(studentName.toUpperCase() + "!");
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Student profile not found!",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                logger.warning("No student found with ID: " + currentStudentId);
+            }
+            
+        } catch (SQLException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Database error loading student profile", e);
+            JOptionPane.showMessageDialog(this,
+                "Error loading student profile: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+        } finally {
+            // Close resources
+            closeResources(rs, pstmt, conn);
+        }
+    }
+    
+    /**
+     * Update student profile in database
+     */
+    private boolean updateStudentProfile() {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
+        try {
+            conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            
+            String query = "UPDATE students SET name = ?, email = ?, course = ?, year_level = ? WHERE student_id = ?";
+            pstmt = conn.prepareStatement(query);
+            
+            pstmt.setString(1, jTextField1.getText().trim());
+            pstmt.setString(2, jTextField2.getText().trim());
+            pstmt.setString(3, jTextField3.getText().trim());
+            pstmt.setString(4, jTextField4.getText().trim());
+            pstmt.setInt(5, currentStudentId);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                JOptionPane.showMessageDialog(this,
+                    "Profile updated successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+                return true;
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Failed to update profile.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+            
+        } catch (SQLException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error updating student profile", e);
+            JOptionPane.showMessageDialog(this,
+                "Error updating profile: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        } finally {
+            closeResources(null, pstmt, conn);
+        }
+    }
+    
+    /**
+     * Set text fields to editable or read-only
+     */
+    private void setTextFieldsEditable(boolean editable) {
+        jTextField1.setEditable(editable);
+        jTextField2.setEditable(editable);
+        jTextField3.setEditable(editable);
+        jTextField4.setEditable(editable);
+        jTextField5.setEditable(false); // School ID should never be editable
+    }
+    
+    /**
+     * Close database resources
+     */
+    private void closeResources(ResultSet rs, PreparedStatement pstmt, Connection conn) {
+        try {
+            if (rs != null) rs.close();
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        } catch (SQLException e) {
+            logger.log(java.util.logging.Level.WARNING, "Error closing database resources", e);
+        }
     }
 
     /**
@@ -309,21 +464,21 @@ public class student_viewprofile extends javax.swing.JFrame {
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
-        student_bookappointment a = new student_bookappointment();
+        student_bookappointment a = new student_bookappointment(currentStudentId, currentStudentName);
         a.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         // TODO add your handling code here:
-        student_viewprofile c = new student_viewprofile();
+        student_viewprofile c = new student_viewprofile(currentStudentId, currentStudentName);
         c.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
-        student_myappointment b = new student_myappointment();
+        student_myappointment b = new student_myappointment(currentStudentId, currentStudentName);
         b.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_jButton6ActionPerformed
@@ -345,8 +500,9 @@ public class student_viewprofile extends javax.swing.JFrame {
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
+        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
+        d.setVisible(true);
         this.dispose();
-        new student_dashboard().setVisible(true);
     }//GEN-LAST:event_jButton8ActionPerformed
 
     /**
