@@ -495,6 +495,22 @@ public LocalDate getSelectedDate() {
         }
         super.dispose();
     }
+    
+    public void setSelectedSpecialization(String spec) {
+    if (spec != null) {
+        specialization.setSelectedItem(spec);
+        loadCounselorsBySpecialization(spec);
+    }
+}
+
+public void setSelectedCounselor(String counselorName) {
+    if (counselorName != null) {
+        counselor.setSelectedItem(counselorName);
+        displayCounselorInfo(counselorName);
+        selectedCounselorId = getSelectedCounselorId();
+        updateCalendarDisplay();
+    }
+}
     /**
      * Creates new form student_bookappointment
      */
@@ -536,6 +552,7 @@ public LocalDate getSelectedDate() {
         previousmonth = new javax.swing.JButton();
         currentmonth = new javax.swing.JLabel();
         nextmonth = new javax.swing.JButton();
+        jButton2 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -738,6 +755,13 @@ public LocalDate getSelectedDate() {
             }
         });
 
+        jButton2.setText("Home");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -746,6 +770,8 @@ public LocalDate getSelectedDate() {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addGap(41, 41, 41)
                 .addComponent(logo_home, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jButton2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(welcome)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -800,7 +826,8 @@ public LocalDate getSelectedDate() {
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(logout)
                             .addComponent(welcome)
-                            .addComponent(user)))
+                            .addComponent(user)
+                            .addComponent(jButton2)))
                     .addComponent(logo_home, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -917,38 +944,41 @@ public LocalDate getSelectedDate() {
 
     private void nextpageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nextpageActionPerformed
         // TODO add your handling code here:                                                                             
-        String selectedSpecialization = (String) specialization.getSelectedItem();
-        String selectedCounselor = (String) counselor.getSelectedItem();
+    String selectedSpecialization = (String) specialization.getSelectedItem();
+    String selectedCounselor = (String) counselor.getSelectedItem();
 
-        if (selectedSpecialization == null || selectedSpecialization.equals("-- Select Specialization --")) {
-            JOptionPane.showMessageDialog(this, "Please select a specialization before proceeding.",
-                    "Selection Required", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+    if (selectedSpecialization == null || selectedSpecialization.equals("-- Select Specialization --")) {
+        JOptionPane.showMessageDialog(this, "Please select a specialization before proceeding.",
+                "Selection Required", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
 
-        if (selectedCounselor == null || selectedCounselor.equals("-- Select Counselor --")) {
-            JOptionPane.showMessageDialog(this, "Please select a counselor before proceeding.",
-                    "Selection Required", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+    if (selectedCounselor == null || selectedCounselor.equals("-- Select Counselor --")) {
+        JOptionPane.showMessageDialog(this, "Please select a counselor before proceeding.",
+                "Selection Required", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
 
-        int counselorId = getSelectedCounselorId();
+    int counselorId = getSelectedCounselorId();
 
-        if (counselorId == -1) {
-               JOptionPane.showMessageDialog(this, "Error retrieving counselor information.",
-                       "Error", JOptionPane.ERROR_MESSAGE);
-               return;
-           }
+    if (counselorId == -1) {
+        JOptionPane.showMessageDialog(this, "Error retrieving counselor information.",
+                "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
 
-           // Pass null for the date parameter or handle it in the next form
-           student_bookappointment2nd d = new student_bookappointment2nd(
-               currentStudentId, 
-               currentStudentName, 
-               counselorId, 
-               null  // Pass null instead of selectedDate
-           );
-           d.setVisible(true);
-           this.dispose();
+    // Pass all necessary information including selections
+    student_bookappointment2nd d = new student_bookappointment2nd(
+        currentStudentId, 
+        currentStudentName, 
+        counselorId, 
+        selectedDate != null ? java.sql.Date.valueOf(selectedDate) : null,
+        selectedSpecialization,
+        selectedCounselor
+    );
+    d.setVisible(true);
+    this.dispose();
+
     }//GEN-LAST:event_nextpageActionPerformed
 
     private void counselorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_counselorActionPerformed
@@ -1004,6 +1034,13 @@ public LocalDate getSelectedDate() {
         updateNavigationButtons();
     }//GEN-LAST:event_nextmonthActionPerformed
 
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
+        d.setVisible(true);
+        this.dispose();
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton2ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1037,6 +1074,7 @@ public LocalDate getSelectedDate() {
     private javax.swing.JComboBox<String> counselor;
     private javax.swing.JTextArea counselordetails;
     private javax.swing.JLabel currentmonth;
+    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel6;
