@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 
 public class counselor_regis extends javax.swing.JFrame {
@@ -29,6 +30,7 @@ public class counselor_regis extends javax.swing.JFrame {
     public counselor_regis() {
         initComponents();
         setupPlaceholders();
+        loadSpecializations();
     }
     
     private boolean emailExists(String email) {
@@ -64,7 +66,6 @@ public class counselor_regis extends javax.swing.JFrame {
     private void setupPlaceholders(){
         setupPlaceholder(jTextField141, "Full name");
         setupPlaceholder(jTextField142, "Email");
-        setupPlaceholder(jTextField143, "Specialization");
         setupPlaceholder(jTextField144, "License ID");
         setupPasswordPlaceholder(jTextField147, "Password");
         setupPasswordPlaceholder(passwordfield, "Confirm Password");
@@ -79,7 +80,7 @@ public class counselor_regis extends javax.swing.JFrame {
         public void focusGained(FocusEvent e) {
             if (textField.getText().equals(placeholder)) {
                 textField.setText("");
-                textField.setForeground(new Color(255, 195, 51));
+                textField.setForeground(new Color(0, 0, 0));
             }
         }
 
@@ -180,6 +181,33 @@ public class counselor_regis extends javax.swing.JFrame {
             return true;
         }
     }
+    
+        
+    private void loadSpecializations() {
+        try {
+            Connection connection = DatabaseConnection.getConnection();
+            if (connection == null) return;
+            
+            String query = "SELECT DISTINCT specialization FROM counselors WHERE status = 'Active' ORDER BY specialization";
+            PreparedStatement pst = connection.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+            
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            model.addElement("-- Select Specialization --");
+            
+            while (rs.next()) {
+                model.addElement(rs.getString("specialization"));
+            }
+            
+            jComboBox1.setModel(model);
+            rs.close();
+            pst.close();
+        } catch (SQLException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error loading specializations", e);
+            JOptionPane.showMessageDialog(this, "Error loading specializations: " + e.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -195,12 +223,12 @@ public class counselor_regis extends javax.swing.JFrame {
         jLabel29 = new javax.swing.JLabel();
         jTextField141 = new javax.swing.JTextField();
         jTextField142 = new javax.swing.JTextField();
-        jTextField143 = new javax.swing.JTextField();
         jTextField144 = new javax.swing.JTextField();
         jTextField147 = new javax.swing.JTextField();
         jTextField146 = new javax.swing.JTextField();
         register = new javax.swing.JButton();
         passwordfield = new javax.swing.JPasswordField();
+        jComboBox1 = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -228,8 +256,6 @@ public class counselor_regis extends javax.swing.JFrame {
                 jTextField142ActionPerformed(evt);
             }
         });
-
-        jTextField143.setText("Specialization");
 
         jTextField144.setText("License ID");
 
@@ -260,6 +286,12 @@ public class counselor_regis extends javax.swing.JFrame {
             }
         });
 
+        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jComboBox1ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel24Layout = new javax.swing.GroupLayout(jPanel24);
         jPanel24.setLayout(jPanel24Layout);
         jPanel24Layout.setHorizontalGroup(
@@ -280,10 +312,10 @@ public class counselor_regis extends javax.swing.JFrame {
                         .addGroup(jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jTextField141)
                             .addComponent(jTextField142)
-                            .addComponent(jTextField143, javax.swing.GroupLayout.DEFAULT_SIZE, 305, Short.MAX_VALUE)
                             .addComponent(jTextField144)
                             .addComponent(jTextField147)
-                            .addComponent(passwordfield))))
+                            .addComponent(passwordfield, javax.swing.GroupLayout.DEFAULT_SIZE, 305, Short.MAX_VALUE)
+                            .addComponent(jComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addContainerGap(174, Short.MAX_VALUE))
         );
         jPanel24Layout.setVerticalGroup(
@@ -298,8 +330,8 @@ public class counselor_regis extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jTextField142, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jTextField143, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(12, 12, 12)
                 .addComponent(jTextField144, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jTextField147, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -341,7 +373,7 @@ public class counselor_regis extends javax.swing.JFrame {
         // TODO add your handling code here:                              
         String fullname = jTextField141.getText().trim();
         String email = jTextField142.getText().trim();
-        String specialization = jTextField143.getText().trim();
+        String selectedSpec = (String) jComboBox1.getSelectedItem();
         String licenseId = jTextField144.getText().trim();
         String password = jTextField147.getText().trim();
         String confirmPassword = new String(passwordfield.getPassword()).trim();
@@ -349,7 +381,7 @@ public class counselor_regis extends javax.swing.JFrame {
         // ================= VALIDATION =================
         if (fullname.isEmpty() || fullname.equals("Full name") ||
             email.isEmpty() || email.equals("Email") ||
-            specialization.isEmpty() || specialization.equals("Specialization") ||
+            selectedSpec == null || selectedSpec.equals("-- Select Specialization --") ||
             licenseId.isEmpty() || licenseId.equals("License ID") ||
             password.isEmpty() || password.equals("Password") ||
             confirmPassword.isEmpty() || confirmPassword.equals("Confirm Password")) {
@@ -414,7 +446,7 @@ public class counselor_regis extends javax.swing.JFrame {
             ps.setString(1, fullname);
             ps.setString(2, email);
             ps.setString(3, password);
-            ps.setString(4, specialization);
+            ps.setString(4, selectedSpec);
             ps.setString(5, licenseId);
             ps.executeUpdate();
 
@@ -439,6 +471,11 @@ public class counselor_regis extends javax.swing.JFrame {
         registerActionPerformed (evt);
     }//GEN-LAST:event_passwordfieldActionPerformed
 
+    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jComboBox1ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -459,11 +496,11 @@ public class counselor_regis extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton57;
+    private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel29;
     private javax.swing.JPanel jPanel24;
     private javax.swing.JTextField jTextField141;
     private javax.swing.JTextField jTextField142;
-    private javax.swing.JTextField jTextField143;
     private javax.swing.JTextField jTextField144;
     private javax.swing.JTextField jTextField146;
     private javax.swing.JTextField jTextField147;

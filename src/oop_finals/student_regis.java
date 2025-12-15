@@ -80,7 +80,7 @@ public class student_regis extends javax.swing.JFrame {
         public void focusGained(FocusEvent e) {
             if (textField.getText().equals(placeholder)) {
                 textField.setText("");
-                textField.setForeground(new Color(255, 195, 51));
+                textField.setForeground(new Color(0, 0, 0));
             }
         }
 
@@ -107,7 +107,7 @@ public class student_regis extends javax.swing.JFrame {
             public void focusGained(FocusEvent e) {
                 if (String.valueOf(pf.getPassword()).equals(placeholder)) {
                     pf.setText("");
-                    pf.setForeground(new Color(255, 195, 51));
+                    pf.setForeground(new Color(0, 0, 0));
                     pf.setEchoChar('•');
                 }
             }
@@ -132,7 +132,7 @@ public class student_regis extends javax.swing.JFrame {
             public void focusGained(FocusEvent e) {
                 if (tf.getText().equals(placeholder)) {
                     tf.setText("");
-                    tf.setForeground(new Color(255, 195, 51));
+                    tf.setForeground(new Color(0, 0, 0));
                 }
             }
 
