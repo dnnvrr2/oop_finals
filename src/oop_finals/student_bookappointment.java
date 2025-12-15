@@ -529,7 +529,6 @@ public LocalDate getSelectedDate() {
         counselor = new javax.swing.JComboBox<>();
         jScrollPane2 = new javax.swing.JScrollPane();
         counselordetails = new javax.swing.JTextArea();
-        select = new javax.swing.JButton();
         jLabel3 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -701,13 +700,6 @@ public LocalDate getSelectedDate() {
         counselordetails.setRows(5);
         jScrollPane2.setViewportView(counselordetails);
 
-        select.setText("Select");
-        select.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                selectActionPerformed(evt);
-            }
-        });
-
         jLabel3.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel3.setForeground(new java.awt.Color(255, 195, 51));
         jLabel3.setText("SPECIALIZATION");
@@ -783,13 +775,8 @@ public LocalDate getSelectedDate() {
                                                     .addComponent(specialization, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                    .addGroup(jPanel2Layout.createSequentialGroup()
-                                                        .addComponent(jLabel8)
-                                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                                    .addComponent(jLabel8)
                                                     .addComponent(counselor, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                                .addGap(0, 0, Short.MAX_VALUE)
-                                                .addComponent(select))
                                             .addComponent(jScrollPane2))
                                         .addGap(18, 18, 18))
                                     .addGroup(jPanel2Layout.createSequentialGroup()
@@ -839,9 +826,7 @@ public LocalDate getSelectedDate() {
                             .addComponent(specialization, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(counselor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jScrollPane2)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(select))
+                        .addComponent(jScrollPane2))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 317, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
                 .addComponent(nextpage)
@@ -968,35 +953,6 @@ public LocalDate getSelectedDate() {
            this.dispose();
     }//GEN-LAST:event_nextpageActionPerformed
 
-    private void selectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectActionPerformed
-        // TODO add your handling code here:
-        String selectedSpecialization = (String) specialization.getSelectedItem();
-        String selectedCounselor = (String) counselor.getSelectedItem();
-
-        if (selectedSpecialization == null || selectedSpecialization.equals("-- Select Specialization --")) {
-            JOptionPane.showMessageDialog(this, "Please select a specialization first.",
-                "Selection Required", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (selectedCounselor == null || selectedCounselor.equals("-- Select Counselor --")) {
-            JOptionPane.showMessageDialog(this, "Please select a counselor.",
-                "Selection Required", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        int confirm = JOptionPane.showConfirmDialog(this,
-            "You have selected:\nCounselor: " + selectedCounselor +
-            "\nSpecialization: " + selectedSpecialization + "\n\nProceed?",
-            "Confirm Selection",
-            JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            JOptionPane.showMessageDialog(this, "Counselor selected successfully!",
-                "Success", JOptionPane.INFORMATION_MESSAGE);
-        }
-    }//GEN-LAST:event_selectActionPerformed
-
     private void counselorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_counselorActionPerformed
         // TODO add your handling code here:
         String selectedCounselor = (String) counselor.getSelectedItem();
@@ -1101,7 +1057,6 @@ public LocalDate getSelectedDate() {
     private javax.swing.JButton nextpage;
     private javax.swing.JButton previousmonth;
     private javax.swing.JLabel profilelogo;
-    private javax.swing.JButton select;
     private javax.swing.JComboBox<String> specialization;
     private javax.swing.JLabel user;
     private javax.swing.JButton viewprofile;

@@ -21,6 +21,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import java.time.LocalDateTime;
 
 public class counselor_myscheduleappointments extends javax.swing.JFrame {
     
@@ -48,14 +49,91 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
         loadUpcomingAppointments();
     }
     
+    private void cancelAppointment(int appointmentId, LocalDate appointmentDate, LocalTime appointmentTime, String studentName) {
+    // Check if cancellation is allowed (30 minutes before)
+        if (!canCancelAppointment(appointmentDate, appointmentTime)) {
+            JOptionPane.showMessageDialog(this,
+                "Cancellation must be done at least 30 minutes before the appointment time.",
+                "Cannot Cancel",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Prompt counselor for cancellation reason
+        String cancellationReason = (String) JOptionPane.showInputDialog(
+            this,
+            "Please provide a reason for cancelling this appointment with " + studentName + ":",
+            "Cancellation Reason",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            null,
+            ""
+        );
+
+        // Check if counselor cancelled the dialog or left it empty
+        if (cancellationReason == null) {
+            // User clicked Cancel on the dialog
+            return;
+        }
+
+        cancellationReason = cancellationReason.trim();
+
+        if (cancellationReason.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Cancellation reason is required. Please provide a reason.",
+                "Reason Required",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            Connection connection = getConnection();
+            if (connection == null) return;
+
+            // Update appointment status to 'Cancelled' and store cancellation reason
+            String updateQuery = "UPDATE appointments SET status = 'Cancelled', " +
+                               "cancellation_reason = ?, cancelled_by = 'counselor' " +
+                               "WHERE appointment_id = ?";
+            PreparedStatement pst = connection.prepareStatement(updateQuery);
+            pst.setString(1, cancellationReason);
+            pst.setInt(2, appointmentId);
+
+            int rowsAffected = pst.executeUpdate();
+
+            if (rowsAffected > 0) {
+                JOptionPane.showMessageDialog(this,
+                    "Appointment cancelled successfully.\nThe student will be notified of the cancellation.",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+                // Reload the table
+                loadUpcomingAppointments();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Failed to cancel appointment. Please try again.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+
+            pst.close();
+
+        } catch (SQLException e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error cancelling appointment", e);
+            JOptionPane.showMessageDialog(this,
+                "Error cancelling appointment: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
     private void loadUpcomingAppointments() {
         try {
             Connection connection = getConnection();
             if (connection == null) return;
-            
+
             // Query to get upcoming appointments for this counselor
             String query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, " +
-                          "s.name as student_name, s.year_level, a.reason " +
+                          "s.name as student_name, s.year_level, s.course, a.reason " +
                           "FROM appointments a " +
                           "JOIN students s ON a.student_id = s.student_id " +
                           "WHERE a.counselor_id = ? " +
@@ -63,56 +141,66 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
                           "AND a.status = 'Upcoming' " +
                           "ORDER BY a.appointment_date ASC, a.appointment_time ASC " +
                           "LIMIT 50";
-            
+
             PreparedStatement pst = connection.prepareStatement(query);
             pst.setInt(1, currentCounselorId);
             ResultSet rs = pst.executeQuery();
-            
-            // Create table modela
+
+            // Create table model with 7 columns (including hidden ID)
             DefaultTableModel model = new DefaultTableModel(
-                new String[]{"Date", "Time", "Student Name", "Year Level", "Reason"}, 0) {
-                @Override
+                new String[]{"ID", "Date", "Time", "Student Name", "Year Level", "Course", "Reason"}, 0) {
+                @Override  // ✅ FIXED: Added opening brace before @Override
                 public boolean isCellEditable(int row, int column) {
                     return false;
                 }
             };
-            
+
             // Populate table
             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy");
             DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
-            
+
             while (rs.next()) {
                 LocalDate date = rs.getDate("appointment_date").toLocalDate();
                 LocalTime time = rs.getTime("appointment_time").toLocalTime();
-                
+
+                // ✅ FIXED: Removed duplicate model.addRow line
                 model.addRow(new Object[]{
+                    rs.getInt("appointment_id"),  // Hidden column for ID
                     date.format(dateFormatter),
                     time.format(timeFormatter),
                     rs.getString("student_name"),
                     rs.getString("year_level"),
+                    rs.getString("course"),
                     rs.getString("reason")
                 });
-            }
-            
+            } // ✅ FIXED: Properly closed while loop
+
             jTable2.setModel(model);
-            
+
+            // Hide the ID column
+            jTable2.getColumnModel().getColumn(0).setMinWidth(0);
+            jTable2.getColumnModel().getColumn(0).setMaxWidth(0);
+            jTable2.getColumnModel().getColumn(0).setPreferredWidth(0);
+
             // Set column widths
-            jTable2.getColumnModel().getColumn(0).setPreferredWidth(100); // Date
-            jTable2.getColumnModel().getColumn(1).setPreferredWidth(80);  // Time
-            jTable2.getColumnModel().getColumn(2).setPreferredWidth(150); // Student Name
-            jTable2.getColumnModel().getColumn(3).setPreferredWidth(80);  // Year Level
-            jTable2.getColumnModel().getColumn(4).setPreferredWidth(250); // Reason
-            
+            jTable2.getColumnModel().getColumn(1).setPreferredWidth(100); // Date
+            jTable2.getColumnModel().getColumn(2).setPreferredWidth(80);  // Time
+            jTable2.getColumnModel().getColumn(3).setPreferredWidth(150); // Student Name
+            jTable2.getColumnModel().getColumn(4).setPreferredWidth(80);  // Year Level
+            jTable2.getColumnModel().getColumn(5).setPreferredWidth(120); // Course
+            jTable2.getColumnModel().getColumn(6).setPreferredWidth(200); // Reason
+
             // Center align specific columns
             DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
             centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-            jTable2.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
             jTable2.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
-            jTable2.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
-            
+            jTable2.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
+            jTable2.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
+            jTable2.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);
+
             rs.close();
             pst.close();
-            
+
         } catch (SQLException e) {
             logger.log(java.util.logging.Level.SEVERE, "Error loading upcoming appointments", e);
             JOptionPane.showMessageDialog(this,
@@ -149,6 +237,14 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
         }
         super.dispose();
     }
+    
+    private boolean canCancelAppointment(LocalDate appointmentDate, LocalTime appointmentTime) {
+        LocalDateTime appointmentDateTime = LocalDateTime.of(appointmentDate, appointmentTime);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime thirtyMinutesBefore = appointmentDateTime.minusMinutes(30);
+
+        return now.isBefore(thirtyMinutesBefore);
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -176,6 +272,8 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
         myschedule2 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable2 = new javax.swing.JTable();
+        jLabel1 = new javax.swing.JLabel();
+        cancelappointment = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -309,17 +407,17 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
 
         jTable2.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null}
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null}
             },
             new String [] {
-                "Date", "Time", "Student Name", "Year Level", "Reason"
+                "Date", "Time", "Student Name", "Year Level", "Course", "Reason"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false
+                false, false, false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -331,6 +429,19 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
         jTable2.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jTable2.setShowHorizontalLines(true);
         jScrollPane2.setViewportView(jTable2);
+
+        jLabel1.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel1.setText("Note: Cancelling an appointment should be 30 minutes before the appointment time");
+
+        cancelappointment.setBackground(new java.awt.Color(204, 0, 0));
+        cancelappointment.setForeground(new java.awt.Color(255, 255, 255));
+        cancelappointment.setText("CANCEL APPOINTMENT");
+        cancelappointment.setBorderPainted(false);
+        cancelappointment.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelappointmentActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -351,8 +462,13 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
                 .addGap(48, 48, 48)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 670, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addGroup(jPanel2Layout.createSequentialGroup()
+                            .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 470, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(cancelappointment))
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 670, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(76, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -371,8 +487,12 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
                 .addGap(51, 51, 51)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(50, Short.MAX_VALUE))
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 409, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(cancelappointment))
+                .addGap(21, 21, 21))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -433,6 +553,57 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
         this.dispose();
     }//GEN-LAST:event_homeActionPerformed
 
+    private void cancelappointmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelappointmentActionPerformed
+        int selectedRow = jTable2.getSelectedRow(); // FIXED: Changed from jTable1 to jTable2
+
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this,
+                "Please select an appointment to cancel.",
+                "No Selection",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            // Get appointment ID from hidden column (column 0)
+            int appointmentId = (int) jTable2.getValueAt(selectedRow, 0);
+
+            // Get date and time for display and validation
+            String dateStr = jTable2.getValueAt(selectedRow, 1).toString();
+            String timeStr = jTable2.getValueAt(selectedRow, 2).toString();
+            String studentName = jTable2.getValueAt(selectedRow, 3).toString();
+
+            // Parse date and time for validation
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy");
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+
+            LocalDate appointmentDate = LocalDate.parse(dateStr, dateFormatter);
+            LocalTime appointmentTime = LocalTime.parse(timeStr, timeFormatter);
+
+            // Confirm cancellation
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to cancel this appointment?\n\n" +
+                "Date: " + dateStr + "\n" +
+                "Time: " + timeStr + "\n" +
+                "Student: " + studentName,
+                "Confirm Cancellation",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                // ✅ FIXED: Added studentName parameter (4th parameter)
+                cancelAppointment(appointmentId, appointmentDate, appointmentTime, studentName);
+            }
+
+        } catch (Exception e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error processing cancellation", e);
+            JOptionPane.showMessageDialog(this,
+                "Error processing appointment cancellation: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_cancelappointmentActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -459,7 +630,9 @@ public class counselor_myscheduleappointments extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton cancelappointment;
     private javax.swing.JButton home;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
