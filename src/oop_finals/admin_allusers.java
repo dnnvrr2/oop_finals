@@ -17,6 +17,11 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.RowFilter;
 import javax.swing.table.TableRowSorter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class admin_allusers extends javax.swing.JFrame {
     
@@ -26,6 +31,10 @@ public class admin_allusers extends javax.swing.JFrame {
     
     private int currentAdminId;
     private String currentAdminName;
+    
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "";
 
     /**
      * Creates new form admin_allusers
@@ -159,24 +168,42 @@ public class admin_allusers extends javax.swing.JFrame {
         // Update the status in the table
         tableModel.setValueAt("Active", modelRow, 4);
         
-        // TODO: Update in database
-        /*
+
         try {
-            Connection conn = DatabaseConnection.getConnection();
-            String query = "UPDATE users SET status = 'Active' WHERE id = ?";
+            Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+
+            String userType = tableModel.getValueAt(modelRow, 1).toString();
+            String tableName = userType.equals("Student") ? "students" : "counselors";
+            String idColumn = userType.equals("Student") ? "student_number" : "license_number";
+
+            // Update user type table
+            String query = "UPDATE " + tableName + " SET status = 'Active' WHERE " + idColumn + " = ?";
             PreparedStatement pst = conn.prepareStatement(query);
-            pst.setString(1, tableModel.getValueAt(modelRow, 2).toString()); // ID
+            pst.setString(1, tableModel.getValueAt(modelRow, 2).toString());
             pst.executeUpdate();
+
+            // Update users table
+            String queryUsers = "UPDATE users SET status = 'Active' WHERE user_id = (SELECT user_id FROM " + tableName + " WHERE " + idColumn + " = ?)";
+            PreparedStatement pstUsers = conn.prepareStatement(queryUsers);
+            pstUsers.setString(1, tableModel.getValueAt(modelRow, 2).toString());
+            pstUsers.executeUpdate();
+
             conn.close();
-        } catch (Exception e) {
+
+            tableModel.setValueAt("Active", modelRow, 4);
+
+            JOptionPane.showMessageDialog(this,
+                "User " + name + " has been activated successfully.",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                "Error activating user: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
-        */
-        
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "User " + name + " has been activated successfully.",
-            "Success",
-            javax.swing.JOptionPane.INFORMATION_MESSAGE);
     }
 }
 
@@ -217,39 +244,56 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         // Update the status in the table
         tableModel.setValueAt("Inactive", modelRow, 4);
         
-        // TODO: Update in database
-        /*
         try {
-            Connection conn = DatabaseConnection.getConnection();
-            String query = "UPDATE users SET status = 'Inactive' WHERE id = ?";
+            Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+
+            String userType = tableModel.getValueAt(modelRow, 1).toString();
+            String tableName = userType.equals("Student") ? "students" : "counselors";
+            String idColumn = userType.equals("Student") ? "student_number" : "license_number";
+
+            // Update user type table
+            String query = "UPDATE " + tableName + " SET status = 'Inactive' WHERE " + idColumn + " = ?";
             PreparedStatement pst = conn.prepareStatement(query);
-            pst.setString(1, tableModel.getValueAt(modelRow, 2).toString()); // ID
+            pst.setString(1, tableModel.getValueAt(modelRow, 2).toString());
             pst.executeUpdate();
+
+            // Update users table
+            String queryUsers = "UPDATE users SET status = 'Inactive' WHERE user_id = (SELECT user_id FROM " + tableName + " WHERE " + idColumn + " = ?)";
+            PreparedStatement pstUsers = conn.prepareStatement(queryUsers);
+            pstUsers.setString(1, tableModel.getValueAt(modelRow, 2).toString());
+            pstUsers.executeUpdate();
+
             conn.close();
-        } catch (Exception e) {
+
+            tableModel.setValueAt("Inactive", modelRow, 4);
+
+            JOptionPane.showMessageDialog(this,
+                "User " + name + " has been deactivated successfully.",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                "Error deactivating user: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
-        */
-        
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "User " + name + " has been deactivated successfully.",
-            "Success",
-            javax.swing.JOptionPane.INFORMATION_MESSAGE);
     }
 }
     private void setupTable() {
-        String[] columns = {"Name", "Type", "ID", "Email", "Profile"};
+        String[] columns = {"Name", "Type", "ID", "Email", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
-        
+
         jTable1.setModel(tableModel);
         jTable1.setRowHeight(25);
+
     }
-    
     private void setupTableClickListener() {
     jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
         @Override
@@ -263,8 +307,6 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
                 String ID = jTable1.getValueAt(row, 2).toString();
                 String Email = jTable1.getValueAt(row, 3).toString(); // ADD THIS
                 
-                // Open profile page
-                openProfile(Name, Type, ID, Email);
             }
         }
     });
@@ -272,60 +314,51 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
     private void loadUsers() {
         // Clear existing data
         tableModel.setRowCount(0);
-        
-        // Add sample users (replace with your database query)
-        tableModel.addRow(new Object[]{"John Doe", "Student", "2021001", "john@email.com", "Active"});
-        tableModel.addRow(new Object[]{"Jane Smith", "Student", "2021002", "jane@email.com", "Active"});
-        tableModel.addRow(new Object[]{"Dr. Brown", "Counselor", "C001", "brown@email.com", "Active"});
-        
-        // TODO: Load from database
-        /*
+       
         try {
-            Connection conn = DatabaseConnection.getConnection();
-            String query = "SELECT name, type, id, email, status FROM users";
-            PreparedStatement pst = conn.prepareStatement(query);
-            ResultSet rs = pst.executeQuery();
-            
-            while (rs.next()) {
-                String name = rs.getString("name");
-                String type = rs.getString("type");
-                String id = rs.getString("id");
-                String email = rs.getString("email");
-                String status = rs.getString("status");
-                
-                tableModel.addRow(new Object[]{name, type, id, email, status});
+            Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+
+            // Get students
+            String queryStudents = "SELECT name, 'Student' as user_type, student_number as id, email, status FROM students";
+            PreparedStatement pstStudents = conn.prepareStatement(queryStudents);
+            ResultSet rsStudents = pstStudents.executeQuery();
+
+            while (rsStudents.next()) {
+                tableModel.addRow(new Object[]{
+                    rsStudents.getString("name"),
+                    rsStudents.getString("user_type"),
+                    rsStudents.getString("id"),
+                    rsStudents.getString("email"),
+                    rsStudents.getString("status")
+                });
             }
-            
+
+            // Get counselors
+            String queryCounselors = "SELECT name, 'Counselor' as user_type, license_number as id, email, status FROM counselors";
+            PreparedStatement pstCounselors = conn.prepareStatement(queryCounselors);
+            ResultSet rsCounselors = pstCounselors.executeQuery();
+
+            while (rsCounselors.next()) {
+                tableModel.addRow(new Object[]{
+                    rsCounselors.getString("name"),
+                    rsCounselors.getString("user_type"),
+                    rsCounselors.getString("id"),
+                    rsCounselors.getString("email"),
+                    rsCounselors.getString("status")
+                });
+            }
+
             conn.close();
-        } catch (Exception e) {
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                "Error loading users: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
-        */
     }
     
-    private void openProfile(String Name, String Type, String ID, String Email) {
-        // Open different profile forms based on user type
-      
-            // For admin or other types
-            javax.swing.JOptionPane.showMessageDialog(this,
-                "Profile Details:\n" +
-                "Name: " + Name + "\n" +
-                "Type: " + Type + "\n" +
-                "ID: " + ID + "\n" +
-                "Email: " + Email,
-                "User Profile",
-                javax.swing.JOptionPane.INFORMATION_MESSAGE);
-    }
-
-            // TODO: Load additional data from database
-            /*
-            try {
-                String query = "SELECT * FROM students WHERE student_id = ?";
-                // Load and display data
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            */
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

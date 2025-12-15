@@ -126,6 +126,11 @@ public class counselor_login_page extends javax.swing.JFrame {
 
         password.setForeground(new java.awt.Color(255, 195, 51));
         password.setText("jPasswordField1");
+        password.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                passwordActionPerformed(evt);
+            }
+        });
 
         login.setBackground(new java.awt.Color(255, 195, 51));
         login.setFont(new java.awt.Font("Segoe UI Black", 1, 12)); // NOI18N
@@ -299,6 +304,11 @@ public class counselor_login_page extends javax.swing.JFrame {
     }
     
     }//GEN-LAST:event_loginActionPerformed
+
+    private void passwordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordActionPerformed
+        // TODO add your handling code here:
+        loginActionPerformed (evt);
+    }//GEN-LAST:event_passwordActionPerformed
 
     /**
      * @param args the command line arguments

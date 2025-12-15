@@ -67,7 +67,7 @@ public class counselor_regis extends javax.swing.JFrame {
         setupPlaceholder(jTextField143, "Specialization");
         setupPlaceholder(jTextField144, "License ID");
         setupPasswordPlaceholder(jTextField147, "Password");
-        setupPasswordPlaceholder(jPasswordField1, "Confirm Password");
+        setupPasswordPlaceholder(passwordfield, "Confirm Password");
     }
     
     private void setupPlaceholder(javax.swing.JTextField textField, String placeholder) {
@@ -106,7 +106,7 @@ public class counselor_regis extends javax.swing.JFrame {
             public void focusGained(FocusEvent e) {
                 if (String.valueOf(pf.getPassword()).equals(placeholder)) {
                     pf.setText("");
-                    pf.setForeground(new Color(255, 195, 51));
+                    pf.setForeground(new Color(0, 0, 0));
                     pf.setEchoChar('•');
                 }
             }
@@ -131,7 +131,7 @@ public class counselor_regis extends javax.swing.JFrame {
             public void focusGained(FocusEvent e) {
                 if (tf.getText().equals(placeholder)) {
                     tf.setText("");
-                    tf.setForeground(new Color(255, 195, 51));
+                    tf.setForeground(new Color(0, 0, 0));
                 }
             }
 
@@ -197,9 +197,10 @@ public class counselor_regis extends javax.swing.JFrame {
         jTextField142 = new javax.swing.JTextField();
         jTextField143 = new javax.swing.JTextField();
         jTextField144 = new javax.swing.JTextField();
-        jButton58 = new javax.swing.JButton();
         jTextField147 = new javax.swing.JTextField();
-        jPasswordField1 = new javax.swing.JPasswordField();
+        jTextField146 = new javax.swing.JTextField();
+        register = new javax.swing.JButton();
+        passwordfield = new javax.swing.JPasswordField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -219,10 +220,8 @@ public class counselor_regis extends javax.swing.JFrame {
         jLabel29.setForeground(new java.awt.Color(255, 255, 255));
         jLabel29.setText("COUNSELOR REGISTRATION");
 
-        jTextField141.setForeground(new java.awt.Color(255, 195, 51));
         jTextField141.setText("Name");
 
-        jTextField142.setForeground(new java.awt.Color(255, 195, 51));
         jTextField142.setText("Email");
         jTextField142.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -230,26 +229,36 @@ public class counselor_regis extends javax.swing.JFrame {
             }
         });
 
-        jTextField143.setForeground(new java.awt.Color(255, 195, 51));
         jTextField143.setText("Specialization");
 
-        jTextField144.setForeground(new java.awt.Color(255, 195, 51));
         jTextField144.setText("License ID");
 
-        jButton58.setBackground(new java.awt.Color(255, 195, 51));
-        jButton58.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jButton58.setForeground(new java.awt.Color(255, 255, 255));
-        jButton58.setText("REGISTER");
-        jButton58.addActionListener(new java.awt.event.ActionListener() {
+        jTextField147.setText("Password");
+        jTextField147.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton58ActionPerformed(evt);
+                jTextField147ActionPerformed(evt);
             }
         });
 
-        jTextField147.setForeground(new java.awt.Color(255, 195, 51));
-        jTextField147.setText("Password");
+        jTextField146.setForeground(new java.awt.Color(255, 195, 51));
+        jTextField146.setText("Password");
 
-        jPasswordField1.setText("jPasswordField1");
+        register.setBackground(new java.awt.Color(255, 195, 51));
+        register.setForeground(new java.awt.Color(255, 255, 255));
+        register.setText("REGISTER");
+        register.setBorderPainted(false);
+        register.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                registerActionPerformed(evt);
+            }
+        });
+
+        passwordfield.setText("jPasswordField1");
+        passwordfield.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                passwordfieldActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel24Layout = new javax.swing.GroupLayout(jPanel24);
         jPanel24.setLayout(jPanel24Layout);
@@ -261,21 +270,20 @@ public class counselor_regis extends javax.swing.JFrame {
                         .addGap(22, 22, 22)
                         .addComponent(jButton57, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel24Layout.createSequentialGroup()
-                        .addGap(238, 238, 238)
-                        .addGroup(jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(jTextField141)
-                                .addComponent(jTextField142)
-                                .addComponent(jTextField143, javax.swing.GroupLayout.DEFAULT_SIZE, 305, Short.MAX_VALUE)
-                                .addComponent(jTextField144)
-                                .addComponent(jTextField147))))
-                    .addGroup(jPanel24Layout.createSequentialGroup()
                         .addGap(165, 165, 165)
                         .addComponent(jLabel29))
                     .addGroup(jPanel24Layout.createSequentialGroup()
-                        .addGap(337, 337, 337)
-                        .addComponent(jButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(349, 349, 349)
+                        .addComponent(register))
+                    .addGroup(jPanel24Layout.createSequentialGroup()
+                        .addGap(238, 238, 238)
+                        .addGroup(jPanel24Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jTextField141)
+                            .addComponent(jTextField142)
+                            .addComponent(jTextField143, javax.swing.GroupLayout.DEFAULT_SIZE, 305, Short.MAX_VALUE)
+                            .addComponent(jTextField144)
+                            .addComponent(jTextField147)
+                            .addComponent(passwordfield))))
                 .addContainerGap(174, Short.MAX_VALUE))
         );
         jPanel24Layout.setVerticalGroup(
@@ -295,11 +303,11 @@ public class counselor_regis extends javax.swing.JFrame {
                 .addComponent(jTextField144, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jTextField147, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(12, 12, 12)
+                .addComponent(passwordfield, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jButton58, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(163, Short.MAX_VALUE))
+                .addComponent(register)
+                .addContainerGap(179, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -325,101 +333,111 @@ public class counselor_regis extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField142ActionPerformed
 
-    private void jButton58ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton58ActionPerformed
+    private void jTextField147ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField147ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField147ActionPerformed
+
+    private void registerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerActionPerformed
+        // TODO add your handling code here:                              
         String fullname = jTextField141.getText().trim();
-    String email = jTextField142.getText().trim();
-    String specialization = jTextField143.getText().trim();
-    String licenseId = jTextField144.getText().trim();
-    String password = jTextField147.getText().trim();
-    String confirmPassword = String.valueOf(jPasswordField1.getPassword()).trim();
+        String email = jTextField142.getText().trim();
+        String specialization = jTextField143.getText().trim();
+        String licenseId = jTextField144.getText().trim();
+        String password = jTextField147.getText().trim();
+        String confirmPassword = new String(passwordfield.getPassword()).trim();
 
-    // ================= VALIDATION =================
-    if (fullname.isEmpty() || fullname.equals("Full name") ||
-        email.isEmpty() || email.equals("Email") ||
-        specialization.isEmpty() || specialization.equals("Specialization") ||
-        licenseId.isEmpty() || licenseId.equals("License ID") ||
-        password.isEmpty() || password.equals("Password") ||
-        confirmPassword.isEmpty()) {
+        // ================= VALIDATION =================
+        if (fullname.isEmpty() || fullname.equals("Full name") ||
+            email.isEmpty() || email.equals("Email") ||
+            specialization.isEmpty() || specialization.equals("Specialization") ||
+            licenseId.isEmpty() || licenseId.equals("License ID") ||
+            password.isEmpty() || password.equals("Password") ||
+            confirmPassword.isEmpty() || confirmPassword.equals("Confirm Password")) {
 
-        JOptionPane.showMessageDialog(this,
-                "Please complete all fields.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+            JOptionPane.showMessageDialog(this,
+                    "Please complete all fields.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    if (!isValidEmail(email)) {
-        JOptionPane.showMessageDialog(this,
-                "Invalid email format.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+        if (!isValidEmail(email)) {
+            JOptionPane.showMessageDialog(this,
+                    "Invalid email format.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    if (password.length() < 6) {
-        JOptionPane.showMessageDialog(this,
-                "Password must be at least 6 characters.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+        if (password.length() < 6) {
+            JOptionPane.showMessageDialog(this,
+                    "Password must be at least 6 characters.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    if (!password.equals(confirmPassword)) {
-        JOptionPane.showMessageDialog(this,
-                "Passwords do not match.",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
+        if (!password.equals(confirmPassword)) {
+            JOptionPane.showMessageDialog(this,
+                    "Passwords do not match.",
+                    "Validation Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    // Check if email already exists in user_requests OR users table
-    if (emailExistsInRequests(email) || emailExists(email)) {
-        JOptionPane.showMessageDialog(this,
-                "Email already registered or pending approval.",
-                "Registration Error",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
+        // Check if email already exists in user_requests OR users table
+        if (emailExistsInRequests(email) || emailExists(email)) {
+            JOptionPane.showMessageDialog(this,
+                    "Email already registered or pending approval.",
+                    "Registration Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    // Check if license number already exists in user_requests OR counselors table
-    if (licenseExistsInRequests(licenseId) || counselorLicenseExists(licenseId)) {
-        JOptionPane.showMessageDialog(this,
-                "License number already registered or pending approval.",
-                "Registration Error",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
+        // Check if license number already exists in user_requests OR counselors table
+        if (licenseExistsInRequests(licenseId) || counselorLicenseExists(licenseId)) {
+            JOptionPane.showMessageDialog(this,
+                    "License number already registered or pending approval.",
+                    "Registration Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    // ================= INSERT INTO user_requests TABLE =================
-    String insertRequest =
-        "INSERT INTO user_requests (user_type, name, email, password, specialization, license_number, status) " +
-        "VALUES ('Counselor', ?, ?, ?, ?, ?, 'Pending')";
+        // ================= INSERT INTO user_requests TABLE =================
+        String insertRequest =
+            "INSERT INTO user_requests (user_type, name, email, password, specialization, license_number, status) " +
+            "VALUES ('Counselor', ?, ?, ?, ?, ?, 'Pending')";
 
-    try (Connection con = DatabaseConnection.getConnection();
-         PreparedStatement ps = con.prepareStatement(insertRequest)) {
-        
-        ps.setString(1, fullname);
-        ps.setString(2, email);
-        ps.setString(3, password);
-        ps.setString(4, specialization);
-        ps.setString(5, licenseId);
-        ps.executeUpdate();
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(insertRequest)) {
 
-        JOptionPane.showMessageDialog(this,
-                "Registration successful!\n\nYour application has been submitted.\nPlease wait for admin approval.",
-                "Registration Submitted",
-                JOptionPane.INFORMATION_MESSAGE);
+            ps.setString(1, fullname);
+            ps.setString(2, email);
+            ps.setString(3, password);
+            ps.setString(4, specialization);
+            ps.setString(5, licenseId);
+            ps.executeUpdate();
 
-        this.dispose();
-        new new_account().setVisible(true);
+            JOptionPane.showMessageDialog(this,
+                    "Registration successful!\n\nYour application has been submitted.\nPlease wait for admin approval.",
+                    "Registration Submitted",
+                    JOptionPane.INFORMATION_MESSAGE);
 
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this,
-                "Registration failed:\n" + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
-    }
-    }//GEN-LAST:event_jButton58ActionPerformed
+            this.dispose();
+            new new_account().setVisible(true);
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Registration failed:\n" + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_registerActionPerformed
+
+    private void passwordfieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordfieldActionPerformed
+        // TODO add your handling code here:
+        registerActionPerformed (evt);
+    }//GEN-LAST:event_passwordfieldActionPerformed
 
     /**
      * @param args the command line arguments
@@ -441,14 +459,15 @@ public class counselor_regis extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton57;
-    private javax.swing.JButton jButton58;
     private javax.swing.JLabel jLabel29;
     private javax.swing.JPanel jPanel24;
-    private javax.swing.JPasswordField jPasswordField1;
     private javax.swing.JTextField jTextField141;
     private javax.swing.JTextField jTextField142;
     private javax.swing.JTextField jTextField143;
     private javax.swing.JTextField jTextField144;
+    private javax.swing.JTextField jTextField146;
     private javax.swing.JTextField jTextField147;
+    private javax.swing.JPasswordField passwordfield;
+    private javax.swing.JButton register;
     // End of variables declaration//GEN-END:variables
 }
