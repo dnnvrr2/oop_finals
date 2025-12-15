@@ -47,6 +47,7 @@ public class admin_allusers extends javax.swing.JFrame {
         loadUsers();
         setupSearchBar();
         setupPlaceholders();
+        setupFilterComboBox();
     }
     
     public admin_allusers(int adminId, String adminName) {
@@ -59,73 +60,61 @@ public class admin_allusers extends javax.swing.JFrame {
         loadUsers();
         setupSearchBar();
         setupPlaceholders();
+        setupFilterComboBox();
 
         // Set the admin name in the UI
         jLabel5.setText(adminName + "!");
     }
    
     private void setupSearchBar() {
-    // Create a sorter for the table
-    sorter = new TableRowSorter<>(tableModel);
-    jTable1.setRowSorter(sorter);
-    
-    // Add document listener for real-time search
-    Search.getDocument().addDocumentListener(new DocumentListener() {
-        @Override
-        public void insertUpdate(DocumentEvent e) {
-            search();
-        }
-        
-        @Override
-        public void removeUpdate(DocumentEvent e) {
-            search();
-        }
-        
-        @Override
-        public void changedUpdate(DocumentEvent e) {
-            search();
-        }
-        
-        private void search() {
-            String text = Search.getText().trim();
-            
-            // Ignore placeholder text
-            if (text.length() == 0 || text.equals("Search")) {
-                sorter.setRowFilter(null);
-            } else {
-                // Search across all columns
-                sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+        sorter = new TableRowSorter<>(tableModel);
+        jTable1.setRowSorter(sorter);
+
+        Search.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                performSearch(); // Use the shared method
             }
-        }
-    });
-}
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                performSearch();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                performSearch();
+            }
+        });
+    }
+    
     private void setupPlaceholders() {
     // Setup username placeholder
-    Search.setText("Search");
-    Search.setForeground(Color.GRAY);
-    
-    Search.addFocusListener(new FocusAdapter() {
-        @Override
-        public void focusGained(FocusEvent e) {
-            if (Search.getText().equals("Search")) {
-                Search.setText("");
-                Search.setForeground(new Color(0, 0, 0)); 
-            }
-        }
-        
-        @Override
-        public void focusLost(FocusEvent e) {
-            if (Search.getText().isEmpty()) {
-                Search.setText("Search");
-                Search.setForeground(Color.GRAY);
-                // Clear any filters when placeholder is restored
-                if (sorter != null) {
-                    sorter.setRowFilter(null);
+        Search.setText("Search");
+        Search.setForeground(Color.GRAY);
+
+        Search.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (Search.getText().equals("Search")) {
+                    Search.setText("");
+                    Search.setForeground(new Color(0, 0, 0)); 
                 }
             }
-        }
-    });
-}
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (Search.getText().isEmpty()) {
+                    Search.setText("Search");
+                    Search.setForeground(Color.GRAY);
+                    // Clear any filters when placeholder is restored
+                    if (sorter != null) {
+                        sorter.setRowFilter(null);
+                    }
+                }
+            }
+        });
+    }
     private void setupButtons() {
     // Get references to your activate/deactivate buttons
     // Assuming you have buttons in your GUI - adjust names as needed
@@ -164,10 +153,7 @@ public class admin_allusers extends javax.swing.JFrame {
         "Confirm Activation",
         javax.swing.JOptionPane.YES_NO_OPTION);
     
-    if (confirm == javax.swing.JOptionPane.YES_OPTION) {
-        // Update the status in the table
-        tableModel.setValueAt("Active", modelRow, 4);
-        
+    if (confirm == javax.swing.JOptionPane.YES_OPTION) {     
 
         try {
             Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -241,9 +227,7 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         javax.swing.JOptionPane.WARNING_MESSAGE);
     
     if (confirm == javax.swing.JOptionPane.YES_OPTION) {
-        // Update the status in the table
-        tableModel.setValueAt("Inactive", modelRow, 4);
-        
+     
         try {
             Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
 
@@ -359,6 +343,65 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         }
     }
     
+     private void setupFilterComboBox() {
+    // Clear existing items
+        jComboBox1.removeAllItems();
+
+        // Add filter options
+        jComboBox1.addItem("Name");
+        jComboBox1.addItem("Type");
+        jComboBox1.addItem("ID");
+        jComboBox1.addItem("Email");
+        jComboBox1.addItem("Status");
+
+        // Add action listener for when selection changes
+        jComboBox1.addActionListener(e -> performSearch());
+    }
+     
+     private void performSearch() {
+        String searchText = Search.getText().trim();
+
+        // Ignore placeholder text
+        if (searchText.isEmpty() || searchText.equals("Search")) {
+            sorter.setRowFilter(null);
+            return;
+        }
+
+        String selectedFilter = (String) jComboBox1.getSelectedItem();
+
+        try {
+            // Search in specific column
+            int columnIndex = getColumnIndex(selectedFilter);
+            if (columnIndex != -1) {
+                // Create a custom row filter that ignores "Dr." prefix
+                sorter.setRowFilter(new RowFilter<DefaultTableModel, Integer>() {
+                    @Override
+                    public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                        String cellValue = entry.getStringValue(columnIndex);
+                        // Remove "Dr." prefix (case-insensitive) and trim
+                        String cleanedValue = cellValue.replaceAll("(?i)^dr\\.?\\s*", "").trim();
+                        // Check if the cleaned value contains the search text (case-insensitive)
+                        return cleanedValue.toLowerCase().contains(searchText.toLowerCase());
+                    }
+                });
+            }
+        } catch (Exception ex) {
+            // If filtering fails, clear the filter
+            sorter.setRowFilter(null);
+        }
+    }
+     
+     private int getColumnIndex(String columnName) {
+        switch (columnName) {
+            case "Name": return 0;
+            case "Type": return 1;
+            case "ID": return 2;
+            case "Email": return 3;
+            case "Status": return 4;
+            default: return -1;
+        }
+    }
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -386,6 +429,8 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         jButton10 = new javax.swing.JButton();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
+        jComboBox1 = new javax.swing.JComboBox<>();
+        jLabel6 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -542,6 +587,16 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
             }
         });
 
+        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jComboBox1ActionPerformed(evt);
+            }
+        });
+
+        jLabel6.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jLabel6.setForeground(new java.awt.Color(255, 195, 51));
+        jLabel6.setText("Filter Search");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -568,10 +623,14 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
                         .addComponent(jButton10)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jButton9))
-                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(jLabel1)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 663, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, 428, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 663, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
+                        .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, 428, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
@@ -592,7 +651,11 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
                 .addGap(36, 36, 36)
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel6))
+                    .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 16, Short.MAX_VALUE)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 400, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(29, 29, 29)
@@ -677,6 +740,10 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton2ActionPerformed
 
+    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jComboBox1ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -697,11 +764,13 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButton8;
     private javax.swing.JButton jButton9;
+    private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;

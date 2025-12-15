@@ -13,6 +13,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.RowFilter;
+import javax.swing.table.TableRowSorter;
+import java.awt.Color;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 public class PendingUsers extends javax.swing.JFrame {
     
@@ -21,6 +26,8 @@ public class PendingUsers extends javax.swing.JFrame {
     private int currentAdminId;
     private String currentAdminName;
     
+    private TableRowSorter<DefaultTableModel> sorter;
+    
     /**
      * Creates new form PendingUsers
      */
@@ -28,6 +35,7 @@ public class PendingUsers extends javax.swing.JFrame {
         initComponents();
         loadPendingUsers();
         setupSearch();
+        setupFilterComboBox();
     }
     
     public PendingUsers(int adminId, String adminName) {
@@ -36,6 +44,7 @@ public class PendingUsers extends javax.swing.JFrame {
         initComponents();
         loadPendingUsers();
         setupSearch();
+        setupFilterComboBox();
 
         // Set the admin name in the UI
         jLabel5.setText(adminName + "!");
@@ -204,50 +213,94 @@ public class PendingUsers extends javax.swing.JFrame {
 
         // SEARCH FILTER
         private void setupSearch() {
-        Search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            sorter = new TableRowSorter<>(model);
+            jTable1.setRowSorter(sorter);
 
-            private void search() {
-                String keyword = Search.getText().trim();
-                DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-                model.setRowCount(0);
+            // Setup placeholder
+            Search.setText("Search");
+            Search.setForeground(Color.GRAY);
 
-                String sql = "SELECT request_id, name, user_type, email, requested_at, status " +
-                            "FROM user_requests " +
-                            "WHERE status = 'Pending' " +
-                            "AND (name LIKE ? OR email LIKE ? OR user_type LIKE ?) " +
-                            "ORDER BY requested_at DESC";
-
-                try (Connection con = DatabaseConnection.getConnection();
-                     PreparedStatement ps = con.prepareStatement(sql)) {
-
-                    String searchPattern = "%" + keyword + "%";
-                    ps.setString(1, searchPattern);
-                    ps.setString(2, searchPattern);
-                    ps.setString(3, searchPattern);
-                    
-                    ResultSet rs = ps.executeQuery();
-
-                    while (rs.next()) {
-                        model.addRow(new Object[]{
-                            rs.getString("name"),
-                            rs.getString("user_type"),
-                            rs.getInt("request_id"),
-                            rs.getTimestamp("requested_at"),
-                            rs.getString("status")
-                        });
+            Search.addFocusListener(new FocusAdapter() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (Search.getText().equals("Search")) {
+                        Search.setText("");
+                        Search.setForeground(Color.BLACK);
                     }
-
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, 
-                            "Search failed:\n" + ex.getMessage(),
-                            "Database Error",
-                            JOptionPane.ERROR_MESSAGE);
                 }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    if (Search.getText().isEmpty()) {
+                        Search.setText("Search");
+                        Search.setForeground(Color.GRAY);
+                        if (sorter != null) {
+                            sorter.setRowFilter(null);
+                        }
+                    }
+                }
+            });
+
+            Search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+                public void insertUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+                public void removeUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+                public void changedUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+            });
+        }
+        
+        private void performSearch() {
+            String searchText = Search.getText().trim();
+
+            // Ignore placeholder text
+            if (searchText.isEmpty() || searchText.equals("Search")) {
+                sorter.setRowFilter(null);
+                return;
             }
-        });
+
+            String selectedFilter = (String) jComboBox1.getSelectedItem();
+
+            try {
+                // Search in specific column
+                int columnIndex = getColumnIndex(selectedFilter);
+                if (columnIndex != -1) {
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i).*" + escapeRegex(searchText) + ".*", columnIndex));
+                }
+            } catch (java.util.regex.PatternSyntaxException ex) {
+                // If regex is invalid, clear the filter
+                sorter.setRowFilter(null);
+            }
+        }
+        
+        private int getColumnIndex(String columnName) {
+            switch (columnName) {
+                case "Name": return 0;
+                case "Type": return 1;
+                case "ID": return 2;
+                case "Date": return 3;
+                case "Status": return 4;
+                default: return -1;
+            }
+        }
+
+        // Add the escapeRegex() helper method:
+        private String escapeRegex(String text) {
+            return text.replaceAll("([\\\\*+\\[\\](){}$.?^|])", "\\\\$1");
+        }
+        
+    private void setupFilterComboBox() {
+    // Clear existing items
+        jComboBox1.removeAllItems();
+
+        // Add filter options matching table columns
+        jComboBox1.addItem("Name");
+        jComboBox1.addItem("Type");
+        jComboBox1.addItem("ID");
+        jComboBox1.addItem("Date");
+        jComboBox1.addItem("Status");
+
+        // Add action listener for when selection changes
+        jComboBox1.addActionListener(e -> performSearch());
     }
 
     /**
@@ -279,6 +332,8 @@ public class PendingUsers extends javax.swing.JFrame {
         jLabel3 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
+        jLabel6 = new javax.swing.JLabel();
+        jComboBox1 = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setBackground(new java.awt.Color(38, 36, 68));
@@ -447,6 +502,16 @@ public class PendingUsers extends javax.swing.JFrame {
             }
         });
 
+        jLabel6.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jLabel6.setForeground(new java.awt.Color(255, 195, 51));
+        jLabel6.setText("Filter Search");
+
+        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jComboBox1ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -475,9 +540,15 @@ public class PendingUsers extends javax.swing.JFrame {
                         .addComponent(jButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addComponent(jLabel1)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 663, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, 428, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jLabel3)))
+                        .addComponent(jLabel3)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
+                                .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, 428, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel6)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 663, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
@@ -501,19 +572,22 @@ public class PendingUsers extends javax.swing.JFrame {
                         .addGap(18, 18, 18)))
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addGap(18, 18, 18)
-                        .addComponent(jLabel3)
-                        .addGap(8, 8, 8)
-                        .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(29, 29, 29)
+                .addComponent(jLabel1)
+                .addGap(37, 37, 37)
+                .addComponent(jLabel3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(Search, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel6))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 400, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
                         .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jButton10, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButton9, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(29, 29, 29))
         );
 
@@ -655,6 +729,10 @@ public class PendingUsers extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton2ActionPerformed
 
+    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jComboBox1ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -689,12 +767,14 @@ public class PendingUsers extends javax.swing.JFrame {
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButton8;
     private javax.swing.JButton jButton9;
+    private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
