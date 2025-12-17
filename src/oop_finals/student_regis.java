@@ -1,67 +1,36 @@
 package oop_finals;
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 
-/**
- *
- * @author Gian
- */
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.util.regex.Pattern;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.swing.JOptionPane;
 
+/**
+ * Student Registration Page
+ * Handles student registration UI using MVC architecture
+ */
 public class student_regis extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_regis.class.getName());
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(student_regis.class.getName());
+    
+    private final StudentController studentController;
 
     /**
      * Creates new form student_regis
      */
     public student_regis() {
+        this.studentController = new StudentController();
         initComponents();
         setupPlaceholders();
+        setLocationRelativeTo(null);
+        setTitle("Student Registration");
     }
     
-    private boolean emailExists(String email) {
-        String sql = "SELECT 1 FROM users WHERE email = ?";
-        try (Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, email);
-            ResultSet rs = ps.executeQuery();
-            return rs.next();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, e.getMessage());
-            return true;
-        }
-    }
-
-    private boolean studentNumberExists(String studentNumber) {
-        String sql = "SELECT 1 FROM students WHERE student_number = ?";
-        try (Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, studentNumber);
-            ResultSet rs = ps.executeQuery();
-            return rs.next();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, e.getMessage());
-            return true;
-        }
-    }
-    
-    private void setupPlaceholders(){
+    /**
+     * Setup placeholders for all input fields
+     */
+    private void setupPlaceholders() {
         setupPlaceholder(jTextField1, "Full name");
         setupPlaceholder(jTextField2, "Email");
         setupPlaceholder(jTextField3, "Year level");
@@ -71,29 +40,35 @@ public class student_regis extends javax.swing.JFrame {
         setupPasswordPlaceholder(jPasswordField1, "Confirm Password");
     }
     
+    /**
+     * Setup placeholder for text field
+     */
     private void setupPlaceholder(javax.swing.JTextField textField, String placeholder) {
         textField.setText(placeholder);
         textField.setForeground(Color.GRAY);
+        
         textField.addFocusListener(new FocusAdapter() {
-            
-        @Override
-        public void focusGained(FocusEvent e) {
-            if (textField.getText().equals(placeholder)) {
-                textField.setText("");
-                textField.setForeground(new Color(0, 0, 0));
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textField.getText().equals(placeholder)) {
+                    textField.setText("");
+                    textField.setForeground(Color.BLACK);
+                }
             }
-        }
 
-        @Override
-        public void focusLost(FocusEvent e) {
-            if (textField.getText().isEmpty()) {
-                textField.setText(placeholder);
-                textField.setForeground(Color.GRAY);
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textField.getText().trim().isEmpty()) {
+                    textField.setText(placeholder);
+                    textField.setForeground(Color.GRAY);
+                }
             }
-        }
-    });
+        });
     }
     
+    /**
+     * Setup placeholder for password field
+     */
     private void setupPasswordPlaceholder(javax.swing.JComponent passwordField, String placeholder) {
         if (passwordField instanceof javax.swing.JPasswordField) {
             javax.swing.JPasswordField pf = (javax.swing.JPasswordField) passwordField;
@@ -102,59 +77,123 @@ public class student_regis extends javax.swing.JFrame {
             pf.setEchoChar((char) 0);
 
             pf.addFocusListener(new FocusAdapter() {
-            
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (String.valueOf(pf.getPassword()).equals(placeholder)) {
-                    pf.setText("");
-                    pf.setForeground(new Color(0, 0, 0));
-                    pf.setEchoChar('•');
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (String.valueOf(pf.getPassword()).equals(placeholder)) {
+                        pf.setText("");
+                        pf.setForeground(Color.BLACK);
+                        pf.setEchoChar('•');
+                    }
                 }
-            }
 
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (String.valueOf(pf.getPassword()).isEmpty()) {
-                    pf.setText(placeholder);
-                    pf.setForeground(Color.GRAY);
-                    pf.setEchoChar((char) 0);
+                @Override
+                public void focusLost(FocusEvent e) {
+                    if (String.valueOf(pf.getPassword()).trim().isEmpty()) {
+                        pf.setText(placeholder);
+                        pf.setForeground(Color.GRAY);
+                        pf.setEchoChar((char) 0);
+                    }
                 }
-            }
-        });
+            });
         } else if (passwordField instanceof javax.swing.JTextField) {
             javax.swing.JTextField tf = (javax.swing.JTextField) passwordField;
             tf.setText(placeholder);
             tf.setForeground(Color.GRAY);
 
             tf.addFocusListener(new FocusAdapter() {
-            
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (tf.getText().equals(placeholder)) {
-                    tf.setText("");
-                    tf.setForeground(new Color(0, 0, 0));
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (tf.getText().equals(placeholder)) {
+                        tf.setText("");
+                        tf.setForeground(Color.BLACK);
+                    }
                 }
-            }
 
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (tf.getText().isEmpty()) {
-                    tf.setText(placeholder);
-                    tf.setForeground(Color.GRAY);
+                @Override
+                public void focusLost(FocusEvent e) {
+                    if (tf.getText().trim().isEmpty()) {
+                        tf.setText(placeholder);
+                        tf.setForeground(Color.GRAY);
+                    }
                 }
-            }
-        });
+            });
         }
     }
     
-    private boolean isValidEmail(String email) {
-    return EMAIL_PATTERN.matcher(email).matches();
-    
+    /**
+     * Get input values from form fields
+     */
+    private String[] getFormInputs() {
+        return new String[] {
+            jTextField1.getText().trim(),      // Full name
+            jTextField2.getText().trim(),      // Email
+            jTextField3.getText().trim(),      // Year level
+            jTextField6.getText().trim(),      // Course
+            jTextField4.getText().trim(),      // Student number
+            jTextField5.getText().trim(),      // Password
+            String.valueOf(jPasswordField1.getPassword()).trim()  // Confirm password
+        };
     }
     
+    /**
+     * Clear all form fields
+     */
+    private void clearForm() {
+        setupPlaceholders();
+    }
     
-    
-    
+    /**
+     * Handle registration action using StudentController
+     */
+    private void performRegistration() {
+        try {
+            // Get form inputs
+            String[] inputs = getFormInputs();
+            String fullname = inputs[0];
+            String email = inputs[1];
+            String yearLevel = inputs[2];
+            String course = inputs[3];
+            String studentNumber = inputs[4];
+            String password = inputs[5];
+            String confirmPassword = inputs[6];
+            
+            // Use StudentController to handle registration
+            String result = studentController.registerStudent(
+                fullname, 
+                email, 
+                password, 
+                confirmPassword, 
+                studentNumber, 
+                course, 
+                yearLevel
+            );
+            
+            // Check result
+            if ("SUCCESS".equals(result)) {
+                JOptionPane.showMessageDialog(this,
+                    "Registration successful!\n\nYour application has been submitted.\nPlease wait for admin approval.",
+                    "Registration Submitted",
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Navigate back to account selection
+                this.dispose();
+                new new_account().setVisible(true);
+            } else {
+                // Show error message
+                JOptionPane.showMessageDialog(this,
+                    result,
+                    "Registration Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            
+        } catch (Exception e) {
+            logger.severe("Registration error: " + e.getMessage());
+            JOptionPane.showMessageDialog(this,
+                "An error occurred during registration. Please try again.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -320,149 +359,27 @@ public class student_regis extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-    // REGISTER BUTTON ACTION - FIXED VERSION                                       
-        String fullname = jTextField1.getText().trim();
-    String email = jTextField2.getText().trim();
-    String yearLevel = jTextField3.getText().trim();
-    String course = jTextField6.getText().trim();
-    String studentNumber = jTextField4.getText().trim();
-    String password = jTextField5.getText().trim();
-    String confirmPassword = String.valueOf(jPasswordField1.getPassword()).trim();
-
-    // ================= VALIDATION =================
-    if (fullname.isEmpty() || fullname.equals("Full name") ||
-        email.isEmpty() || email.equals("Email") ||
-        yearLevel.isEmpty() || yearLevel.equals("Year level") ||
-        course.isEmpty() || course.equals("Course") ||
-        studentNumber.isEmpty() || studentNumber.equals("ID Number") ||
-        password.isEmpty() || password.equals("Password") ||
-        confirmPassword.isEmpty()) {
-
-        JOptionPane.showMessageDialog(this,
-                "Please complete all fields.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    if (!isValidEmail(email)) {
-        JOptionPane.showMessageDialog(this,
-                "Invalid email format.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    if (password.length() < 6) {
-        JOptionPane.showMessageDialog(this,
-                "Password must be at least 6 characters.",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    if (!password.equals(confirmPassword)) {
-        JOptionPane.showMessageDialog(this,
-                "Passwords do not match.",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    // Check if email already exists in user_requests OR users table
-    if (emailExistsInRequests(email) || emailExists(email)) {
-        JOptionPane.showMessageDialog(this,
-                "Email already registered or pending approval.",
-                "Registration Error",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    // Check if student number already exists in user_requests OR students table
-    if (studentNumberExistsInRequests(studentNumber) || studentNumberExists(studentNumber)) {
-        JOptionPane.showMessageDialog(this,
-                "Student number already registered or pending approval.",
-                "Registration Error",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    // ================= INSERT INTO user_requests TABLE =================
-    String insertRequest =
-        "INSERT INTO user_requests (user_type, name, email, password, course, student_number, year_level, status) " +
-        "VALUES ('Student', ?, ?, ?, ?, ?, ?, 'Pending')";
-
-    try (Connection con = DatabaseConnection.getConnection();
-         PreparedStatement ps = con.prepareStatement(insertRequest)) {
-        
-        ps.setString(1, fullname);
-        ps.setString(2, email);
-        ps.setString(3, password);
-        ps.setString(4, course);
-        ps.setString(5, studentNumber);
-        ps.setString(6, yearLevel);
-        ps.executeUpdate();
-
-        JOptionPane.showMessageDialog(this,
-                "Registration successful!\n\nYour application has been submitted.\nPlease wait for admin approval.",
-                "Registration Submitted",
-                JOptionPane.INFORMATION_MESSAGE);
-
-        this.dispose();
-        new new_account().setVisible(true);
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this,
-                "Registration failed:\n" + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
-    }
-    }
-    
-    private boolean emailExistsInRequests(String email) {
-    String sql = "SELECT 1 FROM user_requests WHERE email = ?";
-    try (Connection con = DatabaseConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql)) {
-
-        ps.setString(1, email);
-        ResultSet rs = ps.executeQuery();
-        return rs.next();
-
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, e.getMessage());
-        return true;
-    }
-}
-
-private boolean studentNumberExistsInRequests(String studentNumber) {
-    String sql = "SELECT 1 FROM user_requests WHERE student_number = ?";
-    try (Connection con = DatabaseConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql)) {
-
-        ps.setString(1, studentNumber);
-        ResultSet rs = ps.executeQuery();
-        return rs.next();
-
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, e.getMessage());
-        return true;
-    }
+        performRegistration();
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jPasswordField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jPasswordField1ActionPerformed
         // TODO add your handling code here:
+        performRegistration();
     }//GEN-LAST:event_jPasswordField1ActionPerformed
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
         // TODO add your handling code here:
+        jTextField2.requestFocus();
     }//GEN-LAST:event_jTextField1ActionPerformed
 
     private void jTextField3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField3ActionPerformed
         // TODO add your handling code here:
+        jTextField6.requestFocus();
     }//GEN-LAST:event_jTextField3ActionPerformed
 
     private void jTextField6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField6ActionPerformed
         // TODO add your handling code here:
+        jTextField4.requestFocus();
     }//GEN-LAST:event_jTextField6ActionPerformed
 
     /**

@@ -1,227 +1,187 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package oop_finals;
 
 import javax.swing.JOptionPane;
-import java.sql.*;
 
 /**
- *
- * @author Admin
+ * Student View Profile
+ * Displays and allows editing of student profile information
+ * Uses MVC architecture with StudentController
  */
 public class student_viewprofile extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_viewprofile.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(student_viewprofile.class.getName());
     
-    private String studentName;
-    private String studentEmail;
-    private String studentCourse;
-    private String studentYearLevel;
-    private String studentSchoolID;
+    private final StudentController studentController;
     private int currentStudentId;
     private String currentStudentName;
-    
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
 
     /**
-     * Creates new form student_viewprofile
+     * Default Constructor - Should not be used directly
      */
     public student_viewprofile() {
+        this.studentController = new StudentController();
         initComponents();
         setLocationRelativeTo(null);
-        setTextFieldsEditable(false);
-        loadStudentProfileFromDB();
+        setTextFieldsFocusable(false);
+        
+        // Warn user if accessed without login
+        JOptionPane.showMessageDialog(this,
+            "Please login first!\n\nYou cannot access this page directly.\nStart from the login page.",
+            "Login Required",
+            JOptionPane.WARNING_MESSAGE);
+        
+        this.dispose();
+        new login_page().setVisible(true);
     }
     
     /**
-     * Constructor with student ID
+     * Constructor with student ID and name
+     * @param studentId Current student's ID
+     * @param studentName Current student's name
      */
     public student_viewprofile(int studentId, String studentName) {
-        initComponents();
+        this.studentController = new StudentController();
         this.currentStudentId = studentId;
         this.currentStudentName = studentName;
+        
+        initComponents();
         setLocationRelativeTo(null);
-        setTextFieldsEditable(false);
-        loadStudentProfileFromDB();
+        setTitle("My Profile - " + studentName);
+        setTextFieldsFocusable(false);
+        
+        loadStudentProfile();
     }
     
     /**
-    * Load student profile data from database - WITH DEBUG INFO
-    */
-   private void loadStudentProfileFromDB() {
-        System.out.println("========================================");
-        System.out.println("STARTING loadStudentProfileFromDB");
-        System.out.println("Looking for student_id: " + currentStudentId);
-        System.out.println("Database URL: " + DB_URL);
-        System.out.println("========================================");
-        
-       Connection conn = null;
-       PreparedStatement pstmt = null;
-       ResultSet rs = null;
-
-       try {
-           System.out.println("=== DEBUG INFO ===");
-           System.out.println("currentStudentId: " + currentStudentId);
-           System.out.println("currentStudentName: " + currentStudentName);
-
-           // If currentStudentId is 0, that means the default constructor was used
-           if (currentStudentId == 0) {
-               System.out.println("WARNING: currentStudentId is 0!");
-               System.out.println("This means you're using the default constructor.");
-               System.out.println("Please start from the login page, not directly from this class.");
-
-               JOptionPane.showMessageDialog(this,
-                   "Please login first!\n\nYou cannot access this page directly.\nStart from the login page.",
-                   "Login Required",
-                   JOptionPane.WARNING_MESSAGE);
-
-               this.dispose();
-               new login_page().setVisible(true);
-               return;
-           }
-
-           System.out.println("Attempting to load profile for student_id: " + currentStudentId);
-
-           // Get database connection
-           conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-           System.out.println("✓ Database connection successful");
-
-           // SQL query to fetch student data using student_id (INT)
-           String query = "SELECT name, email, course, year_level, student_number FROM students WHERE student_id = ?";
-           pstmt = conn.prepareStatement(query);
-           pstmt.setInt(1, currentStudentId);
-
-           System.out.println("✓ Executing query with student_id: " + currentStudentId);
-           rs = pstmt.executeQuery();
-
-           if (rs.next()) {
-               System.out.println("✓ Student record found!");
-
-               // Retrieve data from result set
-               studentName = rs.getString("name");
-               studentEmail = rs.getString("email");
-               studentCourse = rs.getString("course");
-               studentYearLevel = rs.getString("year_level");
-               studentSchoolID = rs.getString("student_number");
-
-               System.out.println("Name: " + studentName);
-               System.out.println("Email: " + studentEmail);
-               System.out.println("Course: " + studentCourse);
-               System.out.println("Year Level: " + studentYearLevel);
-               System.out.println("Student Number: " + studentSchoolID);
-
-               // Populate text fields
-               jTextField1.setText(studentName);
-               jTextField2.setText(studentEmail);
-               jTextField3.setText(studentCourse);
-               jTextField4.setText(studentYearLevel);
-               jTextField5.setText(studentSchoolID);
-
-               // Update welcome label
-               jLabel5.setText(studentName.toUpperCase() + "!");
-
-               System.out.println("✓ Profile loaded successfully!");
-           } else {
-               System.out.println("✗ No student found with ID: " + currentStudentId);
-               System.out.println("This could mean:");
-               System.out.println("1. The student_id doesn't exist in the database");
-               System.out.println("2. The database was not properly initialized");
-
-               JOptionPane.showMessageDialog(this,
-                   "Student profile not found!\n\nStudent ID: " + currentStudentId + " does not exist in the database.",
-                   "Error",
-                   JOptionPane.ERROR_MESSAGE);
-               logger.warning("No student found with ID: " + currentStudentId);
-           }
-
-       } catch (SQLException e) {
-           System.out.println("✗ SQL Error: " + e.getMessage());
-           e.printStackTrace();
-
-           logger.log(java.util.logging.Level.SEVERE, "Database error loading student profile", e);
-           JOptionPane.showMessageDialog(this,
-               "Error loading student profile: " + e.getMessage(),
-               "Database Error",
-               JOptionPane.ERROR_MESSAGE);
-       } finally {
-           System.out.println("=================\n");
-           // Close resources
-           closeResources(rs, pstmt, conn);
-       }
-   }
-    
-    /**
-     * Update student profile in database
+     * Load student profile data using StudentController
      */
-    private boolean updateStudentProfile() {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
+    private void loadStudentProfile() {
+        logger.info("Loading profile for student ID: " + currentStudentId);
         
         try {
-            conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-            
-            String query = "UPDATE students SET name = ?, email = ?, course = ?, year_level = ? WHERE student_id = ?";
-            pstmt = conn.prepareStatement(query);
-            
-            pstmt.setString(1, jTextField1.getText().trim());
-            pstmt.setString(2, jTextField2.getText().trim());
-            pstmt.setString(3, jTextField3.getText().trim());
-            pstmt.setString(4, jTextField4.getText().trim());
-            pstmt.setInt(5, currentStudentId);
-            
-            int rowsAffected = pstmt.executeUpdate();
-            
-            if (rowsAffected > 0) {
-                JOptionPane.showMessageDialog(this,
-                    "Profile updated successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                return true;
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Failed to update profile.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-                return false;
+            // Validate student ID
+            if (currentStudentId <= 0) {
+                logger.warning("Invalid student ID: " + currentStudentId);
+                showErrorAndRedirect("Invalid student ID. Please login again.");
+                return;
             }
             
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error updating student profile", e);
+            // Get student data from controller
+            Student student = studentController.getStudentById(currentStudentId);
+            
+            if (student != null) {
+                // Populate form fields
+                populateFields(student);
+                logger.info("Profile loaded successfully for: " + student.getName());
+            } else {
+                logger.warning("No student found with ID: " + currentStudentId);
+                showErrorAndRedirect("Student profile not found. Please login again.");
+            }
+            
+        } catch (Exception e) {
+            logger.severe("Error loading student profile: " + e.getMessage());
+            e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error updating profile: " + e.getMessage(),
-                "Database Error",
+                "Error loading profile: " + e.getMessage(),
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
-            return false;
-        } finally {
-            closeResources(null, pstmt, conn);
         }
     }
     
     /**
-     * Set text fields to editable or read-only
+     * Populate form fields with student data
+     * @param student Student object with data
      */
-    private void setTextFieldsEditable(boolean editable) {
-        jTextField1.setEditable(editable);
-        jTextField2.setEditable(editable);
-        jTextField3.setEditable(editable);
-        jTextField4.setEditable(editable);
-        jTextField5.setEditable(false); // School ID should never be editable
+    private void populateFields(Student student) {
+        jTextField1.setText(student.getName());
+        jTextField2.setText(student.getEmail());
+        jTextField3.setText(student.getCourse());
+        jTextField4.setText(student.getYearLevel());
+        jTextField5.setText(student.getStudentNumber());
+        
+        // Update welcome label
+        jLabel5.setText(student.getName().toUpperCase() + "!");
+        
+        // Update current student name (in case it changed)
+        this.currentStudentName = student.getName();
     }
     
     /**
-     * Close database resources
+     * Toggle edit mode for profile
      */
-    private void closeResources(ResultSet rs, PreparedStatement pstmt, Connection conn) {
-        try {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
-            if (conn != null) conn.close();
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.WARNING, "Error closing database resources", e);
+
+    
+    /**
+     * Set text fields to editable or read-only
+     * @param editable true to enable editing, false to disable
+     */
+    private void setTextFieldsFocusable(boolean editable) {
+        // Update focusable property
+        jTextField1.setFocusable(false);  // Name - not focusable
+        jTextField2.setFocusable(false);  // Email - focusable when editable
+        jTextField3.setFocusable(false);  // Course - focusable when editable
+        jTextField4.setFocusable(false);  // Year Level - focusable when editable
+        jTextField5.setFocusable(false);  // Student ID - not focusable
+    }
+    
+    /**
+     * Show error message and redirect to login
+     * @param message Error message to display
+     */
+    private void showErrorAndRedirect(String message) {
+        JOptionPane.showMessageDialog(this,
+            message,
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
+        
+        this.dispose();
+        new login_page().setVisible(true);
+    }
+    
+    /**
+     * Navigate to student dashboard
+     */
+    private void navigateToDashboard() {
+        student_dashboard dashboard = new student_dashboard(currentStudentId, currentStudentName);
+        dashboard.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Navigate to book appointment page
+     */
+    private void navigateToBookAppointment() {
+        student_bookappointment bookAppointment = 
+            new student_bookappointment(currentStudentId, currentStudentName);
+        bookAppointment.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Navigate to my appointments page
+     */
+    private void navigateToMyAppointments() {
+        student_myappointment myAppointments = 
+            new student_myappointment(currentStudentId, currentStudentName);
+        myAppointments.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Handle logout action
+     */
+    private void handleLogout() {
+        int confirmation = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to logout?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE);
+        
+        if (confirmation == JOptionPane.YES_OPTION) {
+            logger.info("Student logged out: " + currentStudentName);
+            this.dispose();
+            new login_page().setVisible(true);
         }
     }
 
@@ -537,45 +497,26 @@ public class student_viewprofile extends javax.swing.JFrame {
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
-        student_bookappointment a = new student_bookappointment(currentStudentId, currentStudentName);
-        a.setVisible(true);
-        this.dispose();
+        navigateToBookAppointment();
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         // TODO add your handling code here:
-        student_viewprofile c = new student_viewprofile(currentStudentId, currentStudentName);
-        c.setVisible(true);
-        this.dispose();
+        loadStudentProfile();
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
-        student_myappointment b = new student_myappointment(currentStudentId, currentStudentName);
-        b.setVisible(true);
-        this.dispose();
+        navigateToMyAppointments();
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
-        // TODO add your handling code here:
-        int confirmation = JOptionPane.showConfirmDialog(null, 
-                "Are you sure you want to logout?",
-                "Confirm logout",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
-        
-        if (confirmation == JOptionPane.YES_OPTION) {
-            this.dispose();
-            new login_page().setVisible(true);
-        }
-        // TODO add your handling code here:               
+        handleLogout();
     }//GEN-LAST:event_logoutActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
-        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
-        d.setVisible(true);
-        this.dispose();
+        navigateToDashboard();
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
@@ -583,9 +524,7 @@ public class student_viewprofile extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
-        d.setVisible(true);
-        this.dispose();
+        navigateToDashboard();
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton2ActionPerformed
 

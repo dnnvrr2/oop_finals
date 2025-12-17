@@ -13,35 +13,37 @@ import java.awt.*;
 import java.time.*;
 import java.time.format.TextStyle;
 import java.util.*;
-import java.text.SimpleDateFormat;
+import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
-import java.sql.*;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 
-
 public class student_bookappointment extends javax.swing.JFrame {
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_bookappointment.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(student_bookappointment.class.getName());
     
-    private Connection conn;
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASS = "";
-
+    // Controllers
+    private final CounselorController counselorController;
+    
+    // Calendar state
     private YearMonth currentMonth;
     private LocalDate selectedDate;
     private int selectedCounselorId = -1;
     
+    // Student info
     private int currentStudentId;
     private String currentStudentName;
 
-    // Add this method to initialize the calendar in initComponents() or constructor
+    /**
+     * Default constructor (for main method)
+     */
     public student_bookappointment() {
         initComponents();
+        this.counselorController = new CounselorController();
         setLocationRelativeTo(null);
         loadSpecializations();
         counselordetails.setEditable(false);
@@ -49,11 +51,14 @@ public class student_bookappointment extends javax.swing.JFrame {
         initializeCalendar();
     }
 
-
+    /**
+     * Parameterized constructor (for navigation)
+     */
     public student_bookappointment(int studentId, String studentName) {
         initComponents();
         this.currentStudentId = studentId;
         this.currentStudentName = studentName;
+        this.counselorController = new CounselorController();
         setLocationRelativeTo(null);
         user.setText(studentName + "!");
         loadSpecializations();
@@ -62,6 +67,13 @@ public class student_bookappointment extends javax.swing.JFrame {
         initializeCalendar();
     }
 
+    // ============================================================================
+    // CALENDAR INITIALIZATION AND MANAGEMENT
+    // ============================================================================
+
+    /**
+     * Initialize calendar with current month
+     */
     private void initializeCalendar() {
         currentMonth = YearMonth.now();
         selectedDate = null;
@@ -88,7 +100,8 @@ public class student_bookappointment extends javax.swing.JFrame {
         jTable1.setColumnSelectionAllowed(false);
         
         // Center align column headers
-        DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) jTable1.getTableHeader().getDefaultRenderer();
+        DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) 
+            jTable1.getTableHeader().getDefaultRenderer();
         headerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         jTable1.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         jTable1.getTableHeader().setBackground(new Color(255, 195, 51));
@@ -120,6 +133,7 @@ public class student_bookappointment extends javax.swing.JFrame {
                     cell.setBackground(Color.WHITE);
                     cell.setForeground(Color.BLACK);
                     
+                    // Mark unavailable dates
                     if (selectedCounselorId != -1 && cellDate != null) {
                         if (!isDateAvailableForCounselor(cellDate)) {
                             cell.setBackground(new Color(255, 200, 200));
@@ -128,17 +142,20 @@ public class student_bookappointment extends javax.swing.JFrame {
                         }
                     }
                     
+                    // Highlight today
                     if (cellDate != null && cellDate.equals(today)) {
                         cell.setBackground(new Color(173, 216, 230));
                         cell.setFont(cell.getFont().deriveFont(Font.BOLD));
                     }
                     
+                    // Highlight selected date
                     if (selectedDate != null && cellDate != null && cellDate.equals(selectedDate)) {
                         cell.setBackground(new Color(255, 195, 51));
                         cell.setForeground(Color.WHITE);
                         cell.setFont(cell.getFont().deriveFont(Font.BOLD, 16f));
                     }
                     
+                    // Gray out past dates
                     if (cellDate != null && cellDate.isBefore(today)) {
                         cell.setForeground(new Color(180, 180, 180));
                     }
@@ -152,6 +169,7 @@ public class student_bookappointment extends javax.swing.JFrame {
             }
         });
         
+        // Add mouse listener for date selection
         jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -169,19 +187,25 @@ public class student_bookappointment extends javax.swing.JFrame {
         updateNavigationButtons();
     }
 
-private void updateCalendarDisplay() {
-    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+    /**
+     * Update calendar display with current month's dates
+     */
+    private void updateCalendarDisplay() {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         
+        // Clear all cells
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < 7; j++) {
                 model.setValueAt("", i, j);
             }
         }
         
+        // Get first day of month and calculate starting position
         LocalDate firstDay = currentMonth.atDay(1);
         int startDayOfWeek = firstDay.getDayOfWeek().getValue() % 7;
         int daysInMonth = currentMonth.lengthOfMonth();
         
+        // Fill in the days
         int day = 1;
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < 7; j++) {
@@ -198,9 +222,11 @@ private void updateCalendarDisplay() {
         jTable1.clearSelection();
     }
 
-
-private void handleDateSelection(int row, int col) {
-    Object value = jTable1.getValueAt(row, col);
+    /**
+     * Handle date selection from calendar
+     */
+    private void handleDateSelection(int row, int col) {
+        Object value = jTable1.getValueAt(row, col);
         
         if (value == null || value.toString().trim().isEmpty()) {
             return;
@@ -212,6 +238,7 @@ private void handleDateSelection(int row, int col) {
             return;
         }
         
+        // Check if date is in the past
         if (clickedDate.isBefore(LocalDate.now())) {
             JOptionPane.showMessageDialog(this,
                     "Cannot select a date in the past.",
@@ -221,14 +248,14 @@ private void handleDateSelection(int row, int col) {
             return;
         }
         
+        // Validate date availability for selected counselor
         if (selectedCounselorId != -1) {
-            if (!isDateAvailableForCounselor(clickedDate)) {
-                String dayName = clickedDate.getDayOfWeek()
-                        .getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault());
-                
+            String dateError = counselorController.validateDateSelection(
+                selectedCounselorId, clickedDate);
+            
+            if (dateError != null) {
                 JOptionPane.showMessageDialog(this,
-                        "The counselor is not available on " + dayName + "s or this date is blocked.\n" +
-                        "Please select another date.",
+                        dateError,
                         "Date Unavailable",
                         JOptionPane.WARNING_MESSAGE);
                 jTable1.clearSelection();
@@ -240,7 +267,9 @@ private void handleDateSelection(int row, int col) {
         jTable1.repaint();
     }
 
-
+    /**
+     * Get LocalDate from table cell
+     */
     private LocalDate getCellDate(int row, int col) {
         Object value = jTable1.getValueAt(row, col);
         
@@ -250,7 +279,7 @@ private void handleDateSelection(int row, int col) {
         
         try {
             String cellText = value.toString();
-            cellText = cellText.replaceAll("<[^>]*>", "");
+            cellText = cellText.replaceAll("<[^>]*>", ""); // Remove HTML tags
             
             int day = Integer.parseInt(cellText.trim());
             return currentMonth.atDay(day);
@@ -259,82 +288,55 @@ private void handleDateSelection(int row, int col) {
         }
     }
 
+    /**
+     * Check if date is available for selected counselor
+     */
     private boolean isDateAvailableForCounselor(LocalDate date) {
         if (selectedCounselorId == -1) {
             return true;
         }
         
-        try {
-            Connection connection = getConnection();
-            if (connection == null) return false;
-            
-            String dayOfWeek = date.getDayOfWeek()
-                    .getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault());
-            
-            String schedQuery = "SELECT COUNT(*) as count FROM counselor_schedules " +
-                               "WHERE counselor_id = ? AND day_of_week = ? AND is_available = TRUE";
-            PreparedStatement schedPst = connection.prepareStatement(schedQuery);
-            schedPst.setInt(1, selectedCounselorId);
-            schedPst.setString(2, dayOfWeek);
-            ResultSet schedRs = schedPst.executeQuery();
-            
-            boolean dayAvailable = false;
-            if (schedRs.next()) {
-                dayAvailable = schedRs.getInt("count") > 0;
-            }
-            schedRs.close();
-            schedPst.close();
-            
-            if (!dayAvailable) {
-                return false;
-            }
-            
-            String blockedQuery = "SELECT COUNT(*) as count FROM counselor_blocked_dates " +
-                                 "WHERE counselor_id = ? AND blocked_date = ?";
-            PreparedStatement blockedPst = connection.prepareStatement(blockedQuery);
-            blockedPst.setInt(1, selectedCounselorId);
-            blockedPst.setDate(2, java.sql.Date.valueOf(date));
-            ResultSet blockedRs = blockedPst.executeQuery();
-            
-            boolean isBlocked = false;
-            if (blockedRs.next()) {
-                isBlocked = blockedRs.getInt("count") > 0;
-            }
-            blockedRs.close();
-            blockedPst.close();
-            
-            return !isBlocked;
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error checking date availability", e);
-            return false;
-        }
+        // Use controller to check availability
+        return counselorController.isCounselorAvailableOnDate(selectedCounselorId, date);
     }
 
-public LocalDate getSelectedDate() {
+    /**
+     * Get selected date
+     */
+    public LocalDate getSelectedDate() {
         return selectedDate;
     }
 
+    /**
+     * Navigate to previous month
+     */
     public void navigateToPreviousMonth() {
         YearMonth now = YearMonth.now();
         
-            if (currentMonth.isAfter(now)) {
+        if (currentMonth.isAfter(now)) {
             currentMonth = currentMonth.minusMonths(1);
             selectedDate = null;
             updateCalendarDisplay();
         }
     }
 
+    /**
+     * Navigate to next month
+     */
     public void navigateToNextMonth() {
         YearMonth now = YearMonth.now();
         YearMonth maxMonth = now.plusMonths(1);
-            if (currentMonth.isBefore(maxMonth)) {
+        
+        if (currentMonth.isBefore(maxMonth)) {
             currentMonth = currentMonth.plusMonths(1);
             selectedDate = null;
             updateCalendarDisplay();
         }
     }
 
+    /**
+     * Navigate to today
+     */
     public void navigateToToday() {
         currentMonth = YearMonth.now();
         selectedDate = null;
@@ -343,177 +345,169 @@ public LocalDate getSelectedDate() {
         updateNavigationButtons();
     }
 
-// ============================================================================
-// DATABASE METHODS
-// ============================================================================
+    /**
+     * Update month label display
+     */
+    private void updateMonthLabel() {
+        java.time.format.DateTimeFormatter formatter = 
+            java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy");
+        currentmonth.setText(currentMonth.format(formatter));
+    }
+    
+    /**
+     * Update navigation button states
+     */
+    private void updateNavigationButtons() {
+        YearMonth now = YearMonth.now();
+        YearMonth maxMonth = now.plusMonths(1);
 
-    private Connection getConnection() {
-        try {
-            if (conn == null || conn.isClosed()) {
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
-            }
-            return conn;
-        } catch (ClassNotFoundException | SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Database connection error", e);
-            JOptionPane.showMessageDialog(this, "Database connection failed: " + e.getMessage(),
-                    "Connection Error", JOptionPane.ERROR_MESSAGE);
-            return null;
-        }
+        // Disable previous button if we're at current month
+        previousmonth.setEnabled(!currentMonth.equals(now));
+
+        // Disable next button if we're at max month (next month)
+        nextmonth.setEnabled(!currentMonth.equals(maxMonth));
     }
 
+    // ============================================================================
+    // COUNSELOR DATA LOADING METHODS
+    // ============================================================================
+
+    /**
+     * Load all available specializations
+     */
     private void loadSpecializations() {
         try {
-            Connection connection = getConnection();
-            if (connection == null) return;
+            // Get specializations from controller
+            List<String> specializations = counselorController.getAllSpecializations();
             
-            String query = "SELECT DISTINCT specialization FROM counselors WHERE status = 'Active' ORDER BY specialization";
-            PreparedStatement pst = connection.prepareStatement(query);
-            ResultSet rs = pst.executeQuery();
-            
+            // Populate combo box
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Select Specialization --");
             
-            while (rs.next()) {
-                model.addElement(rs.getString("specialization"));
+            for (String spec : specializations) {
+                model.addElement(spec);
             }
             
             specialization.setModel(model);
-            rs.close();
-            pst.close();
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading specializations", e);
-            JOptionPane.showMessageDialog(this, "Error loading specializations: " + e.getMessage(),
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
+            
+            logger.info("Loaded " + specializations.size() + " specializations");
+            
+        } catch (Exception e) {
+            logger.severe("Error loading specializations: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, 
+                "Error loading specializations: " + e.getMessage(),
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void loadCounselorsBySpecialization(String specialization) {
+    /**
+     * Load counselors filtered by specialization
+     */
+    private void loadCounselorsBySpecialization(String selectedSpecialization) {
         try {
-            Connection connection = getConnection();
-            if (connection == null) return;
+            // Get counselors from controller
+            List<Counselor> counselors = counselorController.getCounselorsBySpecialization(
+                selectedSpecialization);
             
-            String query = "SELECT counselor_id, name FROM counselors WHERE specialization = ? AND status = 'Active' ORDER BY name";
-            PreparedStatement pst = connection.prepareStatement(query);
-            pst.setString(1, specialization);
-            ResultSet rs = pst.executeQuery();
-            
+            // Populate combo box
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Select Counselor --");
             
-            while (rs.next()) {
-                String counselorDisplay = rs.getString("name");
-                model.addElement(counselorDisplay);
+            for (Counselor c : counselors) {
+                model.addElement(c.getName());
             }
             
             counselor.setModel(model);
             counselordetails.setText("");
             
-            rs.close();
-            pst.close();
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading counselors", e);
-            JOptionPane.showMessageDialog(this, "Error loading counselors: " + e.getMessage(),
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
+            logger.info("Loaded " + counselors.size() + " counselors for: " + selectedSpecialization);
+            
+        } catch (Exception e) {
+            logger.severe("Error loading counselors: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, 
+                "Error loading counselors: " + e.getMessage(),
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    /**
+     * Display counselor information
+     */
     private void displayCounselorInfo(String counselorName) {
         try {
-            Connection connection = getConnection();
-            if (connection == null) return;
+            // Get formatted counselor info from controller
+            String info = counselorController.getCounselorFormattedInfo(counselorName);
+            counselordetails.setText(info);
             
-            String query = "SELECT * FROM counselors WHERE name = ? AND status = 'Active'";
-            PreparedStatement pst = connection.prepareStatement(query);
-            pst.setString(1, counselorName);
-            ResultSet rs = pst.executeQuery();
-            
-            if (rs.next()) {
-                StringBuilder info = new StringBuilder();
-                info.append("═══════════════════════════════════\n");
-                info.append("           COUNSELOR DETAILS\n");
-                info.append("═══════════════════════════════════\n\n");
-                info.append("Name: ").append(rs.getString("name")).append("\n");
-                info.append("Specialization: ").append(rs.getString("specialization")).append("\n");
-                info.append("Email: ").append(rs.getString("email")).append("\n");
-                info.append("License Number: ").append(rs.getString("license_number")).append("\n");
-                info.append("Status: ").append(rs.getString("status")).append("\n\n");
-                info.append("═══════════════════════════════════\n");
-                
-                counselordetails.setText(info.toString());
-            } else {
-                counselordetails.setText("Counselor information not found.");
-            }
-            
-            rs.close();
-            pst.close();
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading counselor info", e);
-            JOptionPane.showMessageDialog(this, "Error loading counselor information: " + e.getMessage(),
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            logger.severe("Error loading counselor info: " + e.getMessage());
+            counselordetails.setText("Error loading counselor information.");
+            JOptionPane.showMessageDialog(this, 
+                "Error loading counselor information: " + e.getMessage(),
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    /**
+     * Get selected counselor ID
+     */
     public int getSelectedCounselorId() {
-        try {
-            String selectedCounselor = (String) counselor.getSelectedItem();
-            if (selectedCounselor == null || selectedCounselor.equals("-- Select Counselor --")) {
-                return -1;
-            }
-            
-            Connection connection = getConnection();
-            if (connection == null) return -1;
-            
-            String query = "SELECT counselor_id FROM counselors WHERE name = ? AND status = 'Active'";
-            PreparedStatement pst = connection.prepareStatement(query);
-            pst.setString(1, selectedCounselor);
-            ResultSet rs = pst.executeQuery();
-            
-            int counselorId = -1;
-            if (rs.next()) {
-                counselorId = rs.getInt("counselor_id");
-            }
-            
-            rs.close();
-            pst.close();
-            return counselorId;
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error getting counselor ID", e);
+        String selectedCounselor = (String) counselor.getSelectedItem();
+        
+        if (selectedCounselor == null || selectedCounselor.equals("-- Select Counselor --")) {
             return -1;
         }
+        
+        // Get counselor ID from controller
+        return counselorController.getCounselorIdByName(selectedCounselor);
     }
 
-    @Override
-    public void dispose() {
-        try {
-            if (conn != null && !conn.isClosed()) {
-                conn.close();
-            }
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error closing connection", e);
+    /**
+     * Set selected specialization programmatically
+     */
+    public void setSelectedSpecialization(String spec) {
+        if (spec != null) {
+            specialization.setSelectedItem(spec);
+            loadCounselorsBySpecialization(spec);
         }
-        super.dispose();
+    }
+
+    /**
+     * Set selected counselor programmatically
+     */
+    public void setSelectedCounselor(String counselorName) {
+        if (counselorName != null) {
+            counselor.setSelectedItem(counselorName);
+            displayCounselorInfo(counselorName);
+            selectedCounselorId = getSelectedCounselorId();
+            updateCalendarDisplay();
+        }
     }
     
-    public void setSelectedSpecialization(String spec) {
-    if (spec != null) {
-        specialization.setSelectedItem(spec);
-        loadCounselorsBySpecialization(spec);
+    private void navigateToDashboard() {
+        student_dashboard dashboard = new student_dashboard(currentStudentId, currentStudentName);
+        dashboard.setVisible(true);
+        this.dispose();
     }
-}
-
-public void setSelectedCounselor(String counselorName) {
-    if (counselorName != null) {
-        counselor.setSelectedItem(counselorName);
-        displayCounselorInfo(counselorName);
-        selectedCounselorId = getSelectedCounselorId();
-        updateCalendarDisplay();
-    }
-}
+    
     /**
-     * Creates new form student_bookappointment
+     * Navigate to book appointment page
      */
+    private void navigateToMyAppointment() {
+        student_myappointment myappointment = new student_myappointment(currentStudentId, currentStudentName);
+        myappointment.setVisible(true);
+        this.dispose();
+    }
+    
+    private void navigateToViewProfile() {
+        student_viewprofile viewprofile = new student_viewprofile(currentStudentId, currentStudentName);
+        viewprofile.setVisible(true);
+        this.dispose();
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -874,24 +868,6 @@ public void setSelectedCounselor(String counselorName) {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void updateMonthLabel() {
-        // Format: "January 2025"
-        java.time.format.DateTimeFormatter formatter = 
-            java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy");
-        currentmonth.setText(currentMonth.format(formatter));
-    }
-    
-    private void updateNavigationButtons() {
-        YearMonth now = YearMonth.now();
-        YearMonth maxMonth = now.plusMonths(1); // Only allow up to next month
-
-        // Disable previous button if we're at current month
-        previousmonth.setEnabled(!currentMonth.equals(now));
-
-        // Disable next button if we're at max month (next month)
-        nextmonth.setEnabled(!currentMonth.equals(maxMonth));
-    }
-    
     private void bookappointmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bookappointmentActionPerformed
         // TODO add your handling code here:
         student_bookappointment a = new student_bookappointment(currentStudentId, currentStudentName);
@@ -901,16 +877,12 @@ public void setSelectedCounselor(String counselorName) {
 
     private void viewprofileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewprofileActionPerformed
         // TODO add your handling code here:
-        student_viewprofile b = new student_viewprofile(currentStudentId, currentStudentName);
-        b.setVisible(true);
-        this.dispose();
+        navigateToViewProfile();
     }//GEN-LAST:event_viewprofileActionPerformed
 
     private void myappointmetsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_myappointmetsActionPerformed
         // TODO add your handling code here:
-        student_myappointment c = new student_myappointment(currentStudentId, currentStudentName);
-        c.setVisible(true);
-        this.dispose();
+        navigateToMyAppointment();
     }//GEN-LAST:event_myappointmetsActionPerformed
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed

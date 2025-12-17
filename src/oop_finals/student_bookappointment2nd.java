@@ -1,231 +1,439 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package oop_finals;
 
-import java.sql.*;
+import java.sql.Date;
+import java.sql.Time;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JOptionPane;
+
 /**
- *
+ * Second step of appointment booking - Date, Time, and Reason selection
+ * 
+ * Refactored version using AppointmentController (proper 3-layer architecture)
+ * 
  * @author Admin
+ * @version 3.0
  */
 public class student_bookappointment2nd extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_bookappointment2nd.class.getName());
+    // ============================================================================
+    // CONSTANTS
+    // ============================================================================
     
-    private int currentStudentId;
-    private String currentStudentName;
-    private int selectedCounselorId;
-    private java.util.Date selectedDate;
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(student_bookappointment2nd.class.getName());
     
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
+    // Time slot constants
+    private static final int WORK_START_HOUR = 8;
+    private static final int WORK_END_HOUR = 16;
+    private static final int LUNCH_START_HOUR = 12;
+    private static final int SLOT_INTERVAL_MINUTES = 30;
+    private static final int LAST_SLOT_MINUTE = 30; // 4:30 PM
     
-    private String selectedSpecialization;
-    private String selectedCounselorName;
-
+    // Time format
+    private static final String TIME_12H_FORMAT = "hh:mm a";
+    
+    // Validation messages
+    private static final String MSG_SELECT_DATE = "Please select a date";
+    private static final String MSG_SELECT_TIME = "Please select a time";
+    
+    // ============================================================================
+    // INSTANCE VARIABLES
+    // ============================================================================
+    
+    private final int currentStudentId;
+    private final String currentStudentName;
+    private final int selectedCounselorId;
+    private final String selectedSpecialization;
+    private final String selectedCounselorName;
+    
+    // Controller layer - handles business logic
+    private final AppointmentController appointmentController;
+    
+    // ============================================================================
+    // CONSTRUCTORS
+    // ============================================================================
+    
     /**
-     * Creates new form student_bookappointment2nd
+     * Default constructor (for testing only)
      */
     public student_bookappointment2nd() {
-        initComponents();
-        setLocationRelativeTo(null);
-        
-        jDateChooser1.setDateFormatString("yyyy-MM-dd");
-        jDateChooser1.setMinSelectableDate(new java.util.Date());
-        populateTimeSlots();
+        this(0, "Guest", 0, null, null, null);
     }
     
+    /**
+     * Full constructor with all booking context
+     * 
+     * @param studentId Student's ID
+     * @param studentName Student's name
+     * @param counselorId Selected counselor's ID
+     * @param appointmentDate Pre-selected date (nullable)
+     * @param specialization Selected specialization
+     * @param counselorName Selected counselor's name
+     */
     public student_bookappointment2nd(int studentId, String studentName, int counselorId, 
                                       java.util.Date appointmentDate, String specialization, 
                                       String counselorName) {
-        initComponents();
+        // Validate inputs
+        validateConstructorInputs(studentId, studentName, counselorId);
+        
+        // Initialize instance variables
         this.currentStudentId = studentId;
         this.currentStudentName = studentName;
         this.selectedCounselorId = counselorId;
-        this.selectedDate = appointmentDate;
         this.selectedSpecialization = specialization;
         this.selectedCounselorName = counselorName;
-
-        setLocationRelativeTo(null);
-        jLabel5.setText(studentName + "!");
-
-        if (appointmentDate != null) {
-            jDateChooser1.setDate(appointmentDate);
+        
+        // Initialize controller
+        this.appointmentController = new AppointmentController();
+        
+        // Initialize UI components
+        initComponents();
+        setupUI(appointmentDate);
+    }
+    
+    /**
+     * Validate constructor inputs
+     */
+    private void validateConstructorInputs(int studentId, String studentName, int counselorId) {
+        if (studentId <= 0) {
+            throw new IllegalArgumentException("Student ID must be positive");
         }
-        jDateChooser1.setDateFormatString("yyyy-MM-dd");
-        jDateChooser1.setMinSelectableDate(new java.util.Date());
-
+        if (studentName == null || studentName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Student name cannot be empty");
+        }
+        if (counselorId <= 0) {
+            throw new IllegalArgumentException("Counselor ID must be positive");
+        }
+    }
+    
+    // ============================================================================
+    // UI SETUP
+    // ============================================================================
+    
+    /**
+     * Setup UI components after initialization
+     */
+    private void setupUI(java.util.Date preSelectedDate) {
+        setLocationRelativeTo(null);
+        jLabel5.setText(currentStudentName + "!");
+        
+        setupDateChooser(preSelectedDate);
         populateTimeSlots();
     }
-
-    private void populateTimeSlots() {
-        java.util.List<String> timeSlots = new java.util.ArrayList<>();
+    
+    /**
+     * Setup date chooser component
+     */
+    private void setupDateChooser(java.util.Date preSelectedDate) {
+        jDateChooser1.setDateFormatString("yyyy-MM-dd");
+        jDateChooser1.setMinSelectableDate(new java.util.Date());
         
-        // Generate time slots from 8 AM to 4:30 PM (excluding 12 PM to 1 PM)
-        for (int hour = 8; hour <= 16; hour++) {
-            // Skip 12 PM hour (lunch break)
-            if (hour == 12) {
-                continue;
-            }
-            
-            for (int minute = 0; minute < 60; minute += 30) {
-                
-                // Stop at 4:30 PM (16:30)
-                if (hour == 16 && minute == 30) {
-                    int displayHour = 4;
-                    String ampm = "PM";
-                    String timeSlot = String.format("%02d:%02d %s", displayHour, minute, ampm);
-                    timeSlots.add(timeSlot);
-                    break;
-                }
-                
-                // Convert to 12-hour format
-                int displayHour = hour;
-                String ampm = "AM";
-                
-                if (hour >= 12) {
-                    ampm = "PM";
-                    if (hour > 12) {
-                        displayHour = hour - 12;
-                    }
-                }
-                
-                String timeSlot = String.format("%02d:%02d %s", displayHour, minute, ampm);
-                timeSlots.add(timeSlot);
-            }
+        if (preSelectedDate != null) {
+            jDateChooser1.setDate(preSelectedDate);
         }
-        
+    }
+    
+    // ============================================================================
+    // TIME SLOT GENERATION
+    // ============================================================================
+    
+    /**
+     * Populate time slot combo box with available times
+     */
+    private void populateTimeSlots() {
+        List<String> timeSlots = generateTimeSlots();
         jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(
             timeSlots.toArray(new String[0])
         ));
     }
     
-    private void bookAppointment() {
-         java.util.Date selectedDate = jDateChooser1.getDate();
-    String selectedTime = (String) jComboBox1.getSelectedItem();
-    String reason = jTextArea1.getText().trim();
-
-    // Validate inputs
-    if (selectedDate == null) {
-        JOptionPane.showMessageDialog(this, 
-            "Please select a date", 
-            "Validation Error", 
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    if (selectedTime == null || selectedTime.isEmpty()) {
-        JOptionPane.showMessageDialog(this, 
-            "Please select a time", 
-            "Validation Error", 
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    // Convert time from 12-hour format to 24-hour format for database
-    String time24Hour = convertTo24Hour(selectedTime);
-    
-    // Check if time slot is already taken
-    if (isTimeSlotTaken(selectedDate, time24Hour)) {
-        JOptionPane.showMessageDialog(this,
-            "This time slot is already booked. Please select another time.",
-            "Time Slot Unavailable",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    // Insert appointment into database
-    String insertQuery = "INSERT INTO appointments (student_id, counselor_id, appointment_date, " +
-                       "appointment_time, reason, status, created_at, updated_at) " +
-                       "VALUES (?, ?, ?, ?, ?, 'Pending', NOW(), NOW())";
-    
-    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-         PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
+    /**
+     * Generate list of time slots
+     * 
+     * @return List of formatted time strings in 12-hour format
+     */
+    private List<String> generateTimeSlots() {
+        List<String> timeSlots = new ArrayList<>();
         
-        pstmt.setInt(1, currentStudentId);
-        pstmt.setInt(2, selectedCounselorId);
-        pstmt.setDate(3, new java.sql.Date(selectedDate.getTime()));
-        pstmt.setTime(4, java.sql.Time.valueOf(time24Hour + ":00"));
-        pstmt.setString(5, reason.isEmpty() ? null : reason);
-        
-        int rowsAffected = pstmt.executeUpdate();
-        
-        if (rowsAffected > 0) {
-            java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
-            String dateStr = dateFormat.format(selectedDate);
+        for (int hour = WORK_START_HOUR; hour <= WORK_END_HOUR; hour++) {
+            // Skip lunch hour
+            if (hour == LUNCH_START_HOUR) {
+                continue;
+            }
             
-            JOptionPane.showMessageDialog(this, 
-                "Appointment request submitted successfully!\n\n" +
-                "Date: " + dateStr + "\n" +
-                "Time: " + selectedTime + "\n" +
-                "Status: Pending approval\n\n" +
-                "You will be notified once the counselor approves your appointment.", 
-                "Success", 
-                JOptionPane.INFORMATION_MESSAGE);
-            
-            // Navigate back to dashboard
-            student_dashboard dashboard = new student_dashboard(currentStudentId, currentStudentName);
-            dashboard.setVisible(true);
-            this.dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, 
-                "Failed to submit appointment request. Please try again.", 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
+            // Generate 30-minute intervals
+            for (int minute = 0; minute < 60; minute += SLOT_INTERVAL_MINUTES) {
+                // Stop at 4:30 PM
+                if (hour == WORK_END_HOUR && minute > LAST_SLOT_MINUTE) {
+                    break;
+                }
+                
+                String timeSlot = formatTimeSlot(hour, minute);
+                timeSlots.add(timeSlot);
+            }
         }
         
-    } catch (SQLException e) {
-        logger.log(java.util.logging.Level.SEVERE, "Error booking appointment", e);
-        JOptionPane.showMessageDialog(this, 
-            "Database error: " + e.getMessage(), 
-            "Error", 
-            JOptionPane.ERROR_MESSAGE);
+        return timeSlots;
     }
-}
-    private boolean isTimeSlotTaken(java.util.Date date, String time24Hour) {
-    String query = "SELECT COUNT(*) as count FROM appointments " +
-                  "WHERE counselor_id = ? " +
-                  "AND appointment_date = ? " +
-                  "AND appointment_time = ? " +
-                  "AND status IN ('Upcoming', 'Pending')";
-    
-    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-         PreparedStatement pstmt = conn.prepareStatement(query)) {
-        
-        pstmt.setInt(1, selectedCounselorId);
-        pstmt.setDate(2, new java.sql.Date(date.getTime()));
-        pstmt.setTime(3, java.sql.Time.valueOf(time24Hour + ":00"));
-        
-        ResultSet rs = pstmt.executeQuery();
-        
-        if (rs.next()) {
-            return rs.getInt("count") > 0;
-        }
-        
-    } catch (SQLException e) {
-        logger.log(java.util.logging.Level.SEVERE, "Error checking time slot", e);
-    }
-    
-    return false;
-}
     
     /**
-     * Convert 12-hour time format to 24-hour format
+     * Format time slot to 12-hour format
+     * 
+     * @param hour Hour in 24-hour format (0-23)
+     * @param minute Minute (0-59)
+     * @return Formatted time string (e.g., "08:00 AM")
      */
-    private String convertTo24Hour(String time12Hour) {
+    private String formatTimeSlot(int hour, int minute) {
+        LocalTime time = LocalTime.of(hour, minute);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIME_12H_FORMAT);
+        return time.format(formatter);
+    }
+    
+    // ============================================================================
+    // APPOINTMENT BOOKING LOGIC
+    // ============================================================================
+    
+    /**
+     * Main appointment booking method
+     * Uses AppointmentController which handles all validation
+     */
+    private void bookAppointment() {
         try {
-            java.text.SimpleDateFormat displayFormat = new java.text.SimpleDateFormat("hh:mm a");
-            java.text.SimpleDateFormat dbFormat = new java.text.SimpleDateFormat("HH:mm");
-            java.util.Date date = displayFormat.parse(time12Hour);
-            return dbFormat.format(date);
-        } catch (java.text.ParseException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error parsing time", e);
-            return "08:00"; // Default to 8:00 AM
+            // Get UI inputs
+            java.util.Date selectedDateUtil = jDateChooser1.getDate();
+            String selectedTimeStr = (String) jComboBox1.getSelectedItem();
+            String reason = jTextArea1.getText().trim();
+            
+            // Basic UI validation
+            if (selectedDateUtil == null) {
+                showWarning(MSG_SELECT_DATE);
+                return;
+            }
+            
+            if (selectedTimeStr == null || selectedTimeStr.isEmpty()) {
+                showWarning(MSG_SELECT_TIME);
+                return;
+            }
+            
+            // Convert to SQL types
+            Date sqlDate = new Date(selectedDateUtil.getTime());
+            Time sqlTime = parseTimeString(selectedTimeStr);
+            
+            // Create Appointment object
+            Appointment appointment = new Appointment();
+            appointment.setStudentId(currentStudentId);
+            appointment.setCounselorId(selectedCounselorId);
+            appointment.setAppointmentDate(sqlDate);
+            appointment.setAppointmentTime(sqlTime);
+            appointment.setReason(reason.isEmpty() ? null : reason);
+            appointment.setStatus("Pending");
+            
+            // Use Controller to create (it validates everything!)
+            String result = appointmentController.createAppointment(appointment);
+            
+            if ("SUCCESS".equals(result)) {
+                handleBookingSuccess(sqlDate, sqlTime);
+            } else {
+                // Controller returned validation error message
+                showError(result, "Booking Failed");
+            }
+            
+        } catch (Exception e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error booking appointment", e);
+            showError("An unexpected error occurred: " + e.getMessage(), "Error");
         }
     }
+    
+    /**
+     * Handle successful booking
+     */
+    private void handleBookingSuccess(Date date, Time time) {
+        String message = String.format(
+            "Appointment request submitted successfully!\n\n" +
+            "Date: %s\n" +
+            "Time: %s\n" +
+            "Status: Pending approval\n\n" +
+            "You will be notified once the counselor approves your appointment.",
+            date.toString(),
+            formatTime12Hour(time)
+        );
+        
+        showSuccess(message);
+        navigateToDashboard();
+    }
+    
+    // ============================================================================
+    // TIME CONVERSION
+    // ============================================================================
+    
+    /**
+     * Parse 12-hour time string to SQL Time
+     * 
+     * @param time12Hour Time in format "hh:mm AM/PM"
+     * @return SQL Time object
+     */
+    private Time parseTimeString(String time12Hour) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIME_12H_FORMAT);
+            LocalTime localTime = LocalTime.parse(time12Hour, formatter);
+            return Time.valueOf(localTime);
+        } catch (Exception e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error parsing time: " + time12Hour, e);
+            return Time.valueOf(LocalTime.of(8, 0)); // Default to 8:00 AM
+        }
+    }
+    
+    /**
+     * Format SQL Time to 12-hour format
+     * 
+     * @param time SQL Time object
+     * @return Formatted time string
+     */
+    private String formatTime12Hour(Time time) {
+        LocalTime localTime = time.toLocalTime();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIME_12H_FORMAT);
+        return localTime.format(formatter);
+    }
+    
+    // ============================================================================
+    // NAVIGATION
+    // ============================================================================
+    
+    /**
+     * Navigate to dashboard
+     */
+    private void navigateToDashboard() {
+        student_dashboard dashboard = new student_dashboard(currentStudentId, currentStudentName);
+        dashboard.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Navigate to booking page (step 1)
+     */
+    private void navigateToBookingPage() {
+        student_bookappointment bookingPage = 
+            new student_bookappointment(currentStudentId, currentStudentName);
+        
+        // Restore previous selections
+        if (selectedSpecialization != null) {
+            bookingPage.setSelectedSpecialization(selectedSpecialization);
+        }
+        if (selectedCounselorName != null) {
+            bookingPage.setSelectedCounselor(selectedCounselorName);
+        }
+        
+        bookingPage.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Navigate to my appointments
+     */
+    private void navigateToMyAppointments() {
+        student_myappointment myAppointments = 
+            new student_myappointment(currentStudentId, currentStudentName);
+        myAppointments.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Navigate to profile
+     */
+    private void navigateToProfile() {
+        student_viewprofile profile = 
+            new student_viewprofile(currentStudentId, currentStudentName);
+        profile.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Handle logout
+     */
+    private void handleLogout() {
+        int confirmation = JOptionPane.showConfirmDialog(
+            this, 
+            "Are you sure you want to logout?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (confirmation == JOptionPane.YES_OPTION) {
+            try {
+                this.dispose();
+                new login_page().setVisible(true);
+            } catch (Exception e) {
+                logger.log(java.util.logging.Level.SEVERE, "Error during logout", e);
+                showError("Error during logout", "Error");
+            }
+        }
+    }
+    
+    // ============================================================================
+    // UI HELPER METHODS
+    // ============================================================================
+    
+    /**
+     * Show warning message
+     */
+    private void showWarning(String message) {
+        JOptionPane.showMessageDialog(
+            this, 
+            message, 
+            "Validation Error", 
+            JOptionPane.WARNING_MESSAGE
+        );
+    }
+    
+    /**
+     * Show error message
+     */
+    private void showError(String message, String title) {
+        JOptionPane.showMessageDialog(
+            this, 
+            message, 
+            title, 
+            JOptionPane.ERROR_MESSAGE
+        );
+    }
+    
+    /**
+     * Show success message
+     */
+    private void showSuccess(String message) {
+        JOptionPane.showMessageDialog(
+            this, 
+            message, 
+            "Success", 
+            JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+    
+    // ============================================================================
+    // EVENT HANDLERS (Called by GUI components)
+    // ============================================================================
+    
+    /**
+     * Handle submit button click
+     */
+    private void handleSubmitClick() {
+        bookAppointment();
+    }
+    
+    /**
+     * Handle back button click
+     */
+    private void handleBackClick() {
+        navigateToBookingPage();
+    }
+    
+    /**
+     * Handle home button click
+     */
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -539,31 +747,12 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
-        student_myappointment b = new student_myappointment(currentStudentId, currentStudentName);
-        b.setVisible(true);
-        this.dispose();
+        navigateToMyAppointments();
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
         // TODO add your handling code here:
-        int confirmation = JOptionPane.showConfirmDialog(this, 
-            "Are you sure you want to logout?",
-            "Confirm Logout",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE);
-    
-    if (confirmation == JOptionPane.YES_OPTION) {
-        try {
-            this.dispose();
-            new login_page().setVisible(true);
-        } catch (Exception e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error during logout", e);
-            JOptionPane.showMessageDialog(this, 
-                "Error during logout", 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
+        handleLogout();
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
@@ -574,51 +763,11 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-        java.util.Date selectedDate = jDateChooser1.getDate();
-    
-    // Get selected time from combo box
-        String selectedTime = (String) jComboBox1.getSelectedItem();
-
-        // Get reason
-        String reason = jTextArea1.getText();
-
-        // Validate
-        if (selectedDate == null) {
-            javax.swing.JOptionPane.showMessageDialog(this, 
-                "Please select a date", 
-                "Validation Error", 
-                javax.swing.JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (selectedTime == null || selectedTime.isEmpty()) {
-            javax.swing.JOptionPane.showMessageDialog(this, 
-                "Please select a time", 
-                "Validation Error", 
-                javax.swing.JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Format date for display/storage
-        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
-        String dateStr = dateFormat.format(selectedDate);
-
-        // Display or save the appointment
-        bookAppointment();
-
-        // Show confirmation
-        javax.swing.JOptionPane.showMessageDialog(this, 
-            "Appointment booked for:\n" + dateStr + " at " + selectedTime, 
-            "Success", 
-            javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        handleSubmitClick();
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-        // TODO add your handling code here:
-        student_viewprofile d = new student_viewprofile(currentStudentId, currentStudentName);
-        d.setVisible(true);
-        this.dispose();
+        navigateToProfile();
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
@@ -627,26 +776,11 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
     }//GEN-LAST:event_jComboBox1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
-        d.setVisible(true);
-        this.dispose();
-        // TODO add your handling code here:
+        navigateToDashboard();
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-student_bookappointment bookingPage = new student_bookappointment(currentStudentId, currentStudentName);
-    
-    // Restore the selections if available
-    if (selectedSpecialization != null) {
-        bookingPage.setSelectedSpecialization(selectedSpecialization);
-    }
-    if (selectedCounselorName != null) {
-        bookingPage.setSelectedCounselor(selectedCounselorName);
-    }
-    
-    bookingPage.setVisible(true);
-    this.dispose();
-        // TODO add your handling code here:
+        handleBackClick();
     }//GEN-LAST:event_jButton3ActionPerformed
 
     /**

@@ -1,142 +1,317 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package oop_finals;
-/**
- *
- * @author Admin
- */
-import java.sql.*;
-import javax.swing.JOptionPane;
 
+import java.sql.*;
+import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
+/**
+ * Student Dashboard
+ * Main landing page after student login showing appointment statistics and upcoming appointments
+ * 
+ * Refactored version with proper separation of concerns
+ * 
+ * @author Admin
+ * @version 2.0
+ */
 public class student_dashboard extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_dashboard.class.getName());
-    private int currentStudentId;
-    private String currentStudentName;
+    // ============================================================================
+    // CONSTANTS
+    // ============================================================================
     
-    // Database connection parameters
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = ""; // Change to your MySQL password
-
-    // Default constructor
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(student_dashboard.class.getName());
+    
+    // Table column names
+    private static final String[] TABLE_COLUMNS = {"Date", "Time", "Counselor Name"};
+    private static final String NO_APPOINTMENTS_MESSAGE = "No upcoming appointments";
+    
+    // ============================================================================
+    // INSTANCE VARIABLES
+    // ============================================================================
+    
+    private final int currentStudentId;
+    private final String currentStudentName;
+    
+    // Controllers
+    private final AppointmentController appointmentController;
+    
+    // ============================================================================
+    // CONSTRUCTORS
+    // ============================================================================
+    
+    /**
+     * Default constructor (for testing only)
+     */
     public student_dashboard() {
-        initComponents();
-        setLocationRelativeTo(null);
+        this(0, "Guest");
     }
     
-    // Constructor with student information (call this from login page)
+    /**
+     * Constructor with student information
+     * 
+     * @param studentId Student's ID
+     * @param studentName Student's name
+     */
     public student_dashboard(int studentId, String studentName) {
+        validateConstructorInputs(studentId, studentName);
+        
         this.currentStudentId = studentId;
         this.currentStudentName = studentName;
+        this.appointmentController = new AppointmentController();
+        
         initComponents();
-
+        setupUI();
         loadDashboardData();
     }
     
-    // Load all dashboard data from database
-    private void loadDashboardData() {
-        // Update welcome message
-        user.setText(currentStudentName + "!");
-        
-        // Load appointment counts for the cards
-        loadAppointmentCounts();
-        
-        // Load upcoming appointments into the table
-        loadUpcomingAppointmentsTable();
-        
+    /**
+     * Validate constructor inputs
+     */
+    private void validateConstructorInputs(int studentId, String studentName) {
+        if (studentId <= 0) {
+            throw new IllegalArgumentException("Student ID must be positive");
+        }
+        if (studentName == null || studentName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Student name cannot be empty");
+        }
     }
     
-    // Add this new method to load upcoming appointments into the table
-    private void loadUpcomingAppointmentsTable() {
-        System.out.println("=== Loading Upcoming Appointments Into Table ===");
-
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-            // Clear existing table data
-            javax.swing.table.DefaultTableModel model = 
-                (javax.swing.table.DefaultTableModel) pendingrequesttable.getModel();
-            model.setRowCount(0); // Clear all rows
-
-            // Load upcoming appointments for this student
-            String query = "SELECT a.appointment_date, a.appointment_time, c.name as counselor_name " +
-                          "FROM appointments a " +
-                          "JOIN counselors c ON a.counselor_id = c.counselor_id " +
-                          "WHERE a.student_id = ? AND a.status = 'Upcoming' " +
-                          "ORDER BY a.appointment_date, a.appointment_time";
-
-            try (PreparedStatement pst = conn.prepareStatement(query)) {
-                pst.setInt(1, currentStudentId);
-                ResultSet rs = pst.executeQuery();
-
-                int count = 0;
-                while (rs.next()) {
-                    String date = rs.getDate("appointment_date").toString();
-                    String time = rs.getTime("appointment_time").toString();
-                    String counselorName = rs.getString("counselor_name");
-
-                    // Add row to table
-                    model.addRow(new Object[]{date, time, counselorName});
-                    count++;
-
-                    System.out.println("✓ Added appointment: " + date + " at " + time + " with " + counselorName);
-                }
-
-                if (count == 0) {
-                    System.out.println("○ No upcoming appointments found");
-                    // Add empty row to show "No data"
-                    model.addRow(new Object[]{"No upcoming appointments", "", ""});
-                } else {
-                    System.out.println("✓ Loaded " + count + " upcoming appointments into table");
-                }
-
-            }
-
-            System.out.println("=== Finished Loading Upcoming Appointments ===");
-
-        } catch (SQLException e) {
-            System.err.println("✗ Error loading upcoming appointments table: " + e.getMessage());
-            e.printStackTrace();
-            logger.log(java.util.logging.Level.SEVERE, "Error loading upcoming appointments table", e);
-        }
+    // ============================================================================
+    // UI SETUP
+    // ============================================================================
+    
+    /**
+     * Setup UI components
+     */
+    private void setupUI() {
+        setLocationRelativeTo(null);
+        user.setText(currentStudentName + "!");
+        
+        // Setup table
+        setupAppointmentsTable();
     }
-
-        // Load appointment counts for dashboard cards
+    
+    /**
+     * Setup appointments table
+     */
+    private void setupAppointmentsTable() {
+        DefaultTableModel model = new DefaultTableModel(TABLE_COLUMNS, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table read-only
+            }
+        };
+        
+        pendingrequesttable.setModel(model);
+        pendingrequesttable.setRowHeight(90);
+        pendingrequesttable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        pendingrequesttable.setShowGrid(false);
+        pendingrequesttable.setShowHorizontalLines(true);
+    }
+    
+    // ============================================================================
+    // DATA LOADING
+    // ============================================================================
+    
+    /**
+     * Load all dashboard data
+     */
+    private void loadDashboardData() {
+        loadAppointmentCounts();
+        loadUpcomingAppointmentsTable();
+    }
+    
+    /**
+     * Load appointment counts for dashboard cards
+     * Uses AppointmentController to get statistics
+     */
     private void loadAppointmentCounts() {
-        String query = "SELECT " +
-                      "COUNT(CASE WHEN status = 'Upcoming' THEN 1 END) as upcoming_count, " +
-                      "COUNT(CASE WHEN status = 'Pending' THEN 1 END) as pending_count, " +
-                      "COUNT(CASE WHEN status = 'Completed' THEN 1 END) as completed_count " +
-                      "FROM appointments WHERE student_id = ?";
-
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-
-            pstmt.setInt(1, currentStudentId);
-            ResultSet rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                int upcomingCount = rs.getInt("upcoming_count");
-                int pendingCount = rs.getInt("pending_count");
-                int completedCount = rs.getInt("completed_count");
-
-                // Update the labels
-                upcoming.setText(String.valueOf(upcomingCount));
-                pending.setText(String.valueOf(pendingCount));
-                completed.setText(String.valueOf(completedCount));
-            }
-
-        } catch (SQLException e) {
+        try {
+            logger.info("Loading appointment counts for student: " + currentStudentId);
+            
+            // Get counts for each status using Controller
+            int upcomingCount = appointmentController
+                .getStudentAppointments(currentStudentId, "Upcoming")
+                .size();
+            
+            int pendingCount = appointmentController
+                .getStudentAppointments(currentStudentId, "Pending")
+                .size();
+            
+            int completedCount = appointmentController
+                .getStudentAppointments(currentStudentId, "Completed")
+                .size();
+            
+            // Update the labels
+            upcoming.setText(String.valueOf(upcomingCount));
+            pending.setText(String.valueOf(pendingCount));
+            completed.setText(String.valueOf(completedCount));
+            
+            logger.info(String.format("Loaded counts - Upcoming: %d, Pending: %d, Completed: %d",
+                upcomingCount, pendingCount, completedCount));
+            
+        } catch (Exception e) {
             logger.log(java.util.logging.Level.SEVERE, "Error loading appointment counts", e);
-            JOptionPane.showMessageDialog(this, 
-                "Error loading appointment counts: " + e.getMessage(),
-                "Database Error", 
-                JOptionPane.ERROR_MESSAGE);
+            showError("Error loading appointment counts: " + e.getMessage());
+            
+            // Set default values on error
+            upcoming.setText("0");
+            pending.setText("0");
+            completed.setText("0");
         }
     }
-  
-
+    
+    /**
+     * Load upcoming appointments into the table
+     * Uses AppointmentController to get data
+     */
+    private void loadUpcomingAppointmentsTable() {
+        logger.info("Loading upcoming appointments into table");
+        
+        DefaultTableModel model = (DefaultTableModel) pendingrequesttable.getModel();
+        model.setRowCount(0); // Clear existing rows
+        
+        try {
+            // Get upcoming appointments from Controller
+            List<Appointment> appointments = appointmentController
+                .getStudentAppointments(currentStudentId, "Upcoming");
+            
+            if (appointments.isEmpty()) {
+                // Show "no data" message
+                model.addRow(new Object[]{NO_APPOINTMENTS_MESSAGE, "", ""});
+                logger.info("No upcoming appointments found");
+            } else {
+                // Add each appointment to table
+                for (Appointment apt : appointments) {
+                    model.addRow(new Object[]{
+                        formatDate(apt.getAppointmentDate()),
+                        formatTime(apt.getAppointmentTime()),
+                        apt.getCounselorName()
+                    });
+                }
+                
+                logger.info("Loaded " + appointments.size() + " upcoming appointments into table");
+            }
+            
+        } catch (Exception e) {
+            logger.log(java.util.logging.Level.SEVERE, "Error loading upcoming appointments table", e);
+            showError("Error loading appointments: " + e.getMessage());
+            
+            // Show error message in table
+            model.addRow(new Object[]{"Error loading appointments", "", ""});
+        }
+    }
+    
+    // ============================================================================
+    // UTILITY METHODS
+    // ============================================================================
+    
+    /**
+     * Format SQL Date for display
+     */
+    private String formatDate(Date date) {
+        if (date == null) return "";
+        return date.toString(); // Simple format, can be customized
+    }
+    
+    /**
+     * Format SQL Time for display
+     */
+    private String formatTime(Time time) {
+        if (time == null) return "";
+        
+        // Convert to 12-hour format
+        java.time.LocalTime localTime = time.toLocalTime();
+        java.time.format.DateTimeFormatter formatter = 
+            java.time.format.DateTimeFormatter.ofPattern("hh:mm a");
+        return localTime.format(formatter);
+    }
+    
+    // ============================================================================
+    // NAVIGATION
+    // ============================================================================
+    
+    /**
+     * Navigate to book appointment page
+     */
+    private void navigateToBookAppointment() {
+        student_bookappointment bookingPage = 
+            new student_bookappointment(currentStudentId, currentStudentName);
+        bookingPage.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Navigate to my appointments page
+     */
+    private void navigateToMyAppointments() {
+        student_myappointment myAppointments = 
+            new student_myappointment(currentStudentId, currentStudentName);
+        myAppointments.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Navigate to profile page
+     */
+    private void navigateToViewProfile() {
+        student_viewprofile profile = 
+            new student_viewprofile(currentStudentId, currentStudentName);
+        profile.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Refresh current dashboard
+     */
+    private void refreshDashboard() {
+        student_dashboard dashboard = 
+            new student_dashboard(currentStudentId, currentStudentName);
+        dashboard.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Handle logout
+     */
+    private void handleLogout() {
+        int confirmation = JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to logout?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (confirmation == JOptionPane.YES_OPTION) {
+            try {
+                this.dispose();
+                new login_page().setVisible(true);
+                logger.info("User logged out successfully");
+            } catch (Exception e) {
+                logger.log(java.util.logging.Level.SEVERE, "Error during logout", e);
+                showError("Error during logout");
+            }
+        }
+    }
+    
+    // ============================================================================
+    // UI HELPER METHODS
+    // ============================================================================
+    
+    /**
+     * Show error message dialog
+     */
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(
+            this,
+            message,
+            "Error",
+            JOptionPane.ERROR_MESSAGE
+        );
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -451,17 +626,14 @@ public class student_dashboard extends javax.swing.JFrame {
                 .addGap(49, 49, 49))
             .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(48, 48, 48)
-                        .addComponent(dashboard))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(601, 601, 601)
-                        .addComponent(viewall)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(48, 48, 48)
+                .addComponent(dashboard)
+                .addContainerGap(665, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 666, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(viewall)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 666, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(62, 62, 62))
         );
         jPanel2Layout.setVerticalGroup(
@@ -485,9 +657,9 @@ public class student_dashboard extends javax.swing.JFrame {
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 202, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(39, 39, 39)
+                .addGap(18, 18, 18)
                 .addComponent(viewall)
-                .addContainerGap(45, Short.MAX_VALUE))
+                .addContainerGap(66, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -509,59 +681,36 @@ public class student_dashboard extends javax.swing.JFrame {
 
     private void viewallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewallActionPerformed
         // TODO add your handling code here:
-        student_myappointment d = new student_myappointment(currentStudentId, currentStudentName);
-        d.setVisible(true);
-        this.dispose();
+        
     }//GEN-LAST:event_viewallActionPerformed
 
     private void logoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoActionPerformed
         // TODO add your handling code here:
-        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
-        d.setVisible(true);
-        this.dispose();
+        refreshDashboard();
     }//GEN-LAST:event_logoActionPerformed
 
     private void myappointmentsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_myappointmentsActionPerformed
         // TODO add your handling code here:
-        student_myappointment b = new student_myappointment(currentStudentId, currentStudentName);
-        b.setVisible(true);
-        this.dispose();
+        navigateToMyAppointments();
     }//GEN-LAST:event_myappointmentsActionPerformed
 
     private void view_profileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_view_profileActionPerformed
         // TODO add your handling code here:
-        student_viewprofile c = new student_viewprofile(currentStudentId, currentStudentName);
-        c.setVisible(true);
-        this.dispose();
+        navigateToViewProfile();
     }//GEN-LAST:event_view_profileActionPerformed
 
     private void bookappointmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bookappointmentActionPerformed
         // TODO add your handling code here:
-        student_bookappointment a = new student_bookappointment(currentStudentId, currentStudentName);
-        a.setVisible(true);
-        this.dispose();
+        navigateToBookAppointment();
     }//GEN-LAST:event_bookappointmentActionPerformed
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
         // TODO add your handling code here:
-        int confirmation = JOptionPane.showConfirmDialog(null, 
-                "Are you sure you want to logout?",
-                "Confirm logout",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
-        
-        if (confirmation == JOptionPane.YES_OPTION) {
-            this.dispose();
-            new login_page().setVisible(true);
-        }
-        // TODO add your handling code here        
+        handleLogout();
     }//GEN-LAST:event_logoutActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
-        d.setVisible(true);
-        this.dispose();
-        // TODO add your handling code here:
+        refreshDashboard();
     }//GEN-LAST:event_jButton2ActionPerformed
 
     /**

@@ -9,32 +9,26 @@ package oop_finals;
  * @author Gian
  */
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
+import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 public class student_myappointment extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_myappointment.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(student_myappointment.class.getName());
 
     private int currentStudentId;
     private String currentStudentName;
     
-    // Database connection parameters
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
+    // Controller
+    private final AppointmentController appointmentController;
 
     // DEFAULT CONSTRUCTOR (for main method)
     public student_myappointment() {
         initComponents();
         setLocationRelativeTo(null);
+        this.appointmentController = new AppointmentController();
     }
     
     // PARAMETERIZED CONSTRUCTOR (for navigation)
@@ -42,155 +36,199 @@ public class student_myappointment extends javax.swing.JFrame {
         initComponents();
         this.currentStudentId = studentId;
         this.currentStudentName = studentName;
+        this.appointmentController = new AppointmentController();
         jLabel5.setText(studentName + "!");
         setLocationRelativeTo(null);
         loadStudentAppointments();
     }
+    
     /**
-     * Creates new form student_myappointment
+     * Load student appointments into table
      */
     private void loadStudentAppointments() {
-        String query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, " +
-                      "c.name as counselor_name, a.status " +
-                      "FROM appointments a " +
-                      "JOIN counselors c ON a.counselor_id = c.counselor_id " +
-                      "WHERE a.student_id = ? " +
-                      "AND a.status IN ('Upcoming', 'Pending') " +
-                      "ORDER BY a.appointment_date, a.appointment_time";
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+        try {
+            // Get appointments from controller
+            List<Appointment> appointments = appointmentController.getStudentAppointments(
+                currentStudentId, "Upcoming", "Pending"
+            );
             
-            pstmt.setInt(1, currentStudentId);
-            ResultSet rs = pstmt.executeQuery();
-            
-            // Create table model
-            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            // Get table model
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
             model.setRowCount(0); // Clear existing rows
             
-            // Populate table
-            while (rs.next()) {
+            // Populate table with appointments
+            for (Appointment appointment : appointments) {
                 Object[] row = new Object[3];
-                row[0] = rs.getDate("appointment_date");
-                row[1] = rs.getTime("appointment_time");
-                row[2] = rs.getString("counselor_name");
+                row[0] = appointment.getAppointmentDate();
+                row[1] = appointment.getAppointmentTime();
+                row[2] = appointment.getCounselorName();
                 
                 model.addRow(row);
             }
             
-            logger.log(java.util.logging.Level.INFO, "Loaded " + model.getRowCount() + " appointments");
+            logger.info("Loaded " + appointments.size() + " appointments for student: " + currentStudentName);
             
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading appointments", e);
+        } catch (Exception e) {
+            logger.severe("Error loading appointments: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
                 "Error loading appointments: " + e.getMessage(),
-                "Database Error",
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
     
-    // Get appointment ID from selected table row
-    private int getAppointmentIdFromTable(java.util.Date date, java.sql.Time time, String counselorName) {
-        String query = "SELECT a.appointment_id " +
-                      "FROM appointments a " +
-                      "JOIN counselors c ON a.counselor_id = c.counselor_id " +
-                      "WHERE a.student_id = ? " +
-                      "AND a.appointment_date = ? " +
-                      "AND a.appointment_time = ? " +
-                      "AND c.name = ? " +
-                      "AND a.status IN ('Upcoming', 'Pending')";
+    /**
+     * Handle appointment cancellation
+     */
+    private void handleCancelAppointment() {
+        int selectedRow = jTable1.getSelectedRow();
         
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
-            pstmt.setInt(1, currentStudentId);
-            pstmt.setDate(2, new java.sql.Date(date.getTime()));
-            pstmt.setTime(3, time);
-            pstmt.setString(4, counselorName);
-            
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt("appointment_id");
-            }
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error retrieving appointment ID", e);
-        }
-        
-        return -1; // Return -1 if not found or error occurred
-    }
-    
-    // Cancel appointment with 30-minute validation
-    private void cancelAppointment(int appointmentId, java.util.Date appointmentDate, java.sql.Time appointmentTime) {
-        // Check if appointment is at least 30 minutes away
-        try {
-            // Check if appointment is at least 30 minutes away
-            LocalDateTime appointmentDateTime;
-            
-            // Safer conversion handling
-            if (appointmentDate instanceof java.sql.Date) {
-                java.sql.Date sqlDate = (java.sql.Date) appointmentDate;
-                appointmentDateTime = LocalDateTime.of(
-                    sqlDate.toLocalDate(),
-                    appointmentTime.toLocalTime()
-                );
-            } else {
-                appointmentDateTime = LocalDateTime.of(
-                    appointmentDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
-                    appointmentTime.toLocalTime()
-                );
-            }
-            
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime minCancellationTime = appointmentDateTime.minusMinutes(30);
-            
-            if (now.isAfter(minCancellationTime)) {
-                JOptionPane.showMessageDialog(this,
-                    "Cannot cancel appointment. Cancellations must be made at least 30 minutes before the appointment time.",
-                    "Cancellation Not Allowed",
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-        } catch (Exception e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error validating cancellation time", e);
+        if (selectedRow == -1) {
             JOptionPane.showMessageDialog(this,
-                "Error validating appointment time. Please try again.",
-                "Validation Error",
-                JOptionPane.ERROR_MESSAGE);
+                "Please select an appointment to cancel.",
+                "No Selection",
+                JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        String updateQuery = "UPDATE appointments SET status = 'Cancelled', updated_at = NOW() " +
-                           "WHERE appointment_id = ? AND status IN ('Upcoming', 'Pending')";
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
+        try {
+            // Get data from selected row
+            Object dateObj = jTable1.getValueAt(selectedRow, 0);
+            Object timeObj = jTable1.getValueAt(selectedRow, 1);
+            Object counselorObj = jTable1.getValueAt(selectedRow, 2);
             
-            pstmt.setInt(1, appointmentId);
-            int rowsAffected = pstmt.executeUpdate();
-            
-            if (rowsAffected > 0) {
+            // Validate data
+            if (dateObj == null || timeObj == null || counselorObj == null) {
                 JOptionPane.showMessageDialog(this,
-                    "Appointment cancelled successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                // Reload table
-                loadStudentAppointments();
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Failed to cancel appointment. It may have already been processed.",
+                    "Invalid appointment data. Please refresh and try again.",
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
+                return;
             }
             
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error cancelling appointment", e);
+            String counselorName = counselorObj.toString();
+            
+            // Convert to proper types
+            java.sql.Date appointmentDate = convertToSqlDate(dateObj);
+            java.sql.Time appointmentTime = convertToSqlTime(timeObj);
+            
+            // Get appointment ID from controller
+            int appointmentId = appointmentController.getAppointmentId(
+                currentStudentId, appointmentDate, appointmentTime, counselorName
+            );
+            
+            if (appointmentId == -1) {
+                JOptionPane.showMessageDialog(this,
+                    "Could not retrieve appointment information.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Confirm cancellation
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to cancel this appointment?\n" +
+                "Date: " + appointmentDate + "\n" +
+                "Time: " + appointmentTime + "\n" +
+                "Counselor: " + counselorName,
+                "Confirm Cancellation",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Cancel appointment through controller
+                AppointmentController.CancellationResult result = 
+                    appointmentController.cancelAppointment(appointmentId, appointmentDate, appointmentTime);
+                
+                // Show result message
+                if (result.isSuccess()) {
+                    JOptionPane.showMessageDialog(this,
+                        result.getMessage(),
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Reload table
+                    loadStudentAppointments();
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                        result.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.severe("Error processing cancellation: " + e.getMessage());
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error occurred";
             JOptionPane.showMessageDialog(this,
-                "Error cancelling appointment: " + e.getMessage(),
-                "Database Error",
+                "Error processing appointment cancellation: " + errorMsg,
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private void handleLogout() {
+        int confirmation = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to logout?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE);
+        
+        if (confirmation == JOptionPane.YES_OPTION) {
+            logger.info("Student logged out: " + currentStudentName);
+            this.dispose();
+            new login_page().setVisible(true);
+        }
+    }
+    
+    private void navigateToDashboard() {
+        student_dashboard dashboard = new student_dashboard(currentStudentId, currentStudentName);
+        dashboard.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Navigate to book appointment page
+     */
+    private void navigateToBookAppointment() {
+        student_bookappointment bookAppointment = new student_bookappointment(currentStudentId, currentStudentName);
+        bookAppointment.setVisible(true);
+        this.dispose();
+    }
+    
+    private void navigateToViewProfile() {
+        student_viewprofile viewprofile = new student_viewprofile(currentStudentId, currentStudentName);
+        viewprofile.setVisible(true);
+        this.dispose();
+    }
+    
+    /**
+     * Navigate to book appointment page
+     */
+    
+    /**
+     * Convert object to SQL Date
+     */
+    private java.sql.Date convertToSqlDate(Object dateObj) {
+        if (dateObj instanceof java.sql.Date) {
+            return (java.sql.Date) dateObj;
+        } else if (dateObj instanceof java.util.Date) {
+            return new java.sql.Date(((java.util.Date) dateObj).getTime());
+        } else {
+            throw new IllegalArgumentException("Invalid date format in table");
+        }
+    }
+    
+    /**
+     * Convert object to SQL Time
+     */
+    private java.sql.Time convertToSqlTime(Object timeObj) {
+        if (timeObj instanceof java.sql.Time) {
+            return (java.sql.Time) timeObj;
+        } else if (timeObj instanceof java.util.Date) {
+            return new java.sql.Time(((java.util.Date) timeObj).getTime());
+        } else {
+            throw new IllegalArgumentException("Invalid time format in table");
         }
     }
 
@@ -472,147 +510,34 @@ public class student_myappointment extends javax.swing.JFrame {
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
-        student_bookappointment a = new student_bookappointment(currentStudentId, currentStudentName);
-        a.setVisible(true);
-        this.dispose();
+        navigateToBookAppointment();
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         // TODO add your handling code here:
-        student_viewprofile b = new student_viewprofile(currentStudentId, currentStudentName);
-        b.setVisible(true);
-        this.dispose();
+        navigateToViewProfile();
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
-        student_myappointment c = new student_myappointment(currentStudentId, currentStudentName);
-        c.setVisible(true);
-        this.dispose();
+        loadStudentAppointments();
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
-        // TODO add your handling code here:
-        int confirmation = JOptionPane.showConfirmDialog(this, 
-                "Are you sure you want to logout?",
-                "Confirm Logout",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
-        
-        if (confirmation == JOptionPane.YES_OPTION) {
-            try {
-                this.dispose();
-                new login_page().setVisible(true);
-            } catch (Exception e) {
-                logger.log(java.util.logging.Level.SEVERE, "Error during logout", e);
-                JOptionPane.showMessageDialog(this, 
-                    "Error during logout", 
-                    "Error", 
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        }
+        handleLogout();
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
-        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
-        d.setVisible(true);
-        this.dispose();
+        navigateToDashboard();
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void cancelappointmentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelappointmentActionPerformed
-        // TODO add your handling code here:
-        int selectedRow = jTable1.getSelectedRow();
-    
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this,
-                "Please select an appointment to cancel.",
-                "No Selection",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        try {
-            // Get data from selected row - with proper null checks
-            Object dateObj = jTable1.getValueAt(selectedRow, 0);
-            Object timeObj = jTable1.getValueAt(selectedRow, 1);
-            Object counselorObj = jTable1.getValueAt(selectedRow, 2);
-            
-            // Check for null values
-            if (dateObj == null || timeObj == null || counselorObj == null) {
-                JOptionPane.showMessageDialog(this,
-                    "Invalid appointment data. Please refresh and try again.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            String counselorName = counselorObj.toString();
-            
-            // Convert to proper types
-            java.sql.Date appointmentDate;
-            if (dateObj instanceof java.sql.Date) {
-                appointmentDate = (java.sql.Date) dateObj;
-            } else if (dateObj instanceof java.util.Date) {
-                appointmentDate = new java.sql.Date(((java.util.Date) dateObj).getTime());
-            } else {
-                throw new IllegalArgumentException("Invalid date format in table");
-            }
-            
-            java.sql.Time appointmentTime;
-            if (timeObj instanceof java.sql.Time) {
-                appointmentTime = (java.sql.Time) timeObj;
-            } else if (timeObj instanceof java.util.Date) {
-                appointmentTime = new java.sql.Time(((java.util.Date) timeObj).getTime());
-            } else {
-                throw new IllegalArgumentException("Invalid time format in table");
-            }
-            
-            // Get appointment ID
-            int appointmentId = getAppointmentIdFromTable(appointmentDate, appointmentTime, counselorName);
-            
-            if (appointmentId == -1) {
-                JOptionPane.showMessageDialog(this,
-                    "Could not retrieve appointment information.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            // Confirm cancellation
-            int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to cancel this appointment?\n" +
-                "Date: " + appointmentDate + "\n" +
-                "Time: " + appointmentTime + "\n" +
-                "Counselor: " + counselorName,
-                "Confirm Cancellation",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-            
-            if (confirm == JOptionPane.YES_OPTION) {
-                cancelAppointment(appointmentId, appointmentDate, appointmentTime);
-            }
-            
-        } catch (NullPointerException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Null pointer in cancellation", e);
-            JOptionPane.showMessageDialog(this,
-                "Error: Missing appointment data. Please refresh the page and try again.",
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        } catch (Exception e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error processing cancellation", e);
-            String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error occurred";
-            JOptionPane.showMessageDialog(this,
-                "Error processing appointment cancellation: " + errorMsg,
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
+        handleCancelAppointment();
     }//GEN-LAST:event_cancelappointmentActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        student_dashboard d = new student_dashboard(currentStudentId, currentStudentName);
-        d.setVisible(true);
-        this.dispose();
+        navigateToDashboard();
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton2ActionPerformed
 

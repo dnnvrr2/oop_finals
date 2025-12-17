@@ -1,44 +1,43 @@
 package oop_finals;
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
-
-/**
- *
- * @author Gian
- */
 
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.swing.JOptionPane;
 
+/**
+ * Student Login Page
+ * Handles student authentication UI using MVC architecture
+ */
 public class student_login_page extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_login_page.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(student_login_page.class.getName());
     
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
+    private final StudentController studentController;
+    
     /**
      * Creates new form student_login_page
      */
     public student_login_page() {
+        this.studentController = new StudentController();
         initComponents();
         setupPlaceholders();
+        setLocationRelativeTo(null);
+        setTitle("Student Login");
     }
     
+    /**
+     * Setup placeholder text for input fields
+     */
     private void setupPlaceholders() {
-        setupPlaceholder(username, "Username");
+        setupPlaceholder(username, "Email");
         setupPasswordPlaceholder(password, "Password");
     }
     
+    /**
+     * Setup placeholder for text field
+     */
     private void setupPlaceholder(javax.swing.JTextField textField, String placeholder) {
         textField.setText(placeholder);
         textField.setForeground(Color.GRAY);
@@ -48,13 +47,13 @@ public class student_login_page extends javax.swing.JFrame {
             public void focusGained(FocusEvent e) {
                 if (textField.getText().equals(placeholder)) {
                     textField.setText("");
-                    textField.setForeground(new Color(0, 0, 0)); // Your yellow color
+                    textField.setForeground(Color.BLACK);
                 }
             }
             
             @Override
             public void focusLost(FocusEvent e) {
-                if (textField.getText().isEmpty()) {
+                if (textField.getText().trim().isEmpty()) {
                     textField.setText(placeholder);
                     textField.setForeground(Color.GRAY);
                 }
@@ -62,30 +61,107 @@ public class student_login_page extends javax.swing.JFrame {
         });
     }
     
+    /**
+     * Setup placeholder for password field
+     */
     private void setupPasswordPlaceholder(javax.swing.JPasswordField passwordField, String placeholder) {
         passwordField.setText(placeholder);
         passwordField.setForeground(Color.GRAY);
-        passwordField.setEchoChar((char) 0); // Show placeholder text normally
+        passwordField.setEchoChar((char) 0);
         
         passwordField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
                 if (String.valueOf(passwordField.getPassword()).equals(placeholder)) {
                     passwordField.setText("");
-                    passwordField.setForeground(new Color(0, 0, 0)); // Your yellow color
-                    passwordField.setEchoChar('•'); // Hide password with bullets
+                    passwordField.setForeground(Color.BLACK);
+                    passwordField.setEchoChar('•');
                 }
             }
             
             @Override
             public void focusLost(FocusEvent e) {
-                if (String.valueOf(passwordField.getPassword()).isEmpty()) {
+                if (String.valueOf(passwordField.getPassword()).trim().isEmpty()) {
                     passwordField.setText(placeholder);
                     passwordField.setForeground(Color.GRAY);
-                    passwordField.setEchoChar((char) 0); // Show placeholder
+                    passwordField.setEchoChar((char) 0);
                 }
             }
         });
+    }
+    
+    /**
+     * Validate input fields before login
+     */
+    private boolean validateInput() {
+        String emailText = username.getText().trim();
+        String passwordText = String.valueOf(password.getPassword()).trim();
+        
+        if (emailText.isEmpty() || emailText.equals("Email")) {
+            JOptionPane.showMessageDialog(this, 
+                "Please enter your email!", 
+                "Validation Error", 
+                JOptionPane.WARNING_MESSAGE);
+            username.requestFocus();
+            return false;
+        }
+        
+        if (passwordText.isEmpty() || passwordText.equals("Password")) {
+            JOptionPane.showMessageDialog(this, 
+                "Please enter your password!", 
+                "Validation Error", 
+                JOptionPane.WARNING_MESSAGE);
+            password.requestFocus();
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Handle login action using StudentController
+     */
+    private void performLogin() {
+        if (!validateInput()) {
+            return;
+        }
+        
+        String email = username.getText().trim();
+        String pass = String.valueOf(password.getPassword()).trim();
+        
+        try {
+            // Use StudentController for authentication
+            Student student = studentController.loginStudent(email, pass);
+            
+            if (student != null) {
+                // Login successful
+                JOptionPane.showMessageDialog(this, 
+                    "Welcome, " + student.getName() + "!", 
+                    "Login Successful", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Open student dashboard
+                this.dispose();
+                new student_dashboard(student.getStudentId(), student.getName()).setVisible(true);
+            } else {
+                // Login failed
+                JOptionPane.showMessageDialog(this, 
+                    "Invalid email or password!\nPlease check your credentials and try again.", 
+                    "Login Failed", 
+                    JOptionPane.ERROR_MESSAGE);
+                
+                // Clear password field
+                password.setText("");
+                setupPasswordPlaceholder(password, "Password");
+            }
+            
+        } catch (Exception e) {
+            logger.severe("Login error: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, 
+                "An error occurred during login. Please try again.", 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
     /**
      * This method is called from within the constructor to initialize the form.
@@ -206,72 +282,11 @@ public class student_login_page extends javax.swing.JFrame {
 
     private void passwordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordActionPerformed
         // TODO add your handling code here:
-        loginActionPerformed(evt);
+        performLogin();
     }//GEN-LAST:event_passwordActionPerformed
 
     private void loginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginActionPerformed
-        // TODO add your handling code here:
-        String usernameText = username.getText();
-        String passwordText = String.valueOf(password.getPassword());
-        
-        // Validate input
-        if (usernameText.equals("Username") || usernameText.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                "Please enter your username!", 
-                "Validation Error", 
-                JOptionPane.WARNING_MESSAGE);
-            username.requestFocus();
-            return;
-        }
-        
-        if (passwordText.equals("Password") || passwordText.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                "Please enter your password!", 
-                "Validation Error", 
-                JOptionPane.WARNING_MESSAGE);
-            password.requestFocus();
-            return;
-        }
-        
-        // Database authentication
-        String query = "SELECT u.*, s.* FROM users u " +
-                      "JOIN students s ON u.user_id = s.user_id " +
-                      "WHERE s.email = ? AND s.password = ? AND u.status = 'Active'";
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pst = conn.prepareStatement(query)) {
-            
-            pst.setString(1, usernameText);
-            pst.setString(2, passwordText);
-            ResultSet rs = pst.executeQuery();
-            
-            if (rs.next()) {
-                // Login successful
-                int studentId = rs.getInt("student_id");
-                String name = rs.getString("name");
-                
-                JOptionPane.showMessageDialog(this, 
-                    "Welcome, " + name + "!", 
-                    "Login Successful", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                // Open student dashboard with ID and name
-                this.dispose();
-                new student_dashboard(studentId, name).setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(this, 
-                    "Invalid email or password!\nPlease check your credentials and try again.", 
-                    "Login Failed", 
-                    JOptionPane.ERROR_MESSAGE);
-            }
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Database error during login", e);
-            JOptionPane.showMessageDialog(this, 
-                "Database connection error: " + e.getMessage(), 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
-        }
+        performLogin();
     }//GEN-LAST:event_loginActionPerformed
 
     private void usernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_usernameActionPerformed
