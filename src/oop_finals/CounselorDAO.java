@@ -392,4 +392,203 @@ public class CounselorDAO {
         
         return counselor;
     }
+    
+    // Add these methods to your CounselorDAO class
+
+/**
+ * Check if email exists in counselors or pending requests
+ * @param email Email to check
+ * @return true if exists, false otherwise
+ */
+public boolean emailExists(String email) {
+    String query = "SELECT COUNT(*) as count FROM counselors WHERE email = ? " +
+                  "UNION ALL " +
+                  "SELECT COUNT(*) as count FROM user_requests WHERE email = ? AND user_type = 'Counselor'";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement pst = conn.prepareStatement(query)) {
+        
+        pst.setString(1, email);
+        pst.setString(2, email);
+        ResultSet rs = pst.executeQuery();
+        
+        int totalCount = 0;
+        while (rs.next()) {
+            totalCount += rs.getInt("count");
+        }
+        
+        return totalCount > 0;
+        
+    } catch (SQLException e) {
+        logger.severe("Error checking email existence: " + e.getMessage());
+    }
+    
+    return false;
+}
+
+/**
+ * Check if license number exists in counselors or pending requests
+ * @param licenseNumber License number to check
+ * @return true if exists, false otherwise
+ */
+public boolean licenseNumberExists(String licenseNumber) {
+    String query = "SELECT COUNT(*) as count FROM counselors WHERE license_number = ? " +
+                  "UNION ALL " +
+                  "SELECT COUNT(*) as count FROM user_requests WHERE license_number = ? AND user_type = 'Counselor'";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement pst = conn.prepareStatement(query)) {
+        
+        pst.setString(1, licenseNumber);
+        pst.setString(2, licenseNumber);
+        ResultSet rs = pst.executeQuery();
+        
+        int totalCount = 0;
+        while (rs.next()) {
+            totalCount += rs.getInt("count");
+        }
+        
+        return totalCount > 0;
+        
+    } catch (SQLException e) {
+        logger.severe("Error checking license number existence: " + e.getMessage());
+    }
+    
+    return false;
+}
+
+/**
+ * Create new counselor registration request
+ * @param counselor Counselor object with registration data
+ * @return true if successful, false otherwise
+ */
+public boolean createRegistrationRequest(Counselor counselor) {
+    String query = "INSERT INTO user_requests (user_type, name, email, password, " +
+                  "specialization, license_number, status) " +
+                  "VALUES ('Counselor', ?, ?, ?, ?, ?, 'Pending')";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement pst = conn.prepareStatement(query)) {
+        
+        pst.setString(1, counselor.getName());
+        pst.setString(2, counselor.getEmail());
+        pst.setString(3, counselor.getPassword());
+        pst.setString(4, counselor.getSpecialization());
+        pst.setString(5, counselor.getLicenseNumber());
+        
+        return pst.executeUpdate() > 0;
+        
+    } catch (SQLException e) {
+        logger.severe("Error creating counselor registration request: " + e.getMessage());
+        return false;
+    }
+}
+
+/**
+ * Block a specific date for a counselor
+ * @param counselorId Counselor ID
+ * @param date Date to block
+ * @param reason Reason for blocking
+ * @return true if successful, false otherwise
+ */
+public boolean blockDate(int counselorId, LocalDate date, String reason) {
+    String query = "INSERT INTO counselor_blocked_dates (counselor_id, blocked_date, reason) " +
+                  "VALUES (?, ?, ?)";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement pst = conn.prepareStatement(query)) {
+        
+        pst.setInt(1, counselorId);
+        pst.setDate(2, Date.valueOf(date));
+        pst.setString(3, reason);
+        
+        return pst.executeUpdate() > 0;
+        
+    } catch (SQLException e) {
+        // Check if it's a duplicate entry error
+        if (e.getMessage().contains("Duplicate entry")) {
+            logger.warning("Date already blocked: " + date);
+        } else {
+            logger.severe("Error blocking date: " + e.getMessage());
+        }
+        return false;
+    }
+}
+
+/**
+ * Unblock a specific date for a counselor
+ * @param counselorId Counselor ID
+ * @param date Date to unblock
+ * @return true if successful, false otherwise
+ */
+public boolean unblockDate(int counselorId, LocalDate date) {
+    String query = "DELETE FROM counselor_blocked_dates " +
+                  "WHERE counselor_id = ? AND blocked_date = ?";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement pst = conn.prepareStatement(query)) {
+        
+        pst.setInt(1, counselorId);
+        pst.setDate(2, Date.valueOf(date));
+        
+        return pst.executeUpdate() > 0;
+        
+    } catch (SQLException e) {
+        logger.severe("Error unblocking date: " + e.getMessage());
+        return false;
+    }
+}
+
+/**
+ * Update the reason for a blocked date
+ * @param counselorId Counselor ID
+ * @param date Blocked date
+ * @param newReason New reason
+ * @return true if successful, false otherwise
+ */
+public boolean updateBlockedDateReason(int counselorId, LocalDate date, String newReason) {
+    String query = "UPDATE counselor_blocked_dates SET reason = ? " +
+                  "WHERE counselor_id = ? AND blocked_date = ?";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement pst = conn.prepareStatement(query)) {
+        
+        pst.setString(1, newReason);
+        pst.setInt(2, counselorId);
+        pst.setDate(3, Date.valueOf(date));
+        
+        return pst.executeUpdate() > 0;
+        
+    } catch (SQLException e) {
+        logger.severe("Error updating blocked date reason: " + e.getMessage());
+        return false;
+    }
+}
+
+public Counselor authenticateCounselor(String emailOrUsername, String password) {
+    String query = 
+        "SELECT c.counselor_id, c.user_id, c.name, c.email, c.specialization, " +
+        "c.license_number, c.status " +
+        "FROM counselors c " +
+        "JOIN users u ON u.user_id = c.user_id " +
+        "WHERE (c.email = ? OR c.name = ?) AND c.password = ? AND u.status = 'Active'";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement pst = conn.prepareStatement(query)) {
+        
+        pst.setString(1, emailOrUsername);
+        pst.setString(2, emailOrUsername);
+        pst.setString(3, password);
+        ResultSet rs = pst.executeQuery();
+        
+        if (rs.next()) {
+            return extractCounselorFromResultSet(rs);
+        }
+        
+    } catch (SQLException e) {
+        logger.severe("Error authenticating counselor: " + e.getMessage());
+    }
+    
+    return null;
+}
 }

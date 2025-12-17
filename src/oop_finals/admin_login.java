@@ -1,34 +1,24 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package oop_finals;
 
-/**
- *
- * @author bacas
- */
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.swing.JOptionPane;
 
+/**
+ * Admin Login Page - Refactored to use MVC architecture
+ * Uses AdminController for authentication
+ */
 public class admin_login extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(admin_login.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(admin_login.class.getName());
     
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
-    /**
-     * Creates new form admin_login
-     */
+    // Controllers
+    private final AdminController adminController;
+    
     public admin_login() {
+        this.adminController = new AdminController();
         initComponents();
         setupPlaceholders();
     }
@@ -85,6 +75,54 @@ public class admin_login extends javax.swing.JFrame {
                 }
             }
         });
+    }
+
+    // Handle login using controller
+    private void handleLogin() {
+        String usernameText = username.getText().trim();
+        String passwordText = String.valueOf(password.getPassword()).trim();
+
+        // Validate not placeholder values
+        if (usernameText.equals("Username") || usernameText.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Please enter your username!",
+                "Validation Error",
+                JOptionPane.WARNING_MESSAGE);
+            username.requestFocus();
+            return;
+        }
+
+        if (passwordText.equals("Password") || passwordText.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Please enter your password!",
+                "Validation Error",
+                JOptionPane.WARNING_MESSAGE);
+            password.requestFocus();
+            return;
+        }
+
+        // Use controller for authentication
+        AdminController.LoginResult result = adminController.loginAdmin(usernameText, passwordText);
+
+        if (result.isSuccess()) {
+            Admin admin = result.getAdmin();
+            logger.info("Admin login successful: " + admin.getName());
+            
+            JOptionPane.showMessageDialog(this,
+                "Welcome, " + admin.getName() + "!\nAdmin ID: " + admin.getAdminNumber(),
+                "Login Successful",
+                JOptionPane.INFORMATION_MESSAGE);
+
+            // Navigate to admin dashboard
+            this.dispose();
+            new admin_dashboard(admin.getAdminId(), admin.getName()).setVisible(true);
+        } else {
+            logger.warning("Login failed: " + result.getMessage());
+            JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Login Failed",
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
 
 
@@ -190,70 +228,7 @@ public class admin_login extends javax.swing.JFrame {
     }//GEN-LAST:event_usernameActionPerformed
 
     private void loginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginActionPerformed
-        // TODO add your handling code here:
-        String usernameText = username.getText();
-        String passwordText = String.valueOf(password.getPassword());
-
-        // Validate input
-        if (usernameText.equals("Username") || usernameText.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "Please enter your username!",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-            username.requestFocus();
-            return;
-        }
-
-        if (passwordText.equals("Password") || passwordText.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "Please enter your password!",
-                "Validation Error",
-                JOptionPane.WARNING_MESSAGE);
-            password.requestFocus();
-            return;
-        }
-
-        // FIXED: Correct SQL query for ADMIN login
-        String query = "SELECT u.*, a.* FROM users u " +
-                      "JOIN admins a ON u.user_id = a.user_id " +
-                      "WHERE a.email = ? AND a.password = ?";
-
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pst = conn.prepareStatement(query)) {
-
-            pst.setString(1, usernameText);
-            pst.setString(2, passwordText);
-
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    // Login successful - get ADMIN data
-                    int adminId = rs.getInt("admin_id");
-                    String name = rs.getString("name");
-                    String adminNumber = rs.getString("admin_number");
-
-                    JOptionPane.showMessageDialog(this,
-                        "Welcome, " + name + "!\nAdmin ID: " + adminNumber,
-                        "Login Successful",
-                        JOptionPane.INFORMATION_MESSAGE);
-
-                    // Open ADMIN dashboard with proper data
-                    this.dispose();
-                    new admin_dashboard(adminId, name).setVisible(true);
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                        "Invalid email or password!\nPlease check your credentials and try again.",
-                        "Login Failed",
-                        JOptionPane.ERROR_MESSAGE);
-                }
-            }
-
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Database error during login", e);
-            JOptionPane.showMessageDialog(this,
-                "Database connection error: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
+        handleLogin();
     }//GEN-LAST:event_loginActionPerformed
 
     private void backActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backActionPerformed
@@ -264,7 +239,7 @@ public class admin_login extends javax.swing.JFrame {
 
     private void passwordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordActionPerformed
         // TODO add your handling code here:
-        loginActionPerformed (evt);
+        handleLogin();
     }//GEN-LAST:event_passwordActionPerformed
 
     /**

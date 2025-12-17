@@ -1,69 +1,32 @@
 package oop_finals;
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 
-/**
- *
- * @author Gian
- */
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.util.regex.Pattern;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
+import java.util.List;
 
+/**
+ * Counselor Registration - Refactored to use MVC architecture
+ * Uses CounselorController for registration logic and validation
+ */
 public class counselor_regis extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(student_regis.class.getName());
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(counselor_regis.class.getName());
     
-    /**
-     * Creates new form counselor_regis
-     */
+    // Controllers
+    private final CounselorController counselorController;
+    
     public counselor_regis() {
+        this.counselorController = new CounselorController();
         initComponents();
         setupPlaceholders();
         loadSpecializations();
     }
     
-    private boolean emailExists(String email) {
-        String sql = "SELECT 1 FROM users WHERE email = ?";
-        try (Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, email);
-            ResultSet rs = ps.executeQuery();
-            return rs.next();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, e.getMessage());
-            return true;
-        }
-    }
-
-    private boolean counselorLicenseExists(String licenseId) {
-        String sql = "SELECT 1 FROM counselors WHERE license_number = ?";
-        try (Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, licenseId);
-            ResultSet rs = ps.executeQuery();
-            return rs.next();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, e.getMessage());
-            return true;
-        }
-    }
-    
-    private void setupPlaceholders(){
+    private void setupPlaceholders() {
         setupPlaceholder(jTextField141, "Full name");
         setupPlaceholder(jTextField142, "Email");
         setupPlaceholder(jTextField144, "License ID");
@@ -76,22 +39,22 @@ public class counselor_regis extends javax.swing.JFrame {
         textField.setForeground(Color.GRAY);
         textField.addFocusListener(new FocusAdapter() {
             
-        @Override
-        public void focusGained(FocusEvent e) {
-            if (textField.getText().equals(placeholder)) {
-                textField.setText("");
-                textField.setForeground(new Color(0, 0, 0));
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textField.getText().equals(placeholder)) {
+                    textField.setText("");
+                    textField.setForeground(new Color(0, 0, 0));
+                }
             }
-        }
 
-        @Override
-        public void focusLost(FocusEvent e) {
-            if (textField.getText().isEmpty()) {
-                textField.setText(placeholder);
-                textField.setForeground(Color.GRAY);
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textField.getText().isEmpty()) {
+                    textField.setText(placeholder);
+                    textField.setForeground(Color.GRAY);
+                }
             }
-        }
-    });
+        });
     }
     
     private void setupPasswordPlaceholder(javax.swing.JComponent passwordField, String placeholder) {
@@ -103,24 +66,24 @@ public class counselor_regis extends javax.swing.JFrame {
 
             pf.addFocusListener(new FocusAdapter() {
             
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (String.valueOf(pf.getPassword()).equals(placeholder)) {
-                    pf.setText("");
-                    pf.setForeground(new Color(0, 0, 0));
-                    pf.setEchoChar('•');
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (String.valueOf(pf.getPassword()).equals(placeholder)) {
+                        pf.setText("");
+                        pf.setForeground(new Color(0, 0, 0));
+                        pf.setEchoChar('•');
+                    }
                 }
-            }
 
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (String.valueOf(pf.getPassword()).isEmpty()) {
-                    pf.setText(placeholder);
-                    pf.setForeground(Color.GRAY);
-                    pf.setEchoChar((char) 0);
+                @Override
+                public void focusLost(FocusEvent e) {
+                    if (String.valueOf(pf.getPassword()).isEmpty()) {
+                        pf.setText(placeholder);
+                        pf.setForeground(Color.GRAY);
+                        pf.setEchoChar((char) 0);
+                    }
                 }
-            }
-        });
+            });
         } else if (passwordField instanceof javax.swing.JTextField) {
             javax.swing.JTextField tf = (javax.swing.JTextField) passwordField;
             tf.setText(placeholder);
@@ -128,84 +91,46 @@ public class counselor_regis extends javax.swing.JFrame {
 
             tf.addFocusListener(new FocusAdapter() {
             
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (tf.getText().equals(placeholder)) {
-                    tf.setText("");
-                    tf.setForeground(new Color(0, 0, 0));
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (tf.getText().equals(placeholder)) {
+                        tf.setText("");
+                        tf.setForeground(new Color(0, 0, 0));
+                    }
                 }
-            }
 
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (tf.getText().isEmpty()) {
-                    tf.setText(placeholder);
-                    tf.setForeground(Color.GRAY);
+                @Override
+                public void focusLost(FocusEvent e) {
+                    if (tf.getText().isEmpty()) {
+                        tf.setText(placeholder);
+                        tf.setForeground(Color.GRAY);
+                    }
                 }
-            }
-        });
+            });
         }
     }
     
-    private boolean isValidEmail(String email) {
-    return EMAIL_PATTERN.matcher(email).matches();
-    
-    }
-    
-    private boolean emailExistsInRequests(String email) {
-        String sql = "SELECT 1 FROM user_requests WHERE email = ?";
-        try (Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, email);
-            ResultSet rs = ps.executeQuery();
-            return rs.next();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, e.getMessage());
-            return true;
-        }
-    }
-
-    private boolean licenseExistsInRequests(String licenseNumber) {
-        String sql = "SELECT 1 FROM user_requests WHERE license_number = ?";
-        try (Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, licenseNumber);
-            ResultSet rs = ps.executeQuery();
-            return rs.next();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, e.getMessage());
-            return true;
-        }
-    }
-    
-        
+    // Load specializations using controller
     private void loadSpecializations() {
         try {
-            Connection connection = DatabaseConnection.getConnection();
-            if (connection == null) return;
-            
-            String query = "SELECT DISTINCT specialization FROM counselors WHERE status = 'Active' ORDER BY specialization";
-            PreparedStatement pst = connection.prepareStatement(query);
-            ResultSet rs = pst.executeQuery();
+            List<String> specializations = counselorController.getAllSpecializations();
             
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("-- Select Specialization --");
             
-            while (rs.next()) {
-                model.addElement(rs.getString("specialization"));
+            for (String spec : specializations) {
+                model.addElement(spec);
             }
             
             jComboBox1.setModel(model);
-            rs.close();
-            pst.close();
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading specializations", e);
-            JOptionPane.showMessageDialog(this, "Error loading specializations: " + e.getMessage(),
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
+            logger.info("Loaded " + specializations.size() + " specializations");
+            
+        } catch (Exception e) {
+            logger.severe("Error loading specializations: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, 
+                "Error loading specializations: " + e.getMessage(),
+                "Database Error", 
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -370,7 +295,6 @@ public class counselor_regis extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField147ActionPerformed
 
     private void registerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerActionPerformed
-        // TODO add your handling code here:                              
         String fullname = jTextField141.getText().trim();
         String email = jTextField142.getText().trim();
         String selectedSpec = (String) jComboBox1.getSelectedItem();
@@ -378,7 +302,7 @@ public class counselor_regis extends javax.swing.JFrame {
         String password = jTextField147.getText().trim();
         String confirmPassword = new String(passwordfield.getPassword()).trim();
 
-        // ================= VALIDATION =================
+        // Basic field validation
         if (fullname.isEmpty() || fullname.equals("Full name") ||
             email.isEmpty() || email.equals("Email") ||
             selectedSpec == null || selectedSpec.equals("-- Select Specialization --") ||
@@ -393,75 +317,25 @@ public class counselor_regis extends javax.swing.JFrame {
             return;
         }
 
-        if (!isValidEmail(email)) {
+        // Use controller to register counselor (includes all validation)
+        String result = counselorController.registerCounselor(
+            fullname, email, selectedSpec, licenseId, password, confirmPassword);
+
+        if ("SUCCESS".equals(result)) {
             JOptionPane.showMessageDialog(this,
-                    "Invalid email format.",
-                    "Validation Error",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (password.length() < 6) {
-            JOptionPane.showMessageDialog(this,
-                    "Password must be at least 6 characters.",
-                    "Validation Error",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (!password.equals(confirmPassword)) {
-            JOptionPane.showMessageDialog(this,
-                    "Passwords do not match.",
-                    "Validation Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Check if email already exists in user_requests OR users table
-        if (emailExistsInRequests(email) || emailExists(email)) {
-            JOptionPane.showMessageDialog(this,
-                    "Email already registered or pending approval.",
-                    "Registration Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Check if license number already exists in user_requests OR counselors table
-        if (licenseExistsInRequests(licenseId) || counselorLicenseExists(licenseId)) {
-            JOptionPane.showMessageDialog(this,
-                    "License number already registered or pending approval.",
-                    "Registration Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // ================= INSERT INTO user_requests TABLE =================
-        String insertRequest =
-            "INSERT INTO user_requests (user_type, name, email, password, specialization, license_number, status) " +
-            "VALUES ('Counselor', ?, ?, ?, ?, ?, 'Pending')";
-
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(insertRequest)) {
-
-            ps.setString(1, fullname);
-            ps.setString(2, email);
-            ps.setString(3, password);
-            ps.setString(4, selectedSpec);
-            ps.setString(5, licenseId);
-            ps.executeUpdate();
-
-            JOptionPane.showMessageDialog(this,
-                    "Registration successful!\n\nYour application has been submitted.\nPlease wait for admin approval.",
+                    "Registration successful!\n\nYour application has been submitted.\n" +
+                    "Please wait for admin approval.",
                     "Registration Submitted",
                     JOptionPane.INFORMATION_MESSAGE);
 
+            logger.info("Counselor registration submitted: " + fullname);
             this.dispose();
             new new_account().setVisible(true);
-
-        } catch (SQLException e) {
+        } else {
+            // Show error message from controller
             JOptionPane.showMessageDialog(this,
-                    "Registration failed:\n" + e.getMessage(),
-                    "Database Error",
+                    result,
+                    "Registration Error",
                     JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_registerActionPerformed

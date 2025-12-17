@@ -1,49 +1,39 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package oop_finals;
 
-/**
- *
- * @author Admin
- */
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import javax.swing.JOptionPane;
-import javax.swing.table.DefaultTableModel; // ADD THIS IMPORT
+import javax.swing.table.DefaultTableModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.RowFilter;
 import javax.swing.table.TableRowSorter;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.util.List;
 
+/**
+ * Admin All Users - Refactored to use MVC architecture
+ * Uses AdminController for user management
+ */
 public class admin_allusers extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(admin_allusers.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(admin_allusers.class.getName());
+    
     private TableRowSorter<DefaultTableModel> sorter;
     private DefaultTableModel tableModel;
     
     private int currentAdminId;
     private String currentAdminName;
     
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
+    // Controllers
+    private final AdminController adminController;
 
-    /**
-     * Creates new form admin_allusers
-     */
     public admin_allusers() {
+        this.adminController = new AdminController();
         initComponents();
         setupTable();
         setupTableClickListener();
-        setupButtons();
         loadUsers();
         setupSearchBar();
         setupPlaceholders();
@@ -51,18 +41,17 @@ public class admin_allusers extends javax.swing.JFrame {
     }
     
     public admin_allusers(int adminId, String adminName) {
+        this.adminController = new AdminController();
         this.currentAdminId = adminId;
         this.currentAdminName = adminName;
         initComponents();
         setupTable();
         setupTableClickListener();
-        setupButtons();
         loadUsers();
         setupSearchBar();
         setupPlaceholders();
         setupFilterComboBox();
 
-        // Set the admin name in the UI
         jLabel5.setText(adminName + "!");
     }
    
@@ -73,7 +62,7 @@ public class admin_allusers extends javax.swing.JFrame {
         Search.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                performSearch(); // Use the shared method
+                performSearch();
             }
 
             @Override
@@ -89,7 +78,6 @@ public class admin_allusers extends javax.swing.JFrame {
     }
     
     private void setupPlaceholders() {
-    // Setup username placeholder
         Search.setText("Search");
         Search.setForeground(Color.GRAY);
 
@@ -107,7 +95,6 @@ public class admin_allusers extends javax.swing.JFrame {
                 if (Search.getText().isEmpty()) {
                     Search.setText("Search");
                     Search.setForeground(Color.GRAY);
-                    // Clear any filters when placeholder is restored
                     if (sorter != null) {
                         sorter.setRowFilter(null);
                     }
@@ -115,156 +102,7 @@ public class admin_allusers extends javax.swing.JFrame {
             }
         });
     }
-    private void setupButtons() {
-    // Get references to your activate/deactivate buttons
-    // Assuming you have buttons in your GUI - adjust names as needed
-    // You'll need to add these buttons in the GUI designer first
-    
-    // For now, I'll show you the logic that should go in button action handlers
-}
-    private void activateButtonActionPerformed(java.awt.event.ActionEvent evt) {
-    int selectedRow = jTable1.getSelectedRow();
-    
-    if (selectedRow == -1) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "Please select a user from the table first.",
-            "No Selection",
-            javax.swing.JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    // Convert view row to model row (important when using sorter/filter)
-    int modelRow = jTable1.convertRowIndexToModel(selectedRow);
-    
-    String name = tableModel.getValueAt(modelRow, 0).toString();
-    String currentStatus = tableModel.getValueAt(modelRow, 4).toString();
-    
-    if (currentStatus.equals("Active")) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "User " + name + " is already active.",
-            "Already Active",
-            javax.swing.JOptionPane.INFORMATION_MESSAGE);
-        return;
-    }
-    
-    // Confirm action
-    int confirm = javax.swing.JOptionPane.showConfirmDialog(this,
-        "Are you sure you want to activate user: " + name + "?",
-        "Confirm Activation",
-        javax.swing.JOptionPane.YES_NO_OPTION);
-    
-    if (confirm == javax.swing.JOptionPane.YES_OPTION) {     
 
-        try {
-            Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-
-            String userType = tableModel.getValueAt(modelRow, 1).toString();
-            String tableName = userType.equals("Student") ? "students" : "counselors";
-            String idColumn = userType.equals("Student") ? "student_number" : "license_number";
-
-            // Update user type table
-            String query = "UPDATE " + tableName + " SET status = 'Active' WHERE " + idColumn + " = ?";
-            PreparedStatement pst = conn.prepareStatement(query);
-            pst.setString(1, tableModel.getValueAt(modelRow, 2).toString());
-            pst.executeUpdate();
-
-            // Update users table
-            String queryUsers = "UPDATE users SET status = 'Active' WHERE user_id = (SELECT user_id FROM " + tableName + " WHERE " + idColumn + " = ?)";
-            PreparedStatement pstUsers = conn.prepareStatement(queryUsers);
-            pstUsers.setString(1, tableModel.getValueAt(modelRow, 2).toString());
-            pstUsers.executeUpdate();
-
-            conn.close();
-
-            tableModel.setValueAt("Active", modelRow, 4);
-
-            JOptionPane.showMessageDialog(this,
-                "User " + name + " has been activated successfully.",
-                "Success",
-                JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this,
-                "Error activating user: " + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-        }
-    }
-}
-
-// For the DEACTIVATE button
-private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
-    int selectedRow = jTable1.getSelectedRow();
-    
-    if (selectedRow == -1) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "Please select a user from the table first.",
-            "No Selection",
-            javax.swing.JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    // Convert view row to model row
-    int modelRow = jTable1.convertRowIndexToModel(selectedRow);
-    
-    String name = tableModel.getValueAt(modelRow, 0).toString();
-    String currentStatus = tableModel.getValueAt(modelRow, 4).toString();
-    
-    if (currentStatus.equals("Inactive")) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "User " + name + " is already inactive.",
-            "Already Inactive",
-            javax.swing.JOptionPane.INFORMATION_MESSAGE);
-        return;
-    }
-    
-    // Confirm action
-    int confirm = javax.swing.JOptionPane.showConfirmDialog(this,
-        "Are you sure you want to deactivate user: " + name + "?",
-        "Confirm Deactivation",
-        javax.swing.JOptionPane.YES_NO_OPTION,
-        javax.swing.JOptionPane.WARNING_MESSAGE);
-    
-    if (confirm == javax.swing.JOptionPane.YES_OPTION) {
-     
-        try {
-            Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-
-            String userType = tableModel.getValueAt(modelRow, 1).toString();
-            String tableName = userType.equals("Student") ? "students" : "counselors";
-            String idColumn = userType.equals("Student") ? "student_number" : "license_number";
-
-            // Update user type table
-            String query = "UPDATE " + tableName + " SET status = 'Inactive' WHERE " + idColumn + " = ?";
-            PreparedStatement pst = conn.prepareStatement(query);
-            pst.setString(1, tableModel.getValueAt(modelRow, 2).toString());
-            pst.executeUpdate();
-
-            // Update users table
-            String queryUsers = "UPDATE users SET status = 'Inactive' WHERE user_id = (SELECT user_id FROM " + tableName + " WHERE " + idColumn + " = ?)";
-            PreparedStatement pstUsers = conn.prepareStatement(queryUsers);
-            pstUsers.setString(1, tableModel.getValueAt(modelRow, 2).toString());
-            pstUsers.executeUpdate();
-
-            conn.close();
-
-            tableModel.setValueAt("Inactive", modelRow, 4);
-
-            JOptionPane.showMessageDialog(this,
-                "User " + name + " has been deactivated successfully.",
-                "Success",
-                JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this,
-                "Error deactivating user: " + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-        }
-    }
-}
     private void setupTable() {
         String[] columns = {"Name", "Type", "ID", "Email", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
@@ -276,65 +114,48 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
 
         jTable1.setModel(tableModel);
         jTable1.setRowHeight(25);
-
     }
+
     private void setupTableClickListener() {
-    jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseClicked(java.awt.event.MouseEvent e) {
-            int row = jTable1.rowAtPoint(e.getPoint());
-            int column = jTable1.columnAtPoint(e.getPoint());
-            
-            if (row >= 0 && column == 0) { // Column 0 is Name column (first column)
-                String Name = jTable1.getValueAt(row, 0).toString();
-                String Type = jTable1.getValueAt(row, 1).toString(); // ADD THIS
-                String ID = jTable1.getValueAt(row, 2).toString();
-                String Email = jTable1.getValueAt(row, 3).toString(); // ADD THIS
+        jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = jTable1.rowAtPoint(e.getPoint());
+                int column = jTable1.columnAtPoint(e.getPoint());
                 
+                if (row >= 0 && column == 0) {
+                    String name = jTable1.getValueAt(row, 0).toString();
+                    String type = jTable1.getValueAt(row, 1).toString();
+                    String id = jTable1.getValueAt(row, 2).toString();
+                    String email = jTable1.getValueAt(row, 3).toString();
+                    
+                    logger.info("Selected user: " + name + " (" + type + ")");
+                }
             }
-        }
-    });
-}
+        });
+    }
+
+    // Load users using controller
     private void loadUsers() {
-        // Clear existing data
         tableModel.setRowCount(0);
        
         try {
-            Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            List<AdminDAO.UserInfo> users = adminController.getAllUsers();
 
-            // Get students
-            String queryStudents = "SELECT name, 'Student' as user_type, student_number as id, email, status FROM students";
-            PreparedStatement pstStudents = conn.prepareStatement(queryStudents);
-            ResultSet rsStudents = pstStudents.executeQuery();
-
-            while (rsStudents.next()) {
+            for (AdminDAO.UserInfo user : users) {
                 tableModel.addRow(new Object[]{
-                    rsStudents.getString("name"),
-                    rsStudents.getString("user_type"),
-                    rsStudents.getString("id"),
-                    rsStudents.getString("email"),
-                    rsStudents.getString("status")
+                    user.getName(),
+                    user.getUserType(),
+                    user.getId(),
+                    user.getEmail(),
+                    user.getStatus()
                 });
             }
 
-            // Get counselors
-            String queryCounselors = "SELECT name, 'Counselor' as user_type, license_number as id, email, status FROM counselors";
-            PreparedStatement pstCounselors = conn.prepareStatement(queryCounselors);
-            ResultSet rsCounselors = pstCounselors.executeQuery();
+            logger.info("Loaded " + users.size() + " users");
 
-            while (rsCounselors.next()) {
-                tableModel.addRow(new Object[]{
-                    rsCounselors.getString("name"),
-                    rsCounselors.getString("user_type"),
-                    rsCounselors.getString("id"),
-                    rsCounselors.getString("email"),
-                    rsCounselors.getString("status")
-                });
-            }
-
-            conn.close();
-
-        } catch (SQLException e) {
+        } catch (Exception e) {
+            logger.severe("Error loading users: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
                 "Error loading users: " + e.getMessage(),
                 "Database Error",
@@ -343,25 +164,21 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         }
     }
     
-     private void setupFilterComboBox() {
-    // Clear existing items
+    private void setupFilterComboBox() {
         jComboBox1.removeAllItems();
 
-        // Add filter options
         jComboBox1.addItem("Name");
         jComboBox1.addItem("Type");
         jComboBox1.addItem("ID");
         jComboBox1.addItem("Email");
         jComboBox1.addItem("Status");
 
-        // Add action listener for when selection changes
         jComboBox1.addActionListener(e -> performSearch());
     }
      
-     private void performSearch() {
+    private void performSearch() {
         String searchText = Search.getText().trim();
 
-        // Ignore placeholder text
         if (searchText.isEmpty() || searchText.equals("Search")) {
             sorter.setRowFilter(null);
             return;
@@ -370,28 +187,23 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
         String selectedFilter = (String) jComboBox1.getSelectedItem();
 
         try {
-            // Search in specific column
             int columnIndex = getColumnIndex(selectedFilter);
             if (columnIndex != -1) {
-                // Create a custom row filter that ignores "Dr." prefix
                 sorter.setRowFilter(new RowFilter<DefaultTableModel, Integer>() {
                     @Override
                     public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
                         String cellValue = entry.getStringValue(columnIndex);
-                        // Remove "Dr." prefix (case-insensitive) and trim
                         String cleanedValue = cellValue.replaceAll("(?i)^dr\\.?\\s*", "").trim();
-                        // Check if the cleaned value contains the search text (case-insensitive)
                         return cleanedValue.toLowerCase().contains(searchText.toLowerCase());
                     }
                 });
             }
         } catch (Exception ex) {
-            // If filtering fails, clear the filter
             sorter.setRowFilter(null);
         }
     }
      
-     private int getColumnIndex(String columnName) {
+    private int getColumnIndex(String columnName) {
         switch (columnName) {
             case "Name": return 0;
             case "Type": return 1;
@@ -400,6 +212,130 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
             case "Status": return 4;
             default: return -1;
         }
+    }
+
+    /**
+     * Validates if a row is selected in the table
+     * @return The model row index if valid, -1 if no selection
+     */
+    private int validateRowSelection() {
+        int selectedRow = jTable1.getSelectedRow();
+        
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this,
+                "Please select a user from the table first.",
+                "No Selection",
+                JOptionPane.WARNING_MESSAGE);
+            return -1;
+        }
+        
+        return jTable1.convertRowIndexToModel(selectedRow);
+    }
+
+    /**
+     * Checks if user already has the target status
+     * @param modelRow The row index in the model
+     * @param targetStatus The status to check ("Active" or "Inactive")
+     * @return true if user already has target status, false otherwise
+     */
+    private boolean hasTargetStatus(int modelRow, String targetStatus) {
+        String name = tableModel.getValueAt(modelRow, 0).toString();
+        String currentStatus = tableModel.getValueAt(modelRow, 4).toString();
+        
+        if (currentStatus.equals(targetStatus)) {
+            String statusText = targetStatus.toLowerCase();
+            JOptionPane.showMessageDialog(this,
+                "User " + name + " is already " + statusText + ".",
+                "Already " + targetStatus,
+                JOptionPane.INFORMATION_MESSAGE);
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Shows confirmation dialog for status change
+     * @param name User name
+     * @param action Action to perform ("activate" or "deactivate")
+     * @return true if confirmed, false otherwise
+     */
+    private boolean confirmStatusChange(String name, String action) {
+        int dialogType = action.equals("deactivate") ? 
+            JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE;
+        
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to " + action + " user: " + name + "?",
+            "Confirm " + action.substring(0, 1).toUpperCase() + action.substring(1),
+            JOptionPane.YES_NO_OPTION,
+            dialogType);
+        
+        return confirm == JOptionPane.YES_OPTION;
+    }
+
+    /**
+     * Updates user status in the database and table
+     * @param modelRow The row index in the model
+     * @param newStatus The new status to set
+     * @param action The action being performed (for logging)
+     */
+    private void updateUserStatus(int modelRow, String newStatus, String action) {
+        String userType = tableModel.getValueAt(modelRow, 1).toString();
+        String id = tableModel.getValueAt(modelRow, 2).toString();
+        
+        AdminController.StatusUpdateResult result;
+        if (newStatus.equals("Active")) {
+            result = adminController.activateUser(userType, id);
+        } else {
+            result = adminController.deactivateUser(userType, id);
+        }
+        
+        if (result.isSuccess()) {
+            tableModel.setValueAt(newStatus, modelRow, 4);
+            JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+            logger.info(action + " successful for user ID: " + id);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            logger.warning(action + " failed for user ID: " + id + " - " + result.getMessage());
+        }
+    }
+
+    /**
+     * Activates a selected user account
+     */
+    private void activateUser() {
+        int modelRow = validateRowSelection();
+        if (modelRow == -1) return;
+        
+        if (hasTargetStatus(modelRow, "Active")) return;
+        
+        String name = tableModel.getValueAt(modelRow, 0).toString();
+        
+        if (!confirmStatusChange(name, "activate")) return;
+        
+        updateUserStatus(modelRow, "Active", "Activation");
+    }
+
+    /**
+     * Deactivates a selected user account
+     */
+    private void deactivateUser() {
+        int modelRow = validateRowSelection();
+        if (modelRow == -1) return;
+        
+        if (hasTargetStatus(modelRow, "Inactive")) return;
+        
+        String name = tableModel.getValueAt(modelRow, 0).toString();
+        
+        if (!confirmStatusChange(name, "deactivate")) return;
+        
+        updateUserStatus(modelRow, "Inactive", "Deactivation");
     }
     
     /**
@@ -720,12 +656,12 @@ private void deactivateButtonActionPerformed(java.awt.event.ActionEvent evt) {
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
         // TODO add your handling code here:
-        deactivateButtonActionPerformed(evt);
+        deactivateUser();
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
         // TODO add your handling code here:
-        activateButtonActionPerformed(evt);
+        activateUser();
     }//GEN-LAST:event_jButton10ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed

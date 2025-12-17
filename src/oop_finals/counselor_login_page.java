@@ -3,35 +3,23 @@ package oop_finals;
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.swing.JOptionPane;
 
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
-
 /**
- *
- * @author Gian
+ * REFACTORED Counselor Login Page
+ * Uses CounselorController instead of direct database access
  */
 public class counselor_login_page extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(counselor_login_page.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(counselor_login_page.class.getName());
     
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
-
-    /**
-     * Creates new form counselor_login_page
-     */
+    // Use controller instead of direct DB access
+    private final CounselorController counselorController;
+    
     public counselor_login_page() {
         initComponents();
+        this.counselorController = new CounselorController();
         setupPlaceholders();
     }
     
@@ -49,7 +37,7 @@ public class counselor_login_page extends javax.swing.JFrame {
             public void focusGained(FocusEvent e) {
                 if (textField.getText().equals(placeholder)) {
                     textField.setText("");
-                    textField.setForeground(new Color(0, 0, 0)); // Your yellow color
+                    textField.setForeground(Color.BLACK);
                 }
             }
             
@@ -66,15 +54,15 @@ public class counselor_login_page extends javax.swing.JFrame {
     private void setupPasswordPlaceholder(javax.swing.JPasswordField passwordField, String placeholder) {
         passwordField.setText(placeholder);
         passwordField.setForeground(Color.GRAY);
-        passwordField.setEchoChar((char) 0); // Show placeholder text normally
+        passwordField.setEchoChar((char) 0);
         
         passwordField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
                 if (String.valueOf(passwordField.getPassword()).equals(placeholder)) {
                     passwordField.setText("");
-                    passwordField.setForeground(new Color(0, 0, 0)); 
-                    passwordField.setEchoChar('•'); // Hide password with bullets
+                    passwordField.setForeground(Color.BLACK);
+                    passwordField.setEchoChar('•');
                 }
             }
             
@@ -83,7 +71,7 @@ public class counselor_login_page extends javax.swing.JFrame {
                 if (String.valueOf(passwordField.getPassword()).isEmpty()) {
                     passwordField.setText(placeholder);
                     passwordField.setForeground(Color.GRAY);
-                    passwordField.setEchoChar((char) 0); // Show placeholder
+                    passwordField.setEchoChar((char) 0);
                 }
             }
         });
@@ -215,93 +203,50 @@ public class counselor_login_page extends javax.swing.JFrame {
     }//GEN-LAST:event_backActionPerformed
 
     private void loginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginActionPerformed
-        // TODO add your handling code here:
         String usernameText = username.getText();
-    String passwordText = String.valueOf(password.getPassword());
-    
-    // Validate input
-    if (usernameText.equals("Username") || usernameText.trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, 
-            "Please enter your username!", 
-            "Validation Error", 
-            JOptionPane.WARNING_MESSAGE);
-        username.requestFocus();
-        return;
-    }
-    
-    if (passwordText.equals("Password") || passwordText.trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, 
-            "Please enter your password!", 
-            "Validation Error", 
-            JOptionPane.WARNING_MESSAGE);
-        password.requestFocus();
-        return;
-    }
-    
-    // First check if credentials are correct and get status
-    String checkQuery = "SELECT u.*, c.* FROM users u " +
-                       "JOIN counselors c ON u.user_id = c.user_id " +
-                       "WHERE c.email = ? AND c.password = ?";
-    
-    try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-         PreparedStatement pst = conn.prepareStatement(checkQuery)) {
+        String passwordText = String.valueOf(password.getPassword());
         
-        pst.setString(1, usernameText);
-        pst.setString(2, passwordText);
-        
-        try (ResultSet rs = pst.executeQuery()) {
-            if (rs.next()) {
-                String status = rs.getString("status");
-                String name = rs.getString("name");
-                String specialization = rs.getString("specialization");
-                
-                // Check status
-                if (status.equals("Active")) {
-                    // Login successful
-                    int counselorId = rs.getInt("counselor_id");
-                    
-                    JOptionPane.showMessageDialog(this, 
-                        "Welcome, " + name + "!\nSpecialization: " + specialization, 
-                        "Login Successful", 
-                        JOptionPane.INFORMATION_MESSAGE);
-                    
-                    this.dispose();
-                    new counselor_dashboard(counselorId, name).setVisible(true);
-                    
-                } else if (status.equals("Pending")) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Your account is pending admin approval.\nPlease wait for approval before logging in.", 
-                        "Account Pending", 
-                        JOptionPane.WARNING_MESSAGE);
-                    
-                } else if (status.equals("Rejected")) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Your registration has been rejected by the administrator.\nPlease contact the guidance office for more information.", 
-                        "Account Rejected", 
-                        JOptionPane.ERROR_MESSAGE);
-                    
-                } else if (status.equals("Inactive")) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Your account has been deactivated.\nPlease contact the administrator.", 
-                        "Account Inactive", 
-                        JOptionPane.ERROR_MESSAGE);
-                }
-                
-            } else {
-                JOptionPane.showMessageDialog(this, 
-                    "Invalid email or password!\nPlease check your credentials and try again.", 
-                    "Login Failed", 
-                    JOptionPane.ERROR_MESSAGE);
-            }
+        // Validate input
+        if (usernameText.equals("Username") || usernameText.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "Please enter your username!", 
+                "Validation Error", 
+                JOptionPane.WARNING_MESSAGE);
+            username.requestFocus();
+            return;
         }
         
-    } catch (SQLException e) {
-        logger.log(java.util.logging.Level.SEVERE, "Database error during login", e);
-        JOptionPane.showMessageDialog(this, 
-            "Database connection error: " + e.getMessage(), 
-            "Error", 
-            JOptionPane.ERROR_MESSAGE);
-    }
+        if (passwordText.equals("Password") || passwordText.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "Please enter your password!", 
+                "Validation Error", 
+                JOptionPane.WARNING_MESSAGE);
+            password.requestFocus();
+            return;
+        }
+        
+        // Use controller to authenticate - NO DIRECT SQL
+            CounselorController.LoginResult loginResult = 
+            counselorController.loginCounselor(usernameText, passwordText);
+        
+        if (loginResult.isSuccess()) {
+            Counselor counselor = loginResult.getCounselor();
+            
+            JOptionPane.showMessageDialog(this, 
+                "Welcome, " + counselor.getName() + "!\nSpecialization: " + counselor.getSpecialization(), 
+                "Login Successful", 
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            this.dispose();
+            new counselor_dashboard(counselor.getCounselorId(), counselor.getName()).setVisible(true);
+            
+        } else {
+            // Show appropriate error message based on status
+            JOptionPane.showMessageDialog(this, 
+                loginResult.getMessage(), 
+                "Login Failed", 
+                JOptionPane.ERROR_MESSAGE);
+        }
     
     }//GEN-LAST:event_loginActionPerformed
 

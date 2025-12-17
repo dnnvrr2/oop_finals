@@ -316,4 +316,30 @@ public class AppointmentController {
             return message;
         }
     }
+    
+    public CancellationResult cancelAppointmentByCounselor(int appointmentId, String reason) {
+    Appointment appointment = appointmentDAO.getAppointmentById(appointmentId);
+    
+    if (appointment == null) {
+        return new CancellationResult(false, "Appointment not found.");
+    }
+    
+    // Validate 30 minutes before rule
+    String timeError = validateCancellationTime(
+        appointment.getAppointmentDate(),
+        appointment.getAppointmentTime()
+    );
+    
+    if (timeError != null) {
+        return new CancellationResult(false, timeError);
+    }
+    
+    boolean success = appointmentDAO.cancelAppointmentByCounselor(appointmentId, reason);
+    
+    if (success) {
+        return new CancellationResult(true, "Appointment cancelled successfully!");
+    }
+    
+    return new CancellationResult(false, "Failed to cancel appointment.");
+}
 }

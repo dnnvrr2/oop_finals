@@ -1,24 +1,13 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package oop_finals;
 
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.util.List;
 import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
@@ -26,15 +15,15 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumn;
 
 /**
- *
- * @author Admin
+ * Counselor My Schedule - Refactored to use MVC architecture
+ * Uses CounselorController for schedule operations
  */
 public class counselor_myschedule extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(counselor_myschedule.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(counselor_myschedule.class.getName());
 
     private int currentCounselorId;
     private String currentCounselorName;
@@ -42,21 +31,21 @@ public class counselor_myschedule extends javax.swing.JFrame {
     private YearMonth currentMonth;
     private LocalDate selectedDate;
     private int selectedCounselorId = -1;
-    private Connection conn;
     
-    // Database connection parameters
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
-    /**
-     * Creates new form counselor_myschedule
-     */
+    // Controllers
+    private final CounselorController counselorController;
+    private final AppointmentController appointmentController;
+
     public counselor_myschedule() {
+        this.counselorController = new CounselorController();
+        this.appointmentController = new AppointmentController();
         initComponents();
         initializeCalendar();
     }
     
-     public counselor_myschedule(int counselorId, String counselorName) {
+    public counselor_myschedule(int counselorId, String counselorName) {
+        this.counselorController = new CounselorController();
+        this.appointmentController = new AppointmentController();
         initComponents();
         this.currentCounselorId = counselorId;
         this.currentCounselorName = counselorName;
@@ -89,12 +78,14 @@ public class counselor_myschedule extends javax.swing.JFrame {
         jTable1.setRowSelectionAllowed(false);
         jTable1.setColumnSelectionAllowed(false);
         
+        // Set header styling
         DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) jTable1.getTableHeader().getDefaultRenderer();
         headerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         jTable1.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         jTable1.getTableHeader().setBackground(new Color(255, 195, 51));
         jTable1.getTableHeader().setForeground(Color.WHITE);
         
+        // Set cell renderer
         jTable1.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -120,6 +111,7 @@ public class counselor_myschedule extends javax.swing.JFrame {
                     cell.setBackground(Color.WHITE);
                     cell.setForeground(Color.BLACK);
                     
+                    // Check if date is blocked using controller
                     if (selectedCounselorId != -1 && cellDate != null) {
                         if (!isDateAvailableForCounselor(cellDate)) {
                             cell.setBackground(new Color(255, 200, 200));
@@ -128,17 +120,20 @@ public class counselor_myschedule extends javax.swing.JFrame {
                         }
                     }
                     
+                    // Highlight today
                     if (cellDate != null && cellDate.equals(today)) {
                         cell.setBackground(new Color(173, 216, 230));
                         cell.setFont(cell.getFont().deriveFont(Font.BOLD));
                     }
                     
+                    // Highlight selected date
                     if (selectedDate != null && cellDate != null && cellDate.equals(selectedDate)) {
                         cell.setBackground(new Color(255, 195, 51));
                         cell.setForeground(Color.WHITE);
                         cell.setFont(cell.getFont().deriveFont(Font.BOLD, 16f));
                     }
                     
+                    // Gray out past dates
                     if (cellDate != null && cellDate.isBefore(today)) {
                         cell.setForeground(new Color(180, 180, 180));
                     }
@@ -172,6 +167,7 @@ public class counselor_myschedule extends javax.swing.JFrame {
     private void updateCalendarDisplay() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         
+        // Clear all cells
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < 7; j++) {
                 model.setValueAt("", i, j);
@@ -220,8 +216,7 @@ public class counselor_myschedule extends javax.swing.JFrame {
             return;
         }
 
-        // Removed the blocking check - counselors can now click blocked dates
-
+        // Allow counselors to click blocked dates to manage them
         selectedDate = clickedDate;
         jTable1.repaint();
     }
@@ -244,88 +239,24 @@ public class counselor_myschedule extends javax.swing.JFrame {
         }
     }
 
+    // Check date availability using controller
     private boolean isDateAvailableForCounselor(LocalDate date) {
         if (selectedCounselorId == -1) {
             return true;
         }
         
-        try {
-            Connection connection = getConnection();
-            if (connection == null) return false;
-            
-            String dayOfWeek = date.getDayOfWeek()
-                    .getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault());
-            
-            String schedQuery = "SELECT COUNT(*) as count FROM counselor_schedules " +
-                               "WHERE counselor_id = ? AND day_of_week = ? AND is_available = TRUE";
-            PreparedStatement schedPst = connection.prepareStatement(schedQuery);
-            schedPst.setInt(1, selectedCounselorId);
-            schedPst.setString(2, dayOfWeek);
-            ResultSet schedRs = schedPst.executeQuery();
-            
-            boolean dayAvailable = false;
-            if (schedRs.next()) {
-                dayAvailable = schedRs.getInt("count") > 0;
-            }
-            schedRs.close();
-            schedPst.close();
-            
-            if (!dayAvailable) {
-                return false;
-            }
-            
-            String blockedQuery = "SELECT COUNT(*) as count FROM counselor_blocked_dates " +
-                                 "WHERE counselor_id = ? AND blocked_date = ?";
-            PreparedStatement blockedPst = connection.prepareStatement(blockedQuery);
-            blockedPst.setInt(1, selectedCounselorId);
-            blockedPst.setDate(2, java.sql.Date.valueOf(date));
-            ResultSet blockedRs = blockedPst.executeQuery();
-            
-            boolean isBlocked = false;
-            if (blockedRs.next()) {
-                isBlocked = blockedRs.getInt("count") > 0;
-            }
-            blockedRs.close();
-            blockedPst.close();
-            
-            return !isBlocked;
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error checking date availability", e);
+        return counselorController.isCounselorAvailableOnDate(selectedCounselorId, date);
+    }
+    
+    // Check if date is blocked using controller
+    private boolean isDateBlocked(LocalDate date) {
+        if (selectedCounselorId == -1) {
             return false;
         }
+        
+        List<LocalDate> blockedDates = counselorController.getCounselorBlockedDates(selectedCounselorId);
+        return blockedDates.contains(date);
     }
-    
-    private boolean isDateBlocked(LocalDate date) {
-    if (selectedCounselorId == -1) {
-        return false;
-    }
-    
-    try {
-        Connection connection = getConnection();
-        if (connection == null) return false;
-        
-        String blockedQuery = "SELECT COUNT(*) as count FROM counselor_blocked_dates " +
-                             "WHERE counselor_id = ? AND blocked_date = ?";
-        PreparedStatement blockedPst = connection.prepareStatement(blockedQuery);
-        blockedPst.setInt(1, selectedCounselorId);
-        blockedPst.setDate(2, java.sql.Date.valueOf(date));
-        ResultSet blockedRs = blockedPst.executeQuery();
-        
-        boolean isBlocked = false;
-        if (blockedRs.next()) {
-            isBlocked = blockedRs.getInt("count") > 0;
-        }
-        blockedRs.close();
-        blockedPst.close();
-        
-        return isBlocked;
-        
-    } catch (SQLException e) {
-        logger.log(java.util.logging.Level.SEVERE, "Error checking if date is blocked", e);
-        return false;
-    }
-}
 
     public LocalDate getSelectedDate() {
         return selectedDate;
@@ -359,13 +290,11 @@ public class counselor_myschedule extends javax.swing.JFrame {
         updateNavigationButtons();
     }
 
-    // Missing method implementation
     private void updateMonthLabel() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy");
         currentmonth.setText(currentMonth.format(formatter));
     }
 
-    // Missing method implementation
     private void updateNavigationButtons() {
         YearMonth now = YearMonth.now();
         YearMonth maxMonth = now.plusYears(1);
@@ -374,87 +303,11 @@ public class counselor_myschedule extends javax.swing.JFrame {
         nextmonth.setEnabled(currentMonth.isBefore(maxMonth));
     }
     
+    // Load upcoming appointments using controller
     private void loadUpcomingAppointments() {
-    try {
-        Connection connection = getConnection();
-        if (connection == null) return;
-        
-        // Query to get upcoming appointments for this counselor
-        String query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, " +
-                      "s.name as student_name, s.year_level, a.reason " +
-                      "FROM appointments a " +
-                      "JOIN students s ON a.student_id = s.student_id " +
-                      "WHERE a.counselor_id = ? " +
-                      "AND a.appointment_date >= CURDATE() " +
-                      "AND a.status = 'Upcoming' " +
-                      "ORDER BY a.appointment_date ASC, a.appointment_time ASC " +
-                      "LIMIT 10";
-        
-        PreparedStatement pst = connection.prepareStatement(query);
-        pst.setInt(1, currentCounselorId);
-        ResultSet rs = pst.executeQuery();
-        
-        // Create table model
-        DefaultTableModel model = new DefaultTableModel(
-            new String[]{"Date", "Time", "Student Name", "Year Level", "Reason"}, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        
-        // Populate table
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy");
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
-        
-        while (rs.next()) {
-            LocalDate date = rs.getDate("appointment_date").toLocalDate();
-            LocalTime time = rs.getTime("appointment_time").toLocalTime();
-            
-            model.addRow(new Object[]{
-                date.format(dateFormatter),
-                time.format(timeFormatter),
-                rs.getString("student_name"),
-                rs.getString("year_level"),
-                rs.getString("reason")
-            });
-        }
-        
-        
-    } catch (SQLException e) {
-        logger.log(java.util.logging.Level.SEVERE, "Error loading upcoming appointments", e);
-        JOptionPane.showMessageDialog(this,
-                "Error loading appointments: " + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
-    }
-}
-
-    private Connection getConnection() {
-        try {
-            if (conn == null || conn.isClosed()) {
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-            }
-            return conn;
-        } catch (ClassNotFoundException | SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Database connection error", e);
-            JOptionPane.showMessageDialog(this, "Database connection failed: " + e.getMessage(),
-                    "Connection Error", JOptionPane.ERROR_MESSAGE);
-            return null;
-        }
-    }
-
-    @Override
-    public void dispose() {
-        try {
-            if (conn != null && !conn.isClosed()) {
-                conn.close();
-            }
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error closing connection", e);
-        }
-        super.dispose();
+        // This method can be implemented to show appointments in a separate panel
+        // For now, it's a placeholder
+        logger.info("Loading upcoming appointments for counselor: " + currentCounselorId);
     }
 
 
@@ -846,7 +699,6 @@ public class counselor_myschedule extends javax.swing.JFrame {
     }//GEN-LAST:event_homeActionPerformed
 
     private void editActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editActionPerformed
-        // TODO add your handling code here:
         if (selectedDate == null) {
             JOptionPane.showMessageDialog(this,
                     "Please select a blocked date first.",
@@ -863,72 +715,38 @@ public class counselor_myschedule extends javax.swing.JFrame {
             return;
         }
         
-        try {
-            Connection connection = getConnection();
-            if (connection == null) return;
-            
-            // Get current reason
-            String selectQuery = "SELECT reason FROM counselor_blocked_dates " +
-                                "WHERE counselor_id = ? AND blocked_date = ?";
-            PreparedStatement selectPst = connection.prepareStatement(selectQuery);
-            selectPst.setInt(1, currentCounselorId);
-            selectPst.setDate(2, java.sql.Date.valueOf(selectedDate));
-            ResultSet rs = selectPst.executeQuery();
-            
-            String currentReason = "";
-            if (rs.next()) {
-                currentReason = rs.getString("reason");
-            }
-            rs.close();
-            selectPst.close();
-            
-            // Ask for new reason
-            String newReason = (String) JOptionPane.showInputDialog(this,
-                    "Edit reason for blocking " + selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + ":",
-                    "Edit Blocked Date",
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    null,
-                    currentReason);
-            
-            if (newReason == null || newReason.trim().isEmpty()) {
-                return; // User cancelled or entered empty reason
-            }
-            
-            // Update reason
-            String updateQuery = "UPDATE counselor_blocked_dates SET reason = ? " +
-                                "WHERE counselor_id = ? AND blocked_date = ?";
-            PreparedStatement updatePst = connection.prepareStatement(updateQuery);
-            updatePst.setString(1, newReason.trim());
-            updatePst.setInt(2, currentCounselorId);
-            updatePst.setDate(3, java.sql.Date.valueOf(selectedDate));
-            
-            int result = updatePst.executeUpdate();
-            updatePst.close();
-            
-            if (result > 0) {
-                JOptionPane.showMessageDialog(this,
-                        "Blocked date updated successfully!",
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Failed to update blocked date.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error updating blocked date", e);
+        // Ask for new reason
+        String newReason = (String) JOptionPane.showInputDialog(this,
+                "Edit reason for blocking " + 
+                selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + ":",
+                "Edit Blocked Date",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                null,
+                "");
+        
+        if (newReason == null || newReason.trim().isEmpty()) {
+            return; // User cancelled
+        }
+        
+        // Update reason using controller
+        boolean success = counselorController.updateBlockedDateReason(
+            currentCounselorId, selectedDate, newReason.trim());
+        
+        if (success) {
             JOptionPane.showMessageDialog(this,
-                    "Error updating blocked date: " + e.getMessage(),
-                    "Database Error",
+                    "Blocked date updated successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to update blocked date.",
+                    "Error",
                     JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_editActionPerformed
 
     private void addActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addActionPerformed
-        // TODO add your handling code here:
         if (selectedDate == null) {
             JOptionPane.showMessageDialog(this,
                     "Please select a date first.",
@@ -967,54 +785,34 @@ public class counselor_myschedule extends javax.swing.JFrame {
         
         // Ask for reason
         String reason = JOptionPane.showInputDialog(this,
-                "Enter reason for blocking " + selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + ":",
+                "Enter reason for blocking " + 
+                selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + ":",
                 "Block Date",
                 JOptionPane.QUESTION_MESSAGE);
         
         if (reason == null || reason.trim().isEmpty()) {
-            return; // User cancelled or entered empty reason
+            return; // User cancelled
         }
         
-        try {
-            Connection connection = getConnection();
-            if (connection == null) return;
-            
-            String insertQuery = "INSERT INTO counselor_blocked_dates (counselor_id, blocked_date, reason, created_at) " +
-                                "VALUES (?, ?, ?, NOW())";
-            PreparedStatement pst = connection.prepareStatement(insertQuery);
-            pst.setInt(1, currentCounselorId);
-            pst.setDate(2, java.sql.Date.valueOf(selectedDate));
-            pst.setString(3, reason.trim());
-            
-            int result = pst.executeUpdate();
-            pst.close();
-            
-            if (result > 0) {
-                JOptionPane.showMessageDialog(this,
-                        "Date blocked successfully!",
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                updateCalendarDisplay();
-                loadUpcomingAppointments();
-                jTable1.repaint();
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Failed to block date.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error blocking date", e);
+        // Block date using controller
+        boolean success = counselorController.blockDate(currentCounselorId, selectedDate, reason.trim());
+        
+        if (success) {
             JOptionPane.showMessageDialog(this,
-                    "Error blocking date: " + e.getMessage(),
-                    "Database Error",
+                    "Date blocked successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+            updateCalendarDisplay();
+            jTable1.repaint();
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to block date.",
+                    "Error",
                     JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_addActionPerformed
 
     private void deleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteActionPerformed
-        // TODO add your handling code here:
         if (selectedDate == null) {
             JOptionPane.showMessageDialog(this,
                     "Please select a blocked date first.",
@@ -1042,40 +840,21 @@ public class counselor_myschedule extends javax.swing.JFrame {
             return;
         }
         
-        try {
-            Connection connection = getConnection();
-            if (connection == null) return;
-            
-            String deleteQuery = "DELETE FROM counselor_blocked_dates " +
-                                "WHERE counselor_id = ? AND blocked_date = ?";
-            PreparedStatement pst = connection.prepareStatement(deleteQuery);
-            pst.setInt(1, currentCounselorId);
-            pst.setDate(2, java.sql.Date.valueOf(selectedDate));
-            
-            int result = pst.executeUpdate();
-            pst.close();
-            
-            if (result > 0) {
-                JOptionPane.showMessageDialog(this,
-                        "Date unblocked successfully!",
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                selectedDate = null;
-                updateCalendarDisplay();
-                loadUpcomingAppointments();
-                jTable1.repaint();
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Failed to unblock date.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error deleting blocked date", e);
+        // Unblock date using controller
+        boolean success = counselorController.unblockDate(currentCounselorId, selectedDate);
+        
+        if (success) {
             JOptionPane.showMessageDialog(this,
-                    "Error unblocking date: " + e.getMessage(),
-                    "Database Error",
+                    "Date unblocked successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+            selectedDate = null;
+            updateCalendarDisplay();
+            jTable1.repaint();
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to unblock date.",
+                    "Error",
                     JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_deleteActionPerformed

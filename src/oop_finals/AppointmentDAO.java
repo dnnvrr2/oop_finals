@@ -427,4 +427,62 @@ public class AppointmentDAO {
         
         return appointment;
     }
+    
+    // Add this method to your AppointmentDAO class
+
+/**
+ * Cancel appointment by counselor with reason
+ * 
+ * @param appointmentId Appointment ID
+ * @param reason Cancellation reason
+ * @return true if successful, false otherwise
+ */
+public boolean cancelAppointmentByCounselor(int appointmentId, String reason) {
+    // First, add the reason to an appointments_history or notifications table if you have one
+    // For now, we'll just update the status and log the reason
+    
+    String query = "UPDATE appointments SET status = 'Cancelled', " +
+                  "updated_at = NOW() WHERE appointment_id = ?";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        
+        pstmt.setInt(1, appointmentId);
+        
+        int rowsAffected = pstmt.executeUpdate();
+        
+        if (rowsAffected > 0) {
+            // If you have a cancellations table to log the reason:
+            logCancellation(conn, appointmentId, reason);
+            
+            logger.info("Appointment " + appointmentId + " cancelled by counselor. Reason: " + reason);
+            return true;
+        }
+        
+        return false;
+        
+    } catch (SQLException e) {
+        logger.log(Level.SEVERE, "Error cancelling appointment by counselor", e);
+        return false;
+    }
+}
+
+/**
+ * Log cancellation with reason (optional - if you have a cancellations table)
+ * If you don't have this table, you can remove this method
+ */
+private void logCancellation(Connection conn, int appointmentId, String reason) {
+    String logQuery = "INSERT INTO appointment_cancellations " +
+                     "(appointment_id, cancelled_by, reason, cancelled_at) " +
+                     "VALUES (?, 'counselor', ?, NOW())";
+    
+    try (PreparedStatement pstmt = conn.prepareStatement(logQuery)) {
+        pstmt.setInt(1, appointmentId);
+        pstmt.setString(2, reason);
+        pstmt.executeUpdate();
+    } catch (SQLException e) {
+        // Ignore if table doesn't exist
+        logger.warning("Could not log cancellation reason: " + e.getMessage());
+    }
+}
 }

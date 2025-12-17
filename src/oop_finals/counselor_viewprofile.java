@@ -1,78 +1,65 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package oop_finals;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.swing.JOptionPane;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableColumn;
 
 /**
- *
- * @author Admin
+ * Counselor View Profile - Refactored to use MVC architecture
+ * Uses CounselorController to load profile data
  */
 public class counselor_viewprofile extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(counselor_viewprofile.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(counselor_viewprofile.class.getName());
 
     private int currentCounselorId;
     private String currentCounselorName;
     
-    // Database connection parameters
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
-    /**
-     * Creates new form counselor_myschedule
-     */
+    // Controllers
+    private final CounselorController counselorController;
     
     public counselor_viewprofile() {
+        this.counselorController = new CounselorController();
         initComponents();
     }
     
     public counselor_viewprofile(int counselorId, String counselorName) {
+        this.counselorController = new CounselorController();
         initComponents();
         this.currentCounselorId = counselorId;
         this.currentCounselorName = counselorName;
-        jLabel5.setText(currentCounselorName + "!");  // ✅ Correct variable name
-        loadCounselorProfile();  // Load profile data
+        jLabel5.setText(currentCounselorName + "!");
+        loadCounselorProfile();
     }
     
+    // Load counselor profile using controller
     private void loadCounselorProfile() {
-    String query = "SELECT name, email, specialization, license_number FROM counselors WHERE counselor_id = ?";
-    
-    try (java.sql.Connection conn = java.sql.DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-         java.sql.PreparedStatement pstmt = conn.prepareStatement(query)) {
-        
-        pstmt.setInt(1, currentCounselorId);
-        java.sql.ResultSet rs = pstmt.executeQuery();
-        
-        if (rs.next()) {
-            jTextField1.setText(rs.getString("name"));
-            jTextField2.setText(rs.getString("email"));
-            jTextField3.setText(rs.getString("specialization"));
-            jTextField4.setText(rs.getString("license_number"));      
-        } else {
-            javax.swing.JOptionPane.showMessageDialog(this,
-                "Counselor profile not found!",
-                "Error",
-                javax.swing.JOptionPane.ERROR_MESSAGE);
+        try {
+            // Use controller to get counselor data
+            Counselor counselor = counselorController.getCounselorById(currentCounselorId);
+            
+            if (counselor != null) {
+                // Populate fields with counselor data
+                jTextField1.setText(counselor.getName());
+                jTextField2.setText(counselor.getEmail());
+                jTextField3.setText(counselor.getSpecialization());
+                jTextField4.setText(counselor.getLicenseNumber());
+                
+                logger.info("Counselor profile loaded successfully: " + counselor.getName());
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Counselor profile not found!",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            
+        } catch (Exception e) {
+            logger.severe("Error loading counselor profile: " + e.getMessage());
+            JOptionPane.showMessageDialog(this,
+                "Error loading profile: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
         }
-        
-    } catch (java.sql.SQLException e) {
-        logger.log(java.util.logging.Level.SEVERE, "Error loading counselor profile", e);
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "Error loading profile: " + e.getMessage(),
-            "Database Error",
-            javax.swing.JOptionPane.ERROR_MESSAGE);
     }
-}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

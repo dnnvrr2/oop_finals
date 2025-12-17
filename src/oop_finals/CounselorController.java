@@ -2,6 +2,7 @@ package oop_finals;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Counselor Controller
@@ -13,12 +14,43 @@ public class CounselorController {
         java.util.logging.Logger.getLogger(CounselorController.class.getName());
     
     private final CounselorDAO counselorDAO;
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
     
     /**
      * Constructor
      */
     public CounselorController() {
         this.counselorDAO = new CounselorDAO();
+    }
+    
+    /**
+     * Authenticate counselor login
+     * @param emailOrUsername Email or username
+     * @param password Password
+     * @return LoginResult with success status, counselor object, and message
+     */
+    public LoginResult loginCounselor(String emailOrUsername, String password) {
+        // Validate inputs
+        if (emailOrUsername == null || emailOrUsername.trim().isEmpty()) {
+            logger.warning("Login attempt with empty email/username");
+            return new LoginResult(false, null, "Please enter your email or username.");
+        }
+        
+        if (password == null || password.trim().isEmpty()) {
+            logger.warning("Login attempt with empty password");
+            return new LoginResult(false, null, "Please enter your password.");
+        }
+        
+        // Authenticate using DAO
+        Counselor counselor = counselorDAO.authenticateCounselor(emailOrUsername.trim(), password.trim());
+        
+        if (counselor != null) {
+            logger.info("Counselor logged in successfully: " + counselor.getName());
+            return new LoginResult(true, counselor, "Login successful!");
+        } else {
+            logger.warning("Failed login attempt for: " + emailOrUsername);
+            return new LoginResult(false, null, "Invalid email/username or password. Please check your credentials and try again.");
+        }
     }
     
     /**
@@ -299,4 +331,151 @@ public class CounselorController {
         
         return success;
     }
+    
+    /**
+     * Register new counselor
+     */
+    public String registerCounselor(String name, String email, String specialization,
+                                    String licenseNumber, String password, String confirmPassword) {
+        // Validate all fields
+        String validationError = validateCounselorRegistrationData(name, email, specialization, 
+                                                         licenseNumber, password, confirmPassword);
+        if (validationError != null) {
+            return validationError;
+        }
+        
+        // Check if email exists
+        if (counselorDAO.emailExists(email)) {
+            return "Email already registered or pending approval.";
+        }
+        
+        // Check if license exists
+        if (counselorDAO.licenseNumberExists(licenseNumber)) {
+            return "License number already registered or pending approval.";
+        }
+        
+        // Create registration request
+        Counselor counselor = new Counselor();
+        counselor.setName(name.trim());
+        counselor.setEmail(email.trim());
+        counselor.setSpecialization(specialization.trim());
+        counselor.setLicenseNumber(licenseNumber.trim());
+        counselor.setPassword(password.trim());
+        
+        boolean success = counselorDAO.createRegistrationRequest(counselor);
+        
+        return success ? "SUCCESS" : "Registration failed. Please try again.";
+    }
+    
+    /**
+     * Block date for counselor
+     */
+    public boolean blockDate(int counselorId, LocalDate date, String reason) {
+        if (counselorId <= 0 || date == null) {
+            return false;
+        }
+        
+        if (date.isBefore(LocalDate.now())) {
+            return false;
+        }
+        
+        return counselorDAO.blockDate(counselorId, date, reason);
+    }
+    
+    /**
+     * Unblock date for counselor
+     */
+    public boolean unblockDate(int counselorId, LocalDate date) {
+        if (counselorId <= 0 || date == null) {
+            return false;
+        }
+        
+        return counselorDAO.unblockDate(counselorId, date);
+    }
+    
+    /**
+     * Update blocked date reason
+     */
+    public boolean updateBlockedDateReason(int counselorId, LocalDate date, String newReason) {
+        if (counselorId <= 0 || date == null || newReason == null) {
+            return false;
+        }
+        
+        return counselorDAO.updateBlockedDateReason(counselorId, date, newReason);
+    }
+    
+    /**
+     * Validate counselor registration data
+     */
+    private String validateCounselorRegistrationData(String name, String email, String specialization,
+                                                     String licenseNumber, String password, String confirmPassword) {
+        if (name == null || name.trim().isEmpty()) {
+            return "Please enter your name.";
+        }
+        
+        if (email == null || email.trim().isEmpty()) {
+            return "Please enter your email.";
+        }
+        
+        if (!isValidEmail(email)) {
+            return "Invalid email format.";
+        }
+        
+        if (specialization == null || specialization.trim().isEmpty()) {
+            return "Please enter your specialization.";
+        }
+        
+        if (licenseNumber == null || licenseNumber.trim().isEmpty()) {
+            return "Please enter your license number.";
+        }
+        
+        if (password == null || password.trim().isEmpty()) {
+            return "Please enter your password.";
+        }
+        
+        if (password.length() < 6) {
+            return "Password must be at least 6 characters.";
+        }
+        
+        if (!password.equals(confirmPassword)) {
+            return "Passwords do not match.";
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Validate email format
+     */
+    private boolean isValidEmail(String email) {
+        return email != null && EMAIL_PATTERN.matcher(email).matches();
+    }
+    
+    /**
+     * Inner class to represent login result
+     */
+    public static class LoginResult {
+        private final boolean success;
+        private final Counselor counselor;
+        private final String message;
+        
+        public LoginResult(boolean success, Counselor counselor, String message) {
+            this.success = success;
+            this.counselor = counselor;
+            this.message = message;
+        }
+        
+        public boolean isSuccess() {
+            return success;
+        }
+        
+        public Counselor getCounselor() {
+            return counselor;
+        }
+        
+        public String getMessage() {
+            return message;
+        }
+    }
+ 
 }

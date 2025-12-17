@@ -1,16 +1,5 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package oop_finals;
 
-/**
- *
- * @author lain
- */
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.RowFilter;
@@ -18,20 +7,27 @@ import javax.swing.table.TableRowSorter;
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.util.List;
 
+/**
+ * Pending Users Page - Refactored to use MVC architecture
+ * Uses AdminController for user request management
+ */
 public class PendingUsers extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(PendingUsers.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(PendingUsers.class.getName());
 
     private int currentAdminId;
     private String currentAdminName;
     
     private TableRowSorter<DefaultTableModel> sorter;
     
-    /**
-     * Creates new form PendingUsers
-     */
+    // Controllers
+    private final AdminController adminController;
+    
     public PendingUsers() {
+        this.adminController = new AdminController();
         initComponents();
         loadPendingUsers();
         setupSearch();
@@ -39,6 +35,7 @@ public class PendingUsers extends javax.swing.JFrame {
     }
     
     public PendingUsers(int adminId, String adminName) {
+        this.adminController = new AdminController();
         this.currentAdminId = adminId;
         this.currentAdminName = adminName;
         initComponents();
@@ -46,260 +43,160 @@ public class PendingUsers extends javax.swing.JFrame {
         setupSearch();
         setupFilterComboBox();
 
-        // Set the admin name in the UI
         jLabel5.setText(adminName + "!");
     }
     
-    // LOAD PENDING USERS
+    // Load pending users using controller
     private void loadPendingUsers() {
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
 
-        String sql = "SELECT request_id, name, user_type, email, requested_at, status " +
-                 "FROM user_requests " +
-                 "WHERE status = 'Pending' " +
-                 "ORDER BY requested_at DESC";
+        try {
+            List<AdminDAO.UserRequest> requests = adminController.getAllPendingRequests();
 
-        try (Connection con = DatabaseConnection.getConnection(); 
-             PreparedStatement ps = con.prepareStatement(sql); 
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
+            for (AdminDAO.UserRequest request : requests) {
                 model.addRow(new Object[]{
-                    rs.getString("name"),
-                    rs.getString("user_type"),
-                    rs.getInt("request_id"),
-                    rs.getTimestamp("requested_at"),
-                    rs.getString("status")
+                    request.getName(),
+                    request.getUserType(),
+                    request.getRequestId(),
+                    request.getRequestedAt(),
+                    request.getStatus()
                 });
             }
 
+            logger.info("Loaded " + requests.size() + " pending requests");
+
         } catch (Exception e) {
+            logger.severe("Error loading pending users: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
-                    "Error loading pending users:\n" + e.getMessage(),
-                    "Database error",
-                    JOptionPane.ERROR_MESSAGE);
+                "Error loading pending users:\n" + e.getMessage(),
+                "Database error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
-    
 
-    // UPDATE STATUS (APPROVE / REJECT)
+    // Approve user request using controller
     private void approveUserRequest(int requestId, String userType) {
-    try (Connection con = DatabaseConnection.getConnection()) {
-        con.setAutoCommit(false);
-        
-        try {
-            // Get request details from user_requests table
-            String getRequestQuery = "SELECT * FROM user_requests WHERE request_id = ?";
-            PreparedStatement getPst = con.prepareStatement(getRequestQuery);
-            getPst.setInt(1, requestId);
-            ResultSet rs = getPst.executeQuery();
-            
-            if (rs.next()) {
-                // Create user in users table
-                String insertUserQuery = "INSERT INTO users (user_type, name, email, password, status) VALUES (?, ?, ?, ?, 'Active')";
-                PreparedStatement userPst = con.prepareStatement(insertUserQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-                userPst.setString(1, userType);
-                userPst.setString(2, rs.getString("name"));
-                userPst.setString(3, rs.getString("email"));
-                userPst.setString(4, rs.getString("password"));
-                userPst.executeUpdate();
-                
-                ResultSet generatedKeys = userPst.getGeneratedKeys();
-                if (generatedKeys.next()) {
-                    int userId = generatedKeys.getInt(1);
-                    
-                    // Insert into specific table
-                    if (userType.equals("Counselor")) {
-                        String insertCounselorQuery = "INSERT INTO counselors (user_id, name, email, specialization, license_number, password, status) VALUES (?, ?, ?, ?, ?, ?, 'Active')";
-                        PreparedStatement counselorPst = con.prepareStatement(insertCounselorQuery);
-                        counselorPst.setInt(1, userId);
-                        counselorPst.setString(2, rs.getString("name"));
-                        counselorPst.setString(3, rs.getString("email"));
-                        counselorPst.setString(4, rs.getString("specialization"));
-                        counselorPst.setString(5, rs.getString("license_number"));
-                        counselorPst.setString(6, rs.getString("password"));
-                        counselorPst.executeUpdate();
-                        
-                    } else if (userType.equals("Student")) {
-                        // FIXED: Now includes year_level
-                        String insertStudentQuery = "INSERT INTO students (user_id, name, email, course, year_level, student_number, password, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')";
-                        PreparedStatement studentPst = con.prepareStatement(insertStudentQuery);
-                        studentPst.setInt(1, userId);
-                        studentPst.setString(2, rs.getString("name"));
-                        studentPst.setString(3, rs.getString("email"));
-                        studentPst.setString(4, rs.getString("course"));
-                        
-                        // Handle year_level - use default if not present
-                        String yearLevel = rs.getString("year_level");
-                        if (yearLevel == null || yearLevel.trim().isEmpty()) {
-                            yearLevel = "Not Specified"; // Default value
-                        }
-                        studentPst.setString(5, yearLevel);
-                        
-                        studentPst.setString(6, rs.getString("student_number"));
-                        studentPst.setString(7, rs.getString("password"));
-                        studentPst.executeUpdate();
-                    }
-                }
-                
-                // Update request status
-                String updateRequestQuery = "UPDATE user_requests SET status = 'Approved', processed_at = NOW(), processed_by = ? WHERE request_id = ?";
-                PreparedStatement updatePst = con.prepareStatement(updateRequestQuery);
-                updatePst.setInt(1, currentAdminId);
-                updatePst.setInt(2, requestId);
-                updatePst.executeUpdate();
-                
-                con.commit();
-                
-                JOptionPane.showMessageDialog(this,
-                    "User request approved successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                loadPendingUsers();
-            } else {
-                con.rollback();
-                JOptionPane.showMessageDialog(this,
-                    "Request not found.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-            
-        } catch (Exception e) {
-            con.rollback();
-            throw e;
-        }
-        
-    } catch (Exception e) {
-        System.err.println("Error approving request: " + e.getMessage());
-        e.printStackTrace();
-        JOptionPane.showMessageDialog(this,
-            "Error approving request: " + e.getMessage(),
-            "Error",
-            JOptionPane.ERROR_MESSAGE);
-    }
-}
+        AdminController.ApprovalResult result = 
+            adminController.approveUserRequest(requestId, currentAdminId);
 
-    private void rejectUserRequest(int requestId, String reason) {
-        try (Connection con = DatabaseConnection.getConnection()) {
-            String updateQuery = "UPDATE user_requests SET status = 'Rejected', rejection_reason = ?, processed_at = NOW(), processed_by = ? WHERE request_id = ?";
-            PreparedStatement pst = con.prepareStatement(updateQuery);
-            pst.setString(1, reason);
-            pst.setInt(2, currentAdminId);
-            pst.setInt(3, requestId);
-
-            int rowsAffected = pst.executeUpdate();
-
-            if (rowsAffected > 0) {
-                JOptionPane.showMessageDialog(this,
-                    "User request rejected",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-
-                loadPendingUsers();
-            }
-
-        } catch (Exception e) {
-            System.err.println("Error rejecting request: " + e.getMessage());
-            e.printStackTrace();
+        if (result.isSuccess()) {
             JOptionPane.showMessageDialog(this,
-                "Error rejecting request: " + e.getMessage(),
+                result.getMessage(),
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            loadPendingUsers();
+        } else {
+            JOptionPane.showMessageDialog(this,
+                result.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    // Reject user request using controller
+    private void rejectUserRequest(int requestId, String reason) {
+        AdminController.ApprovalResult result = 
+            adminController.rejectUserRequest(requestId, reason, currentAdminId);
 
-        // SEARCH FILTER
-        private void setupSearch() {
-            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-            sorter = new TableRowSorter<>(model);
-            jTable1.setRowSorter(sorter);
+        if (result.isSuccess()) {
+            JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            loadPendingUsers();
+        } else {
+            JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
-            // Setup placeholder
-            Search.setText("Search");
-            Search.setForeground(Color.GRAY);
+    // Setup search filter
+    private void setupSearch() {
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        sorter = new TableRowSorter<>(model);
+        jTable1.setRowSorter(sorter);
 
-            Search.addFocusListener(new FocusAdapter() {
-                @Override
-                public void focusGained(FocusEvent e) {
-                    if (Search.getText().equals("Search")) {
-                        Search.setText("");
-                        Search.setForeground(Color.BLACK);
+        // Setup placeholder
+        Search.setText("Search");
+        Search.setForeground(Color.GRAY);
+
+        Search.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (Search.getText().equals("Search")) {
+                    Search.setText("");
+                    Search.setForeground(Color.BLACK);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (Search.getText().isEmpty()) {
+                    Search.setText("Search");
+                    Search.setForeground(Color.GRAY);
+                    if (sorter != null) {
+                        sorter.setRowFilter(null);
                     }
                 }
-
-                @Override
-                public void focusLost(FocusEvent e) {
-                    if (Search.getText().isEmpty()) {
-                        Search.setText("Search");
-                        Search.setForeground(Color.GRAY);
-                        if (sorter != null) {
-                            sorter.setRowFilter(null);
-                        }
-                    }
-                }
-            });
-
-            Search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-                public void insertUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
-                public void removeUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
-                public void changedUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
-            });
-        }
-        
-        private void performSearch() {
-            String searchText = Search.getText().trim();
-
-            // Ignore placeholder text
-            if (searchText.isEmpty() || searchText.equals("Search")) {
-                sorter.setRowFilter(null);
-                return;
             }
+        });
 
-            String selectedFilter = (String) jComboBox1.getSelectedItem();
+        Search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+        });
+    }
+    
+    private void performSearch() {
+        String searchText = Search.getText().trim();
 
-            try {
-                // Search in specific column
-                int columnIndex = getColumnIndex(selectedFilter);
-                if (columnIndex != -1) {
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i).*" + escapeRegex(searchText) + ".*", columnIndex));
-                }
-            } catch (java.util.regex.PatternSyntaxException ex) {
-                // If regex is invalid, clear the filter
-                sorter.setRowFilter(null);
+        if (searchText.isEmpty() || searchText.equals("Search")) {
+            sorter.setRowFilter(null);
+            return;
+        }
+
+        String selectedFilter = (String) jComboBox1.getSelectedItem();
+
+        try {
+            int columnIndex = getColumnIndex(selectedFilter);
+            if (columnIndex != -1) {
+                sorter.setRowFilter(RowFilter.regexFilter("(?i).*" + escapeRegex(searchText) + ".*", columnIndex));
             }
+        } catch (java.util.regex.PatternSyntaxException ex) {
+            sorter.setRowFilter(null);
         }
-        
-        private int getColumnIndex(String columnName) {
-            switch (columnName) {
-                case "Name": return 0;
-                case "Type": return 1;
-                case "ID": return 2;
-                case "Date": return 3;
-                case "Status": return 4;
-                default: return -1;
-            }
+    }
+    
+    private int getColumnIndex(String columnName) {
+        switch (columnName) {
+            case "Name": return 0;
+            case "Type": return 1;
+            case "ID": return 2;
+            case "Date": return 3;
+            case "Status": return 4;
+            default: return -1;
         }
+    }
 
-        // Add the escapeRegex() helper method:
-        private String escapeRegex(String text) {
-            return text.replaceAll("([\\\\*+\\[\\](){}$.?^|])", "\\\\$1");
-        }
-        
+    private String escapeRegex(String text) {
+        return text.replaceAll("([\\\\*+\\[\\](){}$.?^|])", "\\\\$1");
+    }
+    
     private void setupFilterComboBox() {
-    // Clear existing items
         jComboBox1.removeAllItems();
 
-        // Add filter options matching table columns
         jComboBox1.addItem("Name");
         jComboBox1.addItem("Type");
         jComboBox1.addItem("ID");
         jComboBox1.addItem("Date");
         jComboBox1.addItem("Status");
 
-        // Add action listener for when selection changes
         jComboBox1.addActionListener(e -> performSearch());
     }
 
@@ -691,30 +588,28 @@ public class PendingUsers extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
-    int row = jTable1.getSelectedRow();
+        int row = jTable1.getSelectedRow();
 
-    if (row == -1) {
-        JOptionPane.showMessageDialog(this,
-                "Please select a user first.",
-                "No selection",
-                JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this,
+                    "Please select a user first.",
+                    "No selection",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
-    // Get data from the selected row
-    int requestId = (int) jTable1.getValueAt(row, 2);        // Column 2 is request_id
-    String userName = jTable1.getValueAt(row, 0).toString();  // Column 0 is Name
-    String userType = jTable1.getValueAt(row, 1).toString();  // Column 1 is Type
-    
-    // Confirm approval
-    int confirm = JOptionPane.showConfirmDialog(this,
-            "Are you sure you want to approve " + userName + "?",
-            "Confirm Approval",
-            JOptionPane.YES_NO_OPTION);
+            int requestId = (int) jTable1.getValueAt(row, 2);
+            String userName = jTable1.getValueAt(row, 0).toString();
+            String userType = jTable1.getValueAt(row, 1).toString();
 
-    if (confirm == JOptionPane.YES_OPTION) {
-        approveUserRequest(requestId, userType);
-    }
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to approve " + userName + "?",
+                "Confirm Approval",
+                JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                approveUserRequest(requestId, userType);
+        }
     }//GEN-LAST:event_jButton10ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed

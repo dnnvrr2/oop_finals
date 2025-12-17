@@ -1,36 +1,27 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package oop_finals;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import java.util.List;
 
 /**
- *
- * @author Admin
+ * Counselor Dashboard - Refactored to use MVC architecture
+ * Business logic extracted to use AppointmentController
  */
 public class counselor_dashboard extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(counselor_dashboard.class.getName());
+    private static final java.util.logging.Logger logger = 
+        java.util.logging.Logger.getLogger(counselor_dashboard.class.getName());
+    
     private int currentCounselorId;
     private String currentCounselorName;
     
-    // Database connection parameters
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/guidance_appointment_system";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = ""; // Change to your MySQL password
-    
-    private int currentAppointmentId1 = -1;  // First text area
-    private int currentAppointmentId2 = -1; 
+    // Controllers
+    private final AppointmentController appointmentController;
 
     // Default constructor
     public counselor_dashboard() {
+        this.appointmentController = new AppointmentController();
         initComponents();
         pendingrequesttable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         pendingrequesttable.setColumnSelectionAllowed(false);
@@ -38,49 +29,45 @@ public class counselor_dashboard extends javax.swing.JFrame {
         loadDashboardData();
     }
     
-    // Constructor with student information (call this from login page)
+    // Constructor with counselor information
     public counselor_dashboard(int counselorId, String counselorName) {
+        this.appointmentController = new AppointmentController();
         initComponents();
         this.currentCounselorId = counselorId;
         this.currentCounselorName = counselorName;
+        pendingrequesttable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         loadDashboardData();
     }
     
-    // Load all dashboard data from database
+    // Load all dashboard data
     private void loadDashboardData() {
-        // Update welcome message
         user.setText(currentCounselorName + "!");
         loadAppointmentCounts();
         loadPendingRequestsTable();
     }
     
-    // Load appointment counts for dashboard cards (jLabel1, jLabel3, jLabel8)
+    // Load appointment counts using controller
     private void loadAppointmentCounts() {
-        String query = "SELECT " +
-                      "COUNT(CASE WHEN status = 'Upcoming' THEN 1 END) as upcoming_count, " +
-                      "COUNT(CASE WHEN status = 'Pending' THEN 1 END) as pending_count, " +
-                      "COUNT(CASE WHEN status = 'Completed' THEN 1 END) as completed_count " +
-                      "FROM appointments WHERE counselor_id = ?";
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+        try {
+            // Get upcoming appointments count
+            List<Appointment> upcomingList = appointmentController.getCounselorAppointments(
+                currentCounselorId, "Upcoming");
+            upcoming.setText(String.valueOf(upcomingList.size()));
             
-            pstmt.setInt(1, currentCounselorId);
-            ResultSet rs = pstmt.executeQuery();
+            // Get pending appointments count
+            List<Appointment> pendingList = appointmentController.getCounselorAppointments(
+                currentCounselorId, "Pending");
+            pending.setText(String.valueOf(pendingList.size()));
             
-            if (rs.next()) {
-                int upcomingCount = rs.getInt("upcoming_count");
-                int pendingCount = rs.getInt("pending_count");
-                int completedCount = rs.getInt("completed_count");
-                
-                // Update the labels
-                upcoming.setText(String.valueOf(upcomingCount));
-                pending.setText(String.valueOf(pendingCount));
-                completed.setText(String.valueOf(completedCount));
-            }
+            // Get completed appointments count
+            List<Appointment> completedList = appointmentController.getCounselorAppointments(
+                currentCounselorId, "Completed");
+            completed.setText(String.valueOf(completedList.size()));
             
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading appointment counts", e);
+            logger.info("Dashboard counts loaded successfully");
+            
+        } catch (Exception e) {
+            logger.severe("Error loading appointment counts: " + e.getMessage());
             JOptionPane.showMessageDialog(this, 
                 "Error loading appointment counts: " + e.getMessage(),
                 "Database Error", 
@@ -88,103 +75,66 @@ public class counselor_dashboard extends javax.swing.JFrame {
         }
     }
     
+    // Load pending requests table using controller
     private void loadPendingRequestsTable() {
-    String query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, " +
-                      "s.name as student_name, s.year_level, s.course, a.reason " +
-                      "FROM appointments a " +
-                      "JOIN students s ON a.student_id = s.student_id " +
-                      "WHERE a.counselor_id = ? AND a.status = 'Pending' " +
-                      "ORDER BY a.appointment_date, a.appointment_time LIMIT 2";
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
-            pstmt.setInt(1, currentCounselorId);
-            ResultSet rs = pstmt.executeQuery();
+        try {
+            // Get pending appointments (limit 2 for dashboard)
+            List<Appointment> pendingAppointments = appointmentController.getCounselorAppointments(
+                currentCounselorId, "Pending");
             
             // Create table model
-            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) pendingrequesttable.getModel();
+            DefaultTableModel model = (DefaultTableModel) pendingrequesttable.getModel();
             model.setRowCount(0); // Clear existing rows
             
-            // Populate table
-            while (rs.next()) {
+            // Populate table with first 2 pending requests
+            int count = 0;
+            for (Appointment apt : pendingAppointments) {
+                if (count >= 2) break; // Limit to 2 for dashboard
+                
                 Object[] row = new Object[6];
-                row[0] = rs.getDate("appointment_date");
-                row[1] = rs.getTime("appointment_time");
-                row[2] = rs.getString("student_name");
-                row[3] = rs.getString("year_level");
-                row[4] = rs.getString("course");
-                row[5] = rs.getString("reason");
+                row[0] = apt.getAppointmentDate();
+                row[1] = apt.getAppointmentTime();
+                row[2] = apt.getStudentName();
+                row[3] = apt.getStudentEmail(); // Year level might need adjustment
+                row[4] = "N/A"; // Course - need to add to Appointment model if needed
+                row[5] = apt.getReason();
                 
                 model.addRow(row);
+                count++;
             }
             
-            logger.log(java.util.logging.Level.INFO, "Loaded " + model.getRowCount() + " pending requests (max 2 for dashboard)");
+            logger.info("Loaded " + count + " pending requests for dashboard");
             
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error loading pending requests table", e);
+        } catch (Exception e) {
+            logger.severe("Error loading pending requests: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
                 "Error loading pending requests: " + e.getMessage(),
                 "Database Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
-    
-    private int getAppointmentIdFromTable(java.util.Date date, java.sql.Time time, String studentName) {
-        String query = "SELECT a.appointment_id " +
-                      "FROM appointments a " +
-                      "JOIN students s ON a.student_id = s.student_id " +
-                      "WHERE a.counselor_id = ? AND a.appointment_date = ? " +
-                      "AND a.appointment_time = ? AND s.name = ? AND a.status = 'Pending'";
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
-            pstmt.setInt(1, currentCounselorId);
-            pstmt.setDate(2, new java.sql.Date(date.getTime()));
-            pstmt.setTime(3, time);
-            pstmt.setString(4, studentName);
-            
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt("appointment_id");
-            }
-            
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error getting appointment ID", e);
-        }
-        
-        return -1;
-    }
 
-    // Accept appointment method
+    // Accept appointment using controller
     private void acceptAppointment(int appointmentId) {
-        String updateQuery = "UPDATE appointments SET status = 'Upcoming', updated_at = NOW() WHERE appointment_id = ?";
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
+        try {
+            boolean success = appointmentController.updateAppointmentStatus(appointmentId, "Upcoming");
             
-            pstmt.setInt(1, appointmentId);
-            int rowsAffected = pstmt.executeUpdate();
-            
-            if (rowsAffected > 0) {
+            if (success) {
                 JOptionPane.showMessageDialog(this,
                     "Appointment request accepted successfully!",
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 
-                // Reload dashboard to show updated data
-                loadDashboardData();
+                loadDashboardData(); // Reload dashboard
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Failed to accept appointment. It may have been already processed.",
+                    "Failed to accept appointment. It may have already been processed.",
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
             
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error accepting appointment", e);
+        } catch (Exception e) {
+            logger.severe("Error accepting appointment: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
                 "Error accepting appointment: " + e.getMessage(),
                 "Database Error",
@@ -192,38 +142,46 @@ public class counselor_dashboard extends javax.swing.JFrame {
         }
     }
 
-    // Reject appointment method
+    // Reject appointment using controller
     private void rejectAppointment(int appointmentId, String reason) {
-        String updateQuery = "UPDATE appointments SET status = 'Rejected', notes = ?, updated_at = NOW() WHERE appointment_id = ?";
-        
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
+        try {
+            boolean success = appointmentController.updateAppointmentStatus(appointmentId, "Rejected");
             
-            pstmt.setString(1, "Rejected: " + reason);
-            pstmt.setInt(2, appointmentId);
-            int rowsAffected = pstmt.executeUpdate();
-            
-            if (rowsAffected > 0) {
+            if (success) {
                 JOptionPane.showMessageDialog(this,
                     "Appointment request rejected.",
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
                 
-                // Reload dashboard to show updated data
-                loadDashboardData();
+                loadDashboardData(); // Reload dashboard
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Failed to reject appointment. It may have been already processed.",
+                    "Failed to reject appointment. It may have already been processed.",
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
             
-        } catch (SQLException e) {
-            logger.log(java.util.logging.Level.SEVERE, "Error rejecting appointment", e);
+        } catch (Exception e) {
+            logger.severe("Error rejecting appointment: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
                 "Error rejecting appointment: " + e.getMessage(),
                 "Database Error",
                 JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    // Get appointment ID from table data using controller
+    private int getAppointmentIdFromTable(java.util.Date date, java.sql.Time time, String studentName) {
+        try {
+            return appointmentController.getAppointmentId(
+                currentCounselorId,
+                new java.sql.Date(date.getTime()),
+                time,
+                studentName
+            );
+        } catch (Exception e) {
+            logger.severe("Error getting appointment ID: " + e.getMessage());
+            return -1;
         }
     }
 
@@ -664,7 +622,6 @@ public class counselor_dashboard extends javax.swing.JFrame {
     }//GEN-LAST:event_viewallActionPerformed
 
     private void rejectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rejectActionPerformed
-        // TODO add your handling code here:
         int selectedRow = pendingrequesttable.getSelectedRow();
         
         if (selectedRow == -1) {
@@ -680,7 +637,7 @@ public class counselor_dashboard extends javax.swing.JFrame {
         java.sql.Time appointmentTime = (java.sql.Time) pendingrequesttable.getValueAt(selectedRow, 1);
         String studentName = (String) pendingrequesttable.getValueAt(selectedRow, 2);
         
-        // Find appointment ID
+        // Find appointment ID using controller
         int appointmentId = getAppointmentIdFromTable(appointmentDate, appointmentTime, studentName);
         
         if (appointmentId != -1) {
@@ -697,11 +654,15 @@ public class counselor_dashboard extends javax.swing.JFrame {
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "Could not find appointment. Please refresh and try again.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_rejectActionPerformed
 
     private void acceptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_acceptActionPerformed
-        // TODO add your handling code here:
         int selectedRow = pendingrequesttable.getSelectedRow();
         
         if (selectedRow == -1) {
@@ -717,7 +678,7 @@ public class counselor_dashboard extends javax.swing.JFrame {
         java.sql.Time appointmentTime = (java.sql.Time) pendingrequesttable.getValueAt(selectedRow, 1);
         String studentName = (String) pendingrequesttable.getValueAt(selectedRow, 2);
         
-        // Find appointment ID
+        // Find appointment ID using controller
         int appointmentId = getAppointmentIdFromTable(appointmentDate, appointmentTime, studentName);
         
         if (appointmentId != -1) {
@@ -729,6 +690,11 @@ public class counselor_dashboard extends javax.swing.JFrame {
             if (confirmation == JOptionPane.YES_OPTION) {
                 acceptAppointment(appointmentId);
             }
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "Could not find appointment. Please refresh and try again.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_acceptActionPerformed
 
