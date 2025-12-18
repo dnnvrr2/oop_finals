@@ -39,33 +39,6 @@ public class LoginController {
      * @param password Password
      * @return UniversalLoginResult with user information
      */
-    public UniversalLoginResult login(String emailOrUsername, String password) {
-        // Validate inputs
-        String validationError = validateLoginInputs(emailOrUsername, password);
-        if (validationError != null) {
-            return new UniversalLoginResult(false, null, null, validationError);
-        }
-        
-        // Get user by email to determine type
-        User user = userDAO.getUserByEmail(emailOrUsername.trim());
-        
-        if (user == null) {
-            logger.warning("Failed login attempt - user not found: " + emailOrUsername);
-            return new UniversalLoginResult(false, null, null, 
-                "Invalid email or password. Please check your credentials.");
-        }
-        
-        // Check if user is active
-        if (!user.isActive()) {
-            logger.warning("Inactive user login attempt: " + emailOrUsername);
-            return new UniversalLoginResult(false, null, null, 
-                "Your account has been deactivated. Please contact support.");
-        }
-        
-        // Route to appropriate authentication based on user type
-        return authenticateByUserType(user.getUserType(), emailOrUsername, password);
-    }
-    
     // ============================================================================
     // SPECIFIC USER TYPE LOGIN
     // ============================================================================
@@ -141,71 +114,7 @@ public class LoginController {
         }
     }
     
-    /**
-     * Login with specific user type
-     * @param userType User type (Admin, Student, Counselor)
-     * @param emailOrUsername Email or username
-     * @param password Password
-     * @return UniversalLoginResult
-     */
-    public UniversalLoginResult loginAs(String userType, String emailOrUsername, String password) {
-        // Validate inputs
-        String validationError = validateLoginInputs(emailOrUsername, password);
-        if (validationError != null) {
-            return new UniversalLoginResult(false, null, null, validationError);
-        }
-        
-        if (!isValidUserType(userType)) {
-            return new UniversalLoginResult(false, null, null, "Invalid user type");
-        }
-        
-        // Authenticate based on user type
-        return authenticateByUserType(userType, emailOrUsername, password);
-    }
-    
-    // ============================================================================
-    // HELPER METHODS
-    // ============================================================================
-    
-    /**
-     * Authenticate by user type (internal method)
-     */
-    private UniversalLoginResult authenticateByUserType(String userType, 
-                                                        String emailOrUsername, 
-                                                        String password) {
-        switch (userType) {
-            case "Admin":
-                AdminController.LoginResult adminResult = 
-                    adminController.loginAdmin(emailOrUsername, password);
-                return new UniversalLoginResult(
-                    adminResult.isSuccess(),
-                    adminResult.getAdmin(),
-                    "Admin",
-                    adminResult.getMessage()
-                );
-                
-            case "Student":
-                Student student = studentController.authenticate(emailOrUsername, password);
-                if (student != null) {
-                    return new UniversalLoginResult(true, student, "Student", "Login successful!");
-                } else {
-                    return new UniversalLoginResult(false, null, "Student", 
-                        "Invalid email or password. Please check your credentials.");
-                }
-                
-            case "Counselor":
-                Counselor counselor = counselorController.authenticate(emailOrUsername, password);
-                if (counselor != null) {
-                    return new UniversalLoginResult(true, counselor, "Counselor", "Login successful!");
-                } else {
-                    return new UniversalLoginResult(false, null, "Counselor", 
-                        "Invalid email or password. Please check your credentials.");
-                }
-                
-            default:
-                return new UniversalLoginResult(false, null, null, "Invalid user type");
-        }
-    }
+
     
     /**
      * Validate login inputs
@@ -225,20 +134,7 @@ public class LoginController {
     
     /**
      * Check if user type is valid
-     */
-    private boolean isValidUserType(String userType) {
-        return "Admin".equals(userType) || 
-               "Student".equals(userType) || 
-               "Counselor".equals(userType);
-    }
-    
-    /**
-     * Validate email format
-     */
-    private boolean isValidEmail(String email) {
-        return email != null && EMAIL_PATTERN.matcher(email).matches();
-    }
-    
+
     // ============================================================================
     // RESULT CLASSES
     // ============================================================================
@@ -246,62 +142,7 @@ public class LoginController {
     /**
      * Universal login result - works for all user types
      */
-    public static class UniversalLoginResult {
-        private final boolean success;
-        private final Object userObject; // Can be Admin, Student, or Counselor
-        private final String userType;
-        private final String message;
-        
-        public UniversalLoginResult(boolean success, Object userObject, 
-                                   String userType, String message) {
-            this.success = success;
-            this.userObject = userObject;
-            this.userType = userType;
-            this.message = message;
-        }
-        
-        public boolean isSuccess() {
-            return success;
-        }
-        
-        public Object getUserObject() {
-            return userObject;
-        }
-        
-        public String getUserType() {
-            return userType;
-        }
-        
-        public String getMessage() {
-            return message;
-        }
-        
-        // Convenience methods for type casting
-        public Admin getAsAdmin() {
-            return userObject instanceof Admin ? (Admin) userObject : null;
-        }
-        
-        public Student getAsStudent() {
-            return userObject instanceof Student ? (Student) userObject : null;
-        }
-        
-        public Counselor getAsCounselor() {
-            return userObject instanceof Counselor ? (Counselor) userObject : null;
-        }
-        
-        public boolean isAdmin() {
-            return "Admin".equals(userType);
-        }
-        
-        public boolean isStudent() {
-            return "Student".equals(userType);
-        }
-        
-        public boolean isCounselor() {
-            return "Counselor".equals(userType);
-        }
-    }
-    
+
     /**
      * Admin login result
      */
