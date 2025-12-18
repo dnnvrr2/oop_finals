@@ -2,6 +2,7 @@ package oop_finals;
 
 import java.sql.Date;
 import java.sql.Time;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -51,6 +52,7 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
     
     // Controller layer - handles business logic
     private final AppointmentController appointmentController;
+    private final CounselorController counselorController;
     
     // ============================================================================
     // CONSTRUCTORS
@@ -88,6 +90,7 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
         
         // Initialize controller
         this.appointmentController = new AppointmentController();
+        this.counselorController = new CounselorController();
         
         // Initialize UI components
         initComponents();
@@ -130,11 +133,56 @@ public class student_bookappointment2nd extends javax.swing.JFrame {
     private void setupDateChooser(java.util.Date preSelectedDate) {
         jDateChooser1.setDateFormatString("yyyy-MM-dd");
         jDateChooser1.setMinSelectableDate(new java.util.Date());
-        
+
+        // Add date evaluator to disable unavailable dates
+        jDateChooser1.setSelectableDateRange(
+            new java.util.Date(), 
+            getMaxSelectableDate()
+        );
+
+        // Add property change listener for date selection
+        jDateChooser1.addPropertyChangeListener("date", evt -> {
+            validateSelectedDate();
+        });
+
         if (preSelectedDate != null) {
             jDateChooser1.setDate(preSelectedDate);
         }
     }
+    
+    private java.util.Date getMaxSelectableDate() {
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.add(java.util.Calendar.MONTH, 2);
+        return cal.getTime();
+    }
+    
+    private void validateSelectedDate() {
+        java.util.Date selectedDate = jDateChooser1.getDate();
+
+        if (selectedDate == null) {
+            return;
+        }
+
+        // Convert to LocalDate
+        LocalDate localDate = selectedDate.toInstant()
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate();
+
+        // Check if date is available for counselor
+        if (!counselorController.isCounselorAvailableOnDate(selectedCounselorId, localDate)) {
+            // Date is not available, show warning and clear selection
+            String dayName = localDate.getDayOfWeek()
+                .getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault());
+
+            showWarning("The counselor is not available on " + dayName + "s or this date is blocked.\nPlease select another date.");
+
+            // Clear the invalid date
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                jDateChooser1.setDate(null);
+            });
+        }
+    }
+
     
     // ============================================================================
     // TIME SLOT GENERATION

@@ -240,22 +240,40 @@ public class counselor_myschedule extends javax.swing.JFrame {
     }
 
     // Check date availability using controller
-    private boolean isDateAvailableForCounselor(LocalDate date) {
-        if (selectedCounselorId == -1) {
-            return true;
-        }
-        
-        return counselorController.isCounselorAvailableOnDate(selectedCounselorId, date);
+    /**
+ * Check if date is blocked using controller
+ */
+private boolean isDateBlocked(LocalDate date) {
+    if (selectedCounselorId == -1 || date == null) {
+        return false;
     }
     
-    // Check if date is blocked using controller
-    private boolean isDateBlocked(LocalDate date) {
-        if (selectedCounselorId == -1) {
-            return false;
+    List<LocalDate> blockedDates = counselorController.getCounselorBlockedDates(selectedCounselorId);
+    return blockedDates.contains(date);
+}
+
+/**
+ * Check date availability using controller
+ */
+    private boolean isDateAvailableForCounselor(LocalDate date) {
+        if (selectedCounselorId == -1 || date == null) {
+            return true;
         }
-        
-        List<LocalDate> blockedDates = counselorController.getCounselorBlockedDates(selectedCounselorId);
-        return blockedDates.contains(date);
+
+        return counselorController.isCounselorAvailableOnDate(selectedCounselorId, date);
+    }
+
+    /**
+     * Get reason for blocked date
+     */
+    private String getBlockedDateReason(LocalDate date) {
+        if (selectedCounselorId == -1 || date == null) {
+            return null;
+        }
+
+        // This method needs to be added to CounselorController
+        // For now, return a generic message
+        return "Unavailable";
     }
 
     public LocalDate getSelectedDate() {
@@ -699,128 +717,131 @@ public class counselor_myschedule extends javax.swing.JFrame {
     }//GEN-LAST:event_homeActionPerformed
 
     private void editActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editActionPerformed
-        if (selectedDate == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Please select a blocked date first.",
-                    "No Date Selected",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        if (!isDateBlocked(selectedDate)) {
-            JOptionPane.showMessageDialog(this,
-                    "This date is not blocked. Please select a blocked date to edit.",
-                    "Date Not Blocked",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // Ask for new reason
-        String newReason = (String) JOptionPane.showInputDialog(this,
-                "Edit reason for blocking " + 
-                selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + ":",
-                "Edit Blocked Date",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                null,
-                "");
-        
-        if (newReason == null || newReason.trim().isEmpty()) {
-            return; // User cancelled
-        }
-        
-        // Update reason using controller
-        boolean success = counselorController.updateBlockedDateReason(
-            currentCounselorId, selectedDate, newReason.trim());
-        
-        if (success) {
-            JOptionPane.showMessageDialog(this,
-                    "Blocked date updated successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    "Failed to update blocked date.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-        }
+         if (selectedDate == null) {
+        JOptionPane.showMessageDialog(this,
+                "Please select a blocked date first.",
+                "No Date Selected",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+    if (!isDateBlocked(selectedDate)) {
+        JOptionPane.showMessageDialog(this,
+                "This date is not blocked. Please select a blocked date to edit.",
+                "Date Not Blocked",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+    // Ask for new reason
+    String newReason = (String) JOptionPane.showInputDialog(this,
+            "Edit reason for blocking " + 
+            selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + ":",
+            "Edit Blocked Date",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            null,
+            "");
+    
+    if (newReason == null || newReason.trim().isEmpty()) {
+        return; // User cancelled
+    }
+    
+    // Update reason using controller - now handles OperationResult
+    CounselorController.OperationResult result = counselorController.updateBlockedDateReason(
+        currentCounselorId, selectedDate, newReason.trim());
+    
+    if (result.isSuccess()) {
+        JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+        updateCalendarDisplay();
+        jTable1.repaint();
+    } else {
+        JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
     }//GEN-LAST:event_editActionPerformed
 
     private void addActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addActionPerformed
         if (selectedDate == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Please select a date first.",
-                    "No Date Selected",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        LocalDate today = LocalDate.now();
-        LocalDate maxDate = today.plusYears(1);
-        
-        if (selectedDate.isBefore(today)) {
-            JOptionPane.showMessageDialog(this,
-                    "Cannot block a date in the past.",
-                    "Invalid Date",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        if (selectedDate.isAfter(maxDate)) {
-            JOptionPane.showMessageDialog(this,
-                    "Cannot block a date more than 1 year in advance.",
-                    "Invalid Date",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // Check if date is already blocked
-        if (isDateBlocked(selectedDate)) {
-            JOptionPane.showMessageDialog(this,
-                    "This date is already blocked.",
-                    "Date Already Blocked",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        
-        // Ask for reason
-        String reason = JOptionPane.showInputDialog(this,
-                "Enter reason for blocking " + 
-                selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + ":",
-                "Block Date",
-                JOptionPane.QUESTION_MESSAGE);
-        
-        if (reason == null || reason.trim().isEmpty()) {
-            return; // User cancelled
-        }
-        
-        // Block date using controller
-        boolean success = counselorController.blockDate(currentCounselorId, selectedDate, reason.trim());
-        
-        if (success) {
-            JOptionPane.showMessageDialog(this,
-                    "Date blocked successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-            updateCalendarDisplay();
-            jTable1.repaint();
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    "Failed to block date.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-        }
+        JOptionPane.showMessageDialog(this,
+                "Please select a date first.",
+                "No Date Selected",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+    LocalDate today = LocalDate.now();
+    LocalDate maxDate = today.plusYears(1);
+    
+    if (selectedDate.isBefore(today)) {
+        JOptionPane.showMessageDialog(this,
+                "Cannot block a date in the past.",
+                "Invalid Date",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+    if (selectedDate.isAfter(maxDate)) {
+        JOptionPane.showMessageDialog(this,
+                "Cannot block a date more than 1 year in advance.",
+                "Invalid Date",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+    // Check if date is already blocked
+    if (isDateBlocked(selectedDate)) {
+        JOptionPane.showMessageDialog(this,
+                "This date is already blocked.",
+                "Date Already Blocked",
+                JOptionPane.INFORMATION_MESSAGE);
+        return;
+    }
+    
+    // Ask for reason
+    String reason = JOptionPane.showInputDialog(this,
+            "Enter reason for blocking " + 
+            selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + ":",
+            "Block Date",
+            JOptionPane.QUESTION_MESSAGE);
+    
+    if (reason == null || reason.trim().isEmpty()) {
+        return; // User cancelled
+    }
+    
+    // Block date using controller - now handles OperationResult
+    CounselorController.OperationResult result = counselorController.blockDate(
+        currentCounselorId, selectedDate, reason.trim());
+    
+    if (result.isSuccess()) {
+        JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+        updateCalendarDisplay();
+        jTable1.repaint();
+    } else {
+        JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
     }//GEN-LAST:event_addActionPerformed
 
     private void deleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteActionPerformed
         if (selectedDate == null) {
-            JOptionPane.showMessageDialog(this,
+        JOptionPane.showMessageDialog(this,
                     "Please select a blocked date first.",
                     "No Date Selected",
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         if (!isDateBlocked(selectedDate)) {
             JOptionPane.showMessageDialog(this,
                     "This date is not blocked. Please select a blocked date to delete.",
@@ -828,24 +849,25 @@ public class counselor_myschedule extends javax.swing.JFrame {
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
-        
+
         int confirmation = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to unblock " + 
                 selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + "?",
                 "Confirm Delete",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE);
-        
+
         if (confirmation != JOptionPane.YES_OPTION) {
             return;
         }
-        
-        // Unblock date using controller
-        boolean success = counselorController.unblockDate(currentCounselorId, selectedDate);
-        
-        if (success) {
+
+        // Unblock date using controller - now handles OperationResult
+        CounselorController.OperationResult result = counselorController.unblockDate(
+            currentCounselorId, selectedDate);
+
+        if (result.isSuccess()) {
             JOptionPane.showMessageDialog(this,
-                    "Date unblocked successfully!",
+                    result.getMessage(),
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
             selectedDate = null;
@@ -853,7 +875,7 @@ public class counselor_myschedule extends javax.swing.JFrame {
             jTable1.repaint();
         } else {
             JOptionPane.showMessageDialog(this,
-                    "Failed to unblock date.",
+                    result.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
         }

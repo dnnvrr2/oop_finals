@@ -15,12 +15,14 @@ public class counselor_login_page extends javax.swing.JFrame {
         java.util.logging.Logger.getLogger(counselor_login_page.class.getName());
     
     // Use controller instead of direct DB access
-    private final CounselorController counselorController;
-    
+    private final LoginController loginController;
+
     public counselor_login_page() {
         initComponents();
-        this.counselorController = new CounselorController();
+        this.loginController = new LoginController();
         setupPlaceholders();
+        setLocationRelativeTo(null);
+        setTitle("Counselor Login");
     }
     
     private void setupPlaceholders() {
@@ -203,11 +205,11 @@ public class counselor_login_page extends javax.swing.JFrame {
     }//GEN-LAST:event_backActionPerformed
 
     private void loginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loginActionPerformed
-        String usernameText = username.getText();
-        String passwordText = String.valueOf(password.getPassword());
-        
+        String usernameText = username.getText().trim();
+        String passwordText = String.valueOf(password.getPassword()).trim();
+
         // Validate input
-        if (usernameText.equals("Username") || usernameText.trim().isEmpty()) {
+        if (usernameText.equals("Username") || usernameText.isEmpty()) {
             JOptionPane.showMessageDialog(this, 
                 "Please enter your username!", 
                 "Validation Error", 
@@ -215,8 +217,8 @@ public class counselor_login_page extends javax.swing.JFrame {
             username.requestFocus();
             return;
         }
-        
-        if (passwordText.equals("Password") || passwordText.trim().isEmpty()) {
+
+        if (passwordText.equals("Password") || passwordText.isEmpty()) {
             JOptionPane.showMessageDialog(this, 
                 "Please enter your password!", 
                 "Validation Error", 
@@ -224,30 +226,42 @@ public class counselor_login_page extends javax.swing.JFrame {
             password.requestFocus();
             return;
         }
-        
-        // Use controller to authenticate - NO DIRECT SQL
-            CounselorController.LoginResult loginResult = 
-            counselorController.loginCounselor(usernameText, passwordText);
-        
-        if (loginResult.isSuccess()) {
-            Counselor counselor = loginResult.getCounselor();
-            
+
+        try {
+            // Use LoginController for authentication
+            LoginController.CounselorLoginResult result = 
+                loginController.loginCounselor(usernameText, passwordText);
+
+            if (result.isSuccess()) {
+                Counselor counselor = result.getCounselor();
+
+                JOptionPane.showMessageDialog(this, 
+                    "Welcome, " + counselor.getName() + "!\nSpecialization: " + counselor.getSpecialization(), 
+                    "Login Successful", 
+                    JOptionPane.INFORMATION_MESSAGE);
+
+                this.dispose();
+                new counselor_dashboard(counselor.getCounselorId(), counselor.getName()).setVisible(true);
+
+            } else {
+                // Show error message from LoginController
+                JOptionPane.showMessageDialog(this, 
+                    result.getMessage(), 
+                    "Login Failed", 
+                    JOptionPane.ERROR_MESSAGE);
+
+                // Clear password field
+                password.setText("");
+                setupPasswordPlaceholder(password, "Password");
+            }
+
+        } catch (Exception e) {
+            logger.severe("Login error: " + e.getMessage());
             JOptionPane.showMessageDialog(this, 
-                "Welcome, " + counselor.getName() + "!\nSpecialization: " + counselor.getSpecialization(), 
-                "Login Successful", 
-                JOptionPane.INFORMATION_MESSAGE);
-            
-            this.dispose();
-            new counselor_dashboard(counselor.getCounselorId(), counselor.getName()).setVisible(true);
-            
-        } else {
-            // Show appropriate error message based on status
-            JOptionPane.showMessageDialog(this, 
-                loginResult.getMessage(), 
-                "Login Failed", 
+                "An error occurred during login. Please try again.", 
+                "Error", 
                 JOptionPane.ERROR_MESSAGE);
         }
-    
     }//GEN-LAST:event_loginActionPerformed
 
     private void passwordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passwordActionPerformed

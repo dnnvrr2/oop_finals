@@ -81,30 +81,30 @@ public class counselor_dashboard extends javax.swing.JFrame {
             // Get pending appointments (limit 2 for dashboard)
             List<Appointment> pendingAppointments = appointmentController.getCounselorAppointments(
                 currentCounselorId, "Pending");
-            
+
             // Create table model
             DefaultTableModel model = (DefaultTableModel) pendingrequesttable.getModel();
             model.setRowCount(0); // Clear existing rows
-            
+
             // Populate table with first 2 pending requests
             int count = 0;
             for (Appointment apt : pendingAppointments) {
                 if (count >= 2) break; // Limit to 2 for dashboard
-                
+
                 Object[] row = new Object[6];
                 row[0] = apt.getAppointmentDate();
                 row[1] = apt.getAppointmentTime();
                 row[2] = apt.getStudentName();
-                row[3] = apt.getStudentEmail(); // Year level might need adjustment
-                row[4] = "N/A"; // Course - need to add to Appointment model if needed
+                row[3] = apt.getStudentYearLevel();  // FIX: Use year level method
+                row[4] = apt.getStudentCourse();     // FIX: Use course method
                 row[5] = apt.getReason();
-                
+
                 model.addRow(row);
                 count++;
             }
-            
+
             logger.info("Loaded " + count + " pending requests for dashboard");
-            
+
         } catch (Exception e) {
             logger.severe("Error loading pending requests: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
@@ -113,18 +113,18 @@ public class counselor_dashboard extends javax.swing.JFrame {
                 JOptionPane.ERROR_MESSAGE);
         }
     }
-
+    
     // Accept appointment using controller
     private void acceptAppointment(int appointmentId) {
         try {
             boolean success = appointmentController.updateAppointmentStatus(appointmentId, "Upcoming");
-            
+
             if (success) {
                 JOptionPane.showMessageDialog(this,
                     "Appointment request accepted successfully!",
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
-                
+
                 loadDashboardData(); // Reload dashboard
             } else {
                 JOptionPane.showMessageDialog(this,
@@ -132,7 +132,7 @@ public class counselor_dashboard extends javax.swing.JFrame {
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
-            
+
         } catch (Exception e) {
             logger.severe("Error accepting appointment: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
@@ -142,46 +142,57 @@ public class counselor_dashboard extends javax.swing.JFrame {
         }
     }
 
-    // Reject appointment using controller
+        // Reject appointment using controller
+        private int getAppointmentIdFromTable(java.util.Date date, java.sql.Time time, String studentName) {
+        try {
+            // Search through the counselor's pending appointments to find the matching one
+            List<Appointment> appointments = appointmentController.getCounselorAppointments(
+                currentCounselorId, "Pending");
+
+            for (Appointment apt : appointments) {
+                if (apt.getAppointmentDate().equals(date) &&
+                    apt.getAppointmentTime().equals(time) &&
+                    apt.getStudentName().equals(studentName)) {
+                    return apt.getAppointmentId();
+                }
+            }
+
+            return -1;
+
+        } catch (Exception e) {
+            logger.severe("Error getting appointment ID: " + e.getMessage());
+            return -1;
+        }
+    }
+
+// Reject appointment using controller
     private void rejectAppointment(int appointmentId, String reason) {
         try {
-            boolean success = appointmentController.updateAppointmentStatus(appointmentId, "Rejected");
-            
-            if (success) {
+            // Use the cancelAppointmentByCounselor method which handles rejections with reasons
+            AppointmentController.CancellationResult result = 
+                appointmentController.cancelAppointmentByCounselor(appointmentId, reason);
+
+            if (result.isSuccess()) {
                 JOptionPane.showMessageDialog(this,
-                    "Appointment request rejected.",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
+                        "Appointment request rejected.",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+
                 loadDashboardData(); // Reload dashboard
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Failed to reject appointment. It may have already been processed.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+                        result.getMessage(),
+                        "Error",
+                        JOptionPane.WARNING_MESSAGE);
+                loadDashboardData();
             }
-            
+
         } catch (Exception e) {
             logger.severe("Error rejecting appointment: " + e.getMessage());
             JOptionPane.showMessageDialog(this,
                 "Error rejecting appointment: " + e.getMessage(),
                 "Database Error",
                 JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    // Get appointment ID from table data using controller
-    private int getAppointmentIdFromTable(java.util.Date date, java.sql.Time time, String studentName) {
-        try {
-            return appointmentController.getAppointmentId(
-                currentCounselorId,
-                new java.sql.Date(date.getTime()),
-                time,
-                studentName
-            );
-        } catch (Exception e) {
-            logger.severe("Error getting appointment ID: " + e.getMessage());
-            return -1;
         }
     }
 

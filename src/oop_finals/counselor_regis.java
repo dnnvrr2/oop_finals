@@ -295,6 +295,7 @@ public class counselor_regis extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField147ActionPerformed
 
     private void registerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerActionPerformed
+                                   
         String fullname = jTextField141.getText().trim();
         String email = jTextField142.getText().trim();
         String selectedSpec = (String) jComboBox1.getSelectedItem();
@@ -317,14 +318,16 @@ public class counselor_regis extends javax.swing.JFrame {
             return;
         }
 
-        // Use controller to register counselor (includes all validation)
-        String result = counselorController.registerCounselor(
+        // Create RegistrationController instead of using CounselorController
+        RegistrationController registrationController = new RegistrationController();
+
+        // Use RegistrationController to register counselor
+        RegistrationController.RegistrationResult result = registrationController.registerCounselor(
             fullname, email, selectedSpec, licenseId, password, confirmPassword);
 
-        if ("SUCCESS".equals(result)) {
+        if (result.isSuccess()) {
             JOptionPane.showMessageDialog(this,
-                    "Registration successful!\n\nYour application has been submitted.\n" +
-                    "Please wait for admin approval.",
+                    result.getMessage(),
                     "Registration Submitted",
                     JOptionPane.INFORMATION_MESSAGE);
 
@@ -334,7 +337,7 @@ public class counselor_regis extends javax.swing.JFrame {
         } else {
             // Show error message from controller
             JOptionPane.showMessageDialog(this,
-                    result,
+                    result.getMessage(),
                     "Registration Error",
                     JOptionPane.ERROR_MESSAGE);
         }

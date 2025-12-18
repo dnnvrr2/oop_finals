@@ -97,12 +97,21 @@ public class counselor_requests extends javax.swing.JFrame {
     // Get appointment ID from table data using controller
     private int getAppointmentIdFromTable(java.util.Date date, java.sql.Time time, String studentName) {
         try {
-            return appointmentController.getAppointmentId(
-                currentCounselorId,
-                new java.sql.Date(date.getTime()),
-                time,
-                studentName
-            );
+            // Note: The AppointmentController.getAppointmentId expects counselorId, not studentId
+            // We need to search through appointments to find the matching one
+            List<Appointment> appointments = appointmentController.getCounselorAppointments(
+                currentCounselorId, "Pending");
+
+            for (Appointment apt : appointments) {
+                if (apt.getAppointmentDate().equals(date) &&
+                    apt.getAppointmentTime().equals(time) &&
+                    apt.getStudentName().equals(studentName)) {
+                    return apt.getAppointmentId();
+                }
+            }
+
+            return -1;
+
         } catch (Exception e) {
             logger.severe("Error getting appointment ID: " + e.getMessage());
             return -1;
@@ -111,53 +120,55 @@ public class counselor_requests extends javax.swing.JFrame {
     
     // Accept appointment using controller
     private void acceptAppointment(int appointmentId) {
-        try {
-            boolean success = appointmentController.updateAppointmentStatus(appointmentId, "Upcoming");
-            
-            if (success) {
-                JOptionPane.showMessageDialog(this,
-                    "Appointment request accepted successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                loadAllRequests(); // Reload table
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Failed to accept appointment. It may have already been processed.",
-                    "Already Processed",
-                    JOptionPane.WARNING_MESSAGE);
-                loadAllRequests();
-            }
-            
-        } catch (Exception e) {
-            logger.severe("Error accepting appointment: " + e.getMessage());
+    try {
+        boolean success = appointmentController.updateAppointmentStatus(appointmentId, "Upcoming");
+        
+        if (success) {
             JOptionPane.showMessageDialog(this,
-                "Error accepting appointment: " + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE);
+                "Appointment request accepted successfully!",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            loadAllRequests(); // Reload table
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "Failed to accept appointment. It may have already been processed.",
+                "Already Processed",
+                JOptionPane.WARNING_MESSAGE);
+            loadAllRequests();
         }
+        
+    } catch (Exception e) {
+        logger.severe("Error accepting appointment: " + e.getMessage());
+        JOptionPane.showMessageDialog(this,
+            "Error accepting appointment: " + e.getMessage(),
+            "Database Error",
+            JOptionPane.ERROR_MESSAGE);
     }
-    
-    // Reject appointment using controller
+}
+
+// Reject appointment using controller
     private void rejectAppointment(int appointmentId, String reason) {
         try {
-            boolean success = appointmentController.updateAppointmentStatus(appointmentId, "Rejected");
-            
-            if (success) {
+            // Use the cancelAppointmentByCounselor method which handles rejections with reasons
+            AppointmentController.CancellationResult result = 
+                appointmentController.cancelAppointmentByCounselor(appointmentId, reason);
+
+            if (result.isSuccess()) {
                 JOptionPane.showMessageDialog(this,
-                    "Appointment request rejected.",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
+                        "Appointment request rejected.",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+
                 loadAllRequests(); // Reload table
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Failed to reject appointment. It may have already been processed.",
-                    "Already Processed",
-                    JOptionPane.WARNING_MESSAGE);
+                        result.getMessage(),
+                        "Error",
+                        JOptionPane.WARNING_MESSAGE);
                 loadAllRequests();
             }
-            
+
         } catch (Exception e) {
             logger.severe("Error rejecting appointment: " + e.getMessage());
             JOptionPane.showMessageDialog(this,

@@ -48,7 +48,8 @@ public class AppointmentDAO {
         "ORDER BY a.appointment_date DESC, a.appointment_time DESC";
     
     private static final String GET_COUNSELOR_APPOINTMENTS_SQL =
-        "SELECT a.*, s.name as student_name, s.email as student_email " +
+        "SELECT a.*, s.name as student_name, s.email as student_email, " +
+        "s.year_level as student_year_level, s.course as student_course " +  // ADD THIS
         "FROM appointments a " +
         "JOIN students s ON a.student_id = s.student_id " +
         "WHERE a.counselor_id = ? %s " +
@@ -401,7 +402,7 @@ public class AppointmentDAO {
      */
     private Appointment extractAppointmentFromResultSet(ResultSet rs) throws SQLException {
         Appointment appointment = new Appointment();
-        
+
         appointment.setAppointmentId(rs.getInt("appointment_id"));
         appointment.setStudentId(rs.getInt("student_id"));
         appointment.setCounselorId(rs.getInt("counselor_id"));
@@ -411,23 +412,42 @@ public class AppointmentDAO {
         appointment.setStatus(rs.getString("status"));
         appointment.setCreatedAt(rs.getTimestamp("created_at"));
         appointment.setUpdatedAt(rs.getTimestamp("updated_at"));
-        
+
         // Optional fields from joins
         try {
             appointment.setCounselorName(rs.getString("counselor_name"));
         } catch (SQLException e) {
             // Field might not exist in all queries
         }
-        
+
         try {
             appointment.setStudentName(rs.getString("student_name"));
         } catch (SQLException e) {
             // Field might not exist in all queries
         }
-        
+
+        try {
+            appointment.setStudentEmail(rs.getString("student_email"));
+        } catch (SQLException e) {
+            // Field might not exist in all queries
+        }
+
+        // ADD THESE:
+        try {
+            appointment.setStudentYearLevel(rs.getString("student_year_level"));
+        } catch (SQLException e) {
+            // Field might not exist in all queries
+        }
+
+        try {
+            appointment.setStudentCourse(rs.getString("student_course"));
+        } catch (SQLException e) {
+            // Field might not exist in all queries
+        }
+
         return appointment;
     }
-    
+
     // Add this method to your AppointmentDAO class
 
 /**

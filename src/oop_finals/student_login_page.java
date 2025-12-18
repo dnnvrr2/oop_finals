@@ -14,13 +14,13 @@ public class student_login_page extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = 
         java.util.logging.Logger.getLogger(student_login_page.class.getName());
     
-    private final StudentController studentController;
+    private final LoginController logincontroller;
     
     /**
      * Creates new form student_login_page
      */
     public student_login_page() {
-        this.studentController = new StudentController();
+        this.logincontroller = new LoginController();
         initComponents();
         setupPlaceholders();
         setLocationRelativeTo(null);
@@ -121,48 +121,52 @@ public class student_login_page extends javax.swing.JFrame {
     /**
      * Handle login action using StudentController
      */
-    private void performLogin() {
-        if (!validateInput()) {
-            return;
-        }
-        
-        String email = username.getText().trim();
-        String pass = String.valueOf(password.getPassword()).trim();
-        
-        try {
-            // Use StudentController for authentication
-            Student student = studentController.loginStudent(email, pass);
-            
-            if (student != null) {
-                // Login successful
-                JOptionPane.showMessageDialog(this, 
-                    "Welcome, " + student.getName() + "!", 
-                    "Login Successful", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                // Open student dashboard
-                this.dispose();
-                new student_dashboard(student.getStudentId(), student.getName()).setVisible(true);
-            } else {
-                // Login failed
-                JOptionPane.showMessageDialog(this, 
-                    "Invalid email or password!\nPlease check your credentials and try again.", 
-                    "Login Failed", 
-                    JOptionPane.ERROR_MESSAGE);
-                
-                // Clear password field
-                password.setText("");
-                setupPasswordPlaceholder(password, "Password");
-            }
-            
-        } catch (Exception e) {
-            logger.severe("Login error: " + e.getMessage());
-            JOptionPane.showMessageDialog(this, 
-                "An error occurred during login. Please try again.", 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
-        }
+    /**
+ * Handle login action using LoginController
+ */
+private void performLogin() {
+    if (!validateInput()) {
+        return;
     }
+    
+    String email = username.getText().trim();
+    String pass = String.valueOf(password.getPassword()).trim();
+    
+    try {
+        // Use LoginController for authentication - returns StudentLoginResult
+        LoginController.StudentLoginResult result = logincontroller.loginStudent(email, pass);
+        
+        if (result.isSuccess()) {
+            // Login successful
+            Student student = result.getStudent();
+            JOptionPane.showMessageDialog(this, 
+                "Welcome, " + student.getName() + "!", 
+                "Login Successful", 
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            // Open student dashboard
+            this.dispose();
+            new student_dashboard(student.getStudentId(), student.getName()).setVisible(true);
+        } else {
+            // Login failed - show the error message from LoginController
+            JOptionPane.showMessageDialog(this, 
+                result.getMessage(), 
+                "Login Failed", 
+                JOptionPane.ERROR_MESSAGE);
+            
+            // Clear password field
+            password.setText("");
+            setupPasswordPlaceholder(password, "Password");
+        }
+        
+    } catch (Exception e) {
+        logger.severe("Login error: " + e.getMessage());
+        JOptionPane.showMessageDialog(this, 
+            "An error occurred during login. Please try again.", 
+            "Error", 
+            JOptionPane.ERROR_MESSAGE);
+    }
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

@@ -14,13 +14,10 @@ public class student_regis extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = 
         java.util.logging.Logger.getLogger(student_regis.class.getName());
     
-    private final StudentController studentController;
+    private final RegistrationController registrationController;
 
-    /**
-     * Creates new form student_regis
-     */
     public student_regis() {
-        this.studentController = new StudentController();
+        this.registrationController = new RegistrationController();
         initComponents();
         setupPlaceholders();
         setLocationRelativeTo(null);
@@ -145,55 +142,61 @@ public class student_regis extends javax.swing.JFrame {
     /**
      * Handle registration action using StudentController
      */
-    private void performRegistration() {
-        try {
-            // Get form inputs
-            String[] inputs = getFormInputs();
-            String fullname = inputs[0];
-            String email = inputs[1];
-            String yearLevel = inputs[2];
-            String course = inputs[3];
-            String studentNumber = inputs[4];
-            String password = inputs[5];
-            String confirmPassword = inputs[6];
-            
-            // Use StudentController to handle registration
-            String result = studentController.registerStudent(
-                fullname, 
-                email, 
-                password, 
-                confirmPassword, 
-                studentNumber, 
-                course, 
-                yearLevel
-            );
-            
-            // Check result
-            if ("SUCCESS".equals(result)) {
-                JOptionPane.showMessageDialog(this,
-                    "Registration successful!\n\nYour application has been submitted.\nPlease wait for admin approval.",
-                    "Registration Submitted",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                // Navigate back to account selection
-                this.dispose();
-                new new_account().setVisible(true);
-            } else {
-                // Show error message
-                JOptionPane.showMessageDialog(this,
-                    result,
-                    "Registration Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-            
-        } catch (Exception e) {
-            logger.severe("Registration error: " + e.getMessage());
+    /**
+ * Handle registration action using RegistrationController
+ */
+private void performRegistration() {
+    try {
+        // Get form inputs
+        String[] inputs = getFormInputs();
+        String fullname = inputs[0];
+        String email = inputs[1];
+        String yearLevel = inputs[2];
+        String course = inputs[3];
+        String studentNumber = inputs[4];
+        String password = inputs[5];
+        String confirmPassword = inputs[6];
+        
+        // Create RegistrationController instead of using StudentController
+        RegistrationController registrationController = new RegistrationController();
+        
+        // Use RegistrationController to handle registration
+        RegistrationController.RegistrationResult result = registrationController.registerStudent(
+            fullname, 
+            email, 
+            password, 
+            confirmPassword, 
+            studentNumber, 
+            course, 
+            yearLevel
+        );
+        
+        // Check result
+        if (result.isSuccess()) {
             JOptionPane.showMessageDialog(this,
-                "An error occurred during registration. Please try again.",
-                "Error",
+                result.getMessage(),
+                "Registration Submitted",
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            // Navigate back to account selection
+            this.dispose();
+            new new_account().setVisible(true);
+        } else {
+            // Show error message
+            JOptionPane.showMessageDialog(this,
+                result.getMessage(),
+                "Registration Error",
                 JOptionPane.ERROR_MESSAGE);
         }
+        
+    } catch (Exception e) {
+        logger.severe("Registration error: " + e.getMessage());
+        JOptionPane.showMessageDialog(this,
+            "An error occurred during registration. Please try again.",
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
     }
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

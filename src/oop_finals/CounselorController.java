@@ -2,11 +2,12 @@ package oop_finals;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
- * Counselor Controller
- * Handles business logic and coordinates between views and DAO
+ * Counselor Controller - REFACTORED
+ * Handles counselor-specific operations ONLY
+ * Login moved to LoginController
+ * Registration moved to RegistrationController
  */
 public class CounselorController {
     
@@ -14,7 +15,6 @@ public class CounselorController {
         java.util.logging.Logger.getLogger(CounselorController.class.getName());
     
     private final CounselorDAO counselorDAO;
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
     
     /**
      * Constructor
@@ -23,35 +23,19 @@ public class CounselorController {
         this.counselorDAO = new CounselorDAO();
     }
     
-    /**
-     * Authenticate counselor login
-     * @param emailOrUsername Email or username
-     * @param password Password
-     * @return LoginResult with success status, counselor object, and message
-     */
-    public LoginResult loginCounselor(String emailOrUsername, String password) {
-        // Validate inputs
-        if (emailOrUsername == null || emailOrUsername.trim().isEmpty()) {
-            logger.warning("Login attempt with empty email/username");
-            return new LoginResult(false, null, "Please enter your email or username.");
-        }
-        
-        if (password == null || password.trim().isEmpty()) {
-            logger.warning("Login attempt with empty password");
-            return new LoginResult(false, null, "Please enter your password.");
-        }
-        
-        // Authenticate using DAO
-        Counselor counselor = counselorDAO.authenticateCounselor(emailOrUsername.trim(), password.trim());
-        
-        if (counselor != null) {
-            logger.info("Counselor logged in successfully: " + counselor.getName());
-            return new LoginResult(true, counselor, "Login successful!");
-        } else {
-            logger.warning("Failed login attempt for: " + emailOrUsername);
-            return new LoginResult(false, null, "Invalid email/username or password. Please check your credentials and try again.");
-        }
-    }
+    // ============================================================================
+    // AUTHENTICATION REMOVED - Now handled by LoginController
+    // ============================================================================
+    // loginCounselor() method removed - use LoginController.loginCounselor() instead
+    
+    // ============================================================================
+    // REGISTRATION REMOVED - Now handled by RegistrationController
+    // ============================================================================
+    // registerCounselor() method removed - use RegistrationController.registerCounselor() instead
+    
+    // ============================================================================
+    // COUNSELOR-SPECIFIC OPERATIONS
+    // ============================================================================
     
     /**
      * Get all available specializations
@@ -112,6 +96,56 @@ public class CounselorController {
     }
     
     /**
+     * Update counselor profile
+     * @param counselor Counselor object with updated data
+     * @return OperationResult with success status and message
+     */
+    public OperationResult updateCounselorProfile(Counselor counselor) {
+        if (counselor == null || counselor.getCounselorId() <= 0) {
+            return new OperationResult(false, "Invalid counselor data");
+        }
+        
+        if (counselor.getName() == null || counselor.getName().trim().isEmpty()) {
+            return new OperationResult(false, "Name is required");
+        }
+        
+        boolean success = counselorDAO.updateCounselor(counselor);
+        
+        if (success) {
+            logger.info("Counselor profile updated: " + counselor.getName());
+            return new OperationResult(true, "Profile updated successfully");
+        } else {
+            logger.severe("Failed to update counselor profile: " + counselor.getName());
+            return new OperationResult(false, "Failed to update profile");
+        }
+    }
+    
+    /**
+     * Delete counselor (soft delete)
+     * @param counselorId Counselor ID
+     * @return OperationResult with success status and message
+     */
+    public OperationResult deleteCounselor(int counselorId) {
+        if (counselorId <= 0) {
+            return new OperationResult(false, "Invalid counselor ID");
+        }
+        
+        boolean success = counselorDAO.deleteCounselor(counselorId);
+        
+        if (success) {
+            logger.info("Counselor deleted: ID " + counselorId);
+            return new OperationResult(true, "Counselor deleted successfully");
+        } else {
+            logger.severe("Failed to delete counselor: ID " + counselorId);
+            return new OperationResult(false, "Failed to delete counselor");
+        }
+    }
+    
+    // ============================================================================
+    // SCHEDULE MANAGEMENT
+    // ============================================================================
+    
+    /**
      * Check if counselor is available on a specific date
      * @param counselorId Counselor ID
      * @param date Date to check
@@ -162,6 +196,83 @@ public class CounselorController {
         }
         
         return counselorDAO.getCounselorBlockedDates(counselorId);
+    }
+    
+    /**
+     * Block date for counselor
+     * @param counselorId Counselor ID
+     * @param date Date to block
+     * @param reason Reason for blocking
+     * @return OperationResult with success status and message
+     */
+    public OperationResult blockDate(int counselorId, LocalDate date, String reason) {
+        if (counselorId <= 0) {
+            return new OperationResult(false, "Invalid counselor ID");
+        }
+        
+        if (date == null) {
+            return new OperationResult(false, "Date is required");
+        }
+        
+        if (date.isBefore(LocalDate.now())) {
+            return new OperationResult(false, "Cannot block dates in the past");
+        }
+        
+        boolean success = counselorDAO.blockDate(counselorId, date, reason);
+        
+        if (success) {
+            logger.info("Date blocked for counselor " + counselorId + ": " + date);
+            return new OperationResult(true, "Date blocked successfully");
+        } else {
+            return new OperationResult(false, "Failed to block date");
+        }
+    }
+    
+    /**
+     * Unblock date for counselor
+     * @param counselorId Counselor ID
+     * @param date Date to unblock
+     * @return OperationResult with success status and message
+     */
+    public OperationResult unblockDate(int counselorId, LocalDate date) {
+        if (counselorId <= 0) {
+            return new OperationResult(false, "Invalid counselor ID");
+        }
+        
+        if (date == null) {
+            return new OperationResult(false, "Date is required");
+        }
+        
+        boolean success = counselorDAO.unblockDate(counselorId, date);
+        
+        if (success) {
+            logger.info("Date unblocked for counselor " + counselorId + ": " + date);
+            return new OperationResult(true, "Date unblocked successfully");
+        } else {
+            return new OperationResult(false, "Failed to unblock date");
+        }
+    }
+    
+    /**
+     * Update blocked date reason
+     * @param counselorId Counselor ID
+     * @param date Blocked date
+     * @param newReason New reason
+     * @return OperationResult with success status and message
+     */
+    public OperationResult updateBlockedDateReason(int counselorId, LocalDate date, String newReason) {
+        if (counselorId <= 0 || date == null) {
+            return new OperationResult(false, "Invalid parameters");
+        }
+        
+        boolean success = counselorDAO.updateBlockedDateReason(counselorId, date, newReason);
+        
+        if (success) {
+            logger.info("Blocked date reason updated for counselor " + counselorId);
+            return new OperationResult(true, "Reason updated successfully");
+        } else {
+            return new OperationResult(false, "Failed to update reason");
+        }
     }
     
     /**
@@ -255,213 +366,91 @@ public class CounselorController {
         return null; // Validation passed
     }
     
+    // ============================================================================
+    // HELPER METHODS (For internal use by other controllers)
+    // ============================================================================
+    
     /**
-     * Create new counselor
-     * @param counselor Counselor object
-     * @return true if successful, false otherwise
+     * Check if email exists
+     * Used by RegistrationController for validation
+     * @param email Email to check
+     * @return true if exists, false otherwise
      */
-    public boolean createCounselor(Counselor counselor) {
-        if (counselor == null) {
-            logger.warning("Cannot create null counselor");
+    public boolean emailExists(String email) {
+        if (email == null || email.trim().isEmpty()) {
             return false;
         }
-        
-        // Validate required fields
-        if (counselor.getName() == null || counselor.getName().trim().isEmpty()) {
-            logger.warning("Counselor name is required");
-            return false;
-        }
-        
-        if (counselor.getEmail() == null || counselor.getEmail().trim().isEmpty()) {
-            logger.warning("Counselor email is required");
-            return false;
-        }
-        
-        boolean success = counselorDAO.createCounselor(counselor);
-        
-        if (success) {
-            logger.info("Counselor created successfully: " + counselor.getName());
-        } else {
-            logger.severe("Failed to create counselor: " + counselor.getName());
-        }
-        
-        return success;
+        return counselorDAO.emailExists(email.trim());
     }
     
     /**
-     * Update counselor
-     * @param counselor Counselor object with updated data
-     * @return true if successful, false otherwise
+     * Check if license number exists
+     * Used by RegistrationController for validation
+     * @param licenseNumber License number to check
+     * @return true if exists, false otherwise
      */
-    public boolean updateCounselor(Counselor counselor) {
-        if (counselor == null || counselor.getCounselorId() <= 0) {
-            logger.warning("Invalid counselor data for update");
+    public boolean licenseNumberExists(String licenseNumber) {
+        if (licenseNumber == null || licenseNumber.trim().isEmpty()) {
             return false;
         }
-        
-        boolean success = counselorDAO.updateCounselor(counselor);
-        
-        if (success) {
-            logger.info("Counselor updated successfully: " + counselor.getName());
-        } else {
-            logger.severe("Failed to update counselor: " + counselor.getName());
-        }
-        
-        return success;
+        return counselorDAO.licenseNumberExists(licenseNumber.trim());
     }
     
     /**
-     * Delete counselor (soft delete)
-     * @param counselorId Counselor ID
+     * Create counselor registration request
+     * Called by RegistrationController
+     * @param counselor Counselor object with registration data
      * @return true if successful, false otherwise
      */
-    public boolean deleteCounselor(int counselorId) {
-        if (counselorId <= 0) {
-            logger.warning("Invalid counselor ID for deletion: " + counselorId);
-            return false;
-        }
-        
-        boolean success = counselorDAO.deleteCounselor(counselorId);
-        
-        if (success) {
-            logger.info("Counselor deleted successfully: ID " + counselorId);
-        } else {
-            logger.severe("Failed to delete counselor: ID " + counselorId);
-        }
-        
-        return success;
-    }
-    
-    /**
-     * Register new counselor
-     */
-    public String registerCounselor(String name, String email, String specialization,
-                                    String licenseNumber, String password, String confirmPassword) {
-        // Validate all fields
-        String validationError = validateCounselorRegistrationData(name, email, specialization, 
-                                                         licenseNumber, password, confirmPassword);
-        if (validationError != null) {
-            return validationError;
-        }
-        
-        // Check if email exists
-        if (counselorDAO.emailExists(email)) {
-            return "Email already registered or pending approval.";
-        }
-        
-        // Check if license exists
-        if (counselorDAO.licenseNumberExists(licenseNumber)) {
-            return "License number already registered or pending approval.";
-        }
-        
-        // Create registration request
-        Counselor counselor = new Counselor();
-        counselor.setName(name.trim());
-        counselor.setEmail(email.trim());
-        counselor.setSpecialization(specialization.trim());
-        counselor.setLicenseNumber(licenseNumber.trim());
-        counselor.setPassword(password.trim());
-        
+    protected boolean createRegistrationRequest(Counselor counselor) {
         boolean success = counselorDAO.createRegistrationRequest(counselor);
         
-        return success ? "SUCCESS" : "Registration failed. Please try again.";
+        if (success) {
+            logger.info("Registration request created for: " + counselor.getName());
+        } else {
+            logger.severe("Failed to create registration request for: " + counselor.getName());
+        }
+        
+        return success;
     }
     
     /**
-     * Block date for counselor
+     * Authenticate counselor
+     * Called by LoginController
+     * @param emailOrUsername Email or username
+     * @param password Password
+     * @return Counselor object if authenticated, null otherwise
      */
-    public boolean blockDate(int counselorId, LocalDate date, String reason) {
-        if (counselorId <= 0 || date == null) {
-            return false;
+    protected Counselor authenticate(String emailOrUsername, String password) {
+        if (emailOrUsername == null || emailOrUsername.trim().isEmpty() || 
+            password == null || password.trim().isEmpty()) {
+            return null;
         }
         
-        if (date.isBefore(LocalDate.now())) {
-            return false;
+        Counselor counselor = counselorDAO.authenticateCounselor(emailOrUsername.trim(), password.trim());
+        
+        if (counselor != null) {
+            logger.info("Counselor authenticated: " + counselor.getName());
+        } else {
+            logger.warning("Failed authentication attempt for: " + emailOrUsername);
         }
         
-        return counselorDAO.blockDate(counselorId, date, reason);
+        return counselor;
     }
     
-    /**
-     * Unblock date for counselor
-     */
-    public boolean unblockDate(int counselorId, LocalDate date) {
-        if (counselorId <= 0 || date == null) {
-            return false;
-        }
-        
-        return counselorDAO.unblockDate(counselorId, date);
-    }
+    // ============================================================================
+    // RESULT CLASSES
+    // ============================================================================
     
     /**
-     * Update blocked date reason
+     * Operation result class
      */
-    public boolean updateBlockedDateReason(int counselorId, LocalDate date, String newReason) {
-        if (counselorId <= 0 || date == null || newReason == null) {
-            return false;
-        }
-        
-        return counselorDAO.updateBlockedDateReason(counselorId, date, newReason);
-    }
-    
-    /**
-     * Validate counselor registration data
-     */
-    private String validateCounselorRegistrationData(String name, String email, String specialization,
-                                                     String licenseNumber, String password, String confirmPassword) {
-        if (name == null || name.trim().isEmpty()) {
-            return "Please enter your name.";
-        }
-        
-        if (email == null || email.trim().isEmpty()) {
-            return "Please enter your email.";
-        }
-        
-        if (!isValidEmail(email)) {
-            return "Invalid email format.";
-        }
-        
-        if (specialization == null || specialization.trim().isEmpty()) {
-            return "Please enter your specialization.";
-        }
-        
-        if (licenseNumber == null || licenseNumber.trim().isEmpty()) {
-            return "Please enter your license number.";
-        }
-        
-        if (password == null || password.trim().isEmpty()) {
-            return "Please enter your password.";
-        }
-        
-        if (password.length() < 6) {
-            return "Password must be at least 6 characters.";
-        }
-        
-        if (!password.equals(confirmPassword)) {
-            return "Passwords do not match.";
-        }
-        
-        return null;
-    }
-    
-    /**
-     * Validate email format
-     */
-    private boolean isValidEmail(String email) {
-        return email != null && EMAIL_PATTERN.matcher(email).matches();
-    }
-    
-    /**
-     * Inner class to represent login result
-     */
-    public static class LoginResult {
+    public static class OperationResult {
         private final boolean success;
-        private final Counselor counselor;
         private final String message;
         
-        public LoginResult(boolean success, Counselor counselor, String message) {
+        public OperationResult(boolean success, String message) {
             this.success = success;
-            this.counselor = counselor;
             this.message = message;
         }
         
@@ -469,13 +458,8 @@ public class CounselorController {
             return success;
         }
         
-        public Counselor getCounselor() {
-            return counselor;
-        }
-        
         public String getMessage() {
             return message;
         }
     }
- 
 }
